@@ -29,11 +29,10 @@ public:
         rec.t = t;
         rec.p = r.at(rec.t);
         rec.set_face_normal(r, plane_normal);
+        rec.object_type = "plane";
 
         return true;  // Intersection occurred in the ray's direction
     }
-
-    std::string object_name() const override { return "plane"; }
 
 private:
     point3 plane_point1;

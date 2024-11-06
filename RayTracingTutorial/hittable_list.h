@@ -35,7 +35,6 @@ public:
         return hit_anything;
     }
 
-    std::string object_name() const override { return "sphere"; }
 };
 
 #endif

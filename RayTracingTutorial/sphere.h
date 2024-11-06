@@ -31,11 +31,10 @@ public:
         rec.p = r.at(rec.t);
         vec3 outward_normal = (rec.p - center) / radius;
         rec.set_face_normal(r, outward_normal);
+        rec.object_type = "sphere";
 
         return true;
     }
-
-    std::string object_name() const override { return "sphere"; }
 
 private:
     point3 center;

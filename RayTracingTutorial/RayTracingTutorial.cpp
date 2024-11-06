@@ -7,6 +7,7 @@
 #include "sphere.h"
 #include "camera.h"
 #include "plane.h"
+#include "triangle.h"
 
 int main() {
     auto aspect_ratio = 16.0 / 9.0;
@@ -15,8 +16,9 @@ int main() {
     // World
     hittable_list world;
     //world.add(make_shared<sphere>(point3(0, 0, -1), 0.5));
-    //world.add(make_shared<sphere>(point3(0, -100.5, -1), 100));
-    world.add(make_shared<plane>(point3(0, 0, -1), point3(1, 0, -1), point3(0, 1, -1)));
+    //world.add(make_shared<sphere>(point3(0, -100.5, -1), 90));
+    world.add(make_shared<plane>(point3(0, 0, -2), point3(1, 0, -2), point3(0, 1, -2)));
+    world.add(make_shared<triangle>(point3(0, 0, -1), point3(1, 0, -1), point3(0, 1, -1)));
 
     camera cam;
 

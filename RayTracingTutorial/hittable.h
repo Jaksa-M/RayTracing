@@ -7,6 +7,7 @@ public:
     vec3 normal;
     double t;
     bool front_face;
+    std::string object_type;
 
     void set_face_normal(const ray& r, const vec3& outward_normal) {
         // Sets the hit record normal vector.
@@ -23,7 +24,6 @@ public:
     virtual ~hittable() = default;
 
     virtual bool hit(const ray& r, interval ray_t, hit_record& rec) const = 0;
-    virtual std::string object_name() const = 0;
 };
 
 #endif

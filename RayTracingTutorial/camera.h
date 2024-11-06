@@ -8,7 +8,7 @@ public:
     double aspect_ratio = 1.0;  // Ratio of image width over height
     int    image_width = 100;  // Rendered image width in pixel count
 
-    void render(const hittable& world) {
+    void render(const hittable_list& world) {
         initialize();
 
         std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
@@ -81,24 +81,22 @@ private:
     }
 
 
-    color ray_color(const ray& r, const hittable& world) const {
+    color ray_color(const ray& r, const hittable_list& world) const {
         hit_record rec;
 
-        /*if (world.hit(r, interval(0, infinity), rec)) {
-            return 0.5 * (rec.normal + color(1, 1, 1));
-        }*/
-
         if (world.hit(r, interval(0, infinity), rec)) {
-            if (world.object_name() == "plane") {
+            if (rec.object_type == "plane") {
                 return color(1.0, 1.0, 0.0); // Change color to yellow for hits
             }
-            else if (world.object_name() == "sphere") {
+            else if (rec.object_type == "sphere") {
                 return 0.5 * (rec.normal + color(1, 1, 1));
             }
-            
+            else if (rec.object_type == "triangle") {
+                return 0.5 * (rec.normal + color(1, 0, 0)); // Change color to red for hits
+            }
         }
 
-
+        // Background gradient if no object is hit
         vec3 unit_direction = unit_vector(r.direction());
         auto a = 0.5 * (unit_direction.y() + 1.0);
         return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0);
