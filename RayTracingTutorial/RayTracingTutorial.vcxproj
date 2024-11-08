@@ -137,6 +137,7 @@
     <ClInclude Include="interval.h" />
     <ClInclude Include="plane.h" />
     <ClInclude Include="ray.h" />
+    <ClInclude Include="rectangle.h" />
     <ClInclude Include="rtweekend.h" />
     <ClInclude Include="sphere.h" />
     <ClInclude Include="stb_image_write.h" />

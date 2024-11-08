@@ -5,10 +5,12 @@
 
 class plane : public hittable {
 public:
-    // Plane is defined by 3 points on it
+    // Plane is defined by 3 points on it or 1 point and normal
     plane(const point3& p1, const point3& p2, const point3& p3) : plane_point1(p1), plane_point2(p2), plane_point3(p3) {
         plane_normal = unit_vector(cross(p2 - p1, p3 - p1));
     }
+
+    plane(const point3& p1, const point3& normal) : plane_point1(p1), plane_normal(normal) {}
 
     bool hit(const ray& r, interval ray_t, hit_record& rec) const override {
         double denominator = dot(plane_normal, r.direction()); // Imenilac (ispod razlomka)

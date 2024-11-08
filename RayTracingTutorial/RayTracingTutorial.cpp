@@ -8,6 +8,7 @@
 #include "camera.h"
 #include "plane.h"
 #include "triangle.h"
+#include "rectangle.h"
 
 int main() {
     auto aspect_ratio = 16.0 / 9.0;
@@ -16,14 +17,22 @@ int main() {
     // World
     hittable_list world;
     //world.add(make_shared<sphere>(point3(0, 0, -1), 0.5));
-    //world.add(make_shared<sphere>(point3(0, -100.5, -1), 90));
-    world.add(make_shared<plane>(point3(0, 0, -2), point3(1, 0, -2), point3(0, 1, -2)));
-    world.add(make_shared<triangle>(point3(0, 0, -1), point3(1, 0, -1), point3(0, 1, -1)));
+    //world.add(make_shared<sphere>(point3(0, -100.5, -1), 100));
+    //world.add(make_shared<plane>(point3(0, 0, -2), point3(1, 0, -2), point3(0, 1, -2)));
+    //world.add(make_shared<plane>(point3(0, 0, 0), point3(0, 1, 0)));
+    //world.add(make_shared<triangle>(point3(0, 0, -1), point3(1, 0, -1), point3(0, 1, -1)));
+    //world.add(make_shared<triangle>(point3(1, 1, -2), point3(3, 0, -2), point3(2, 3, -2)));
+    //world.add(make_shared<rectangle>(point3(0, 0, -1), point3(1, 0, -1), point3(1, 1, -1), point3(0, 1, -1)));
+    //world.add(make_shared<rectangle>(point3(0, 2, 0), point3(0, 1, 0), point3(1, 1, 0), point3(1, 2, 0)));
+    //world.add(make_shared<rectangle>(point3(0, 0, 0), point3(1, 0, 0), point3(1, -1, 0), point3(0, -1, 0)));
+    world.add(make_shared<rectangle>(point3(0, -1, -1), point3(1, -1, -1), point3(1, 0, -1), point3(0, 0, -1)));
 
     camera cam;
 
     cam.aspect_ratio = 16.0 / 9.0;
     cam.image_width = 400;
+    cam.samples_per_pixel = 100;
+    cam.max_depth = 50;
 
     cam.render(world);
 
