@@ -23,9 +23,13 @@ int main() {
     //world.add(make_shared<triangle>(point3(0, 0, -1), point3(1, 0, -1), point3(0, 1, -1)));
     //world.add(make_shared<triangle>(point3(1, 1, -2), point3(3, 0, -2), point3(2, 3, -2)));
     //world.add(make_shared<rectangle>(point3(0, 0, -1), point3(1, 0, -1), point3(1, 1, -1), point3(0, 1, -1)));
-    //world.add(make_shared<rectangle>(point3(0, 2, 0), point3(0, 1, 0), point3(1, 1, 0), point3(1, 2, 0)));
-    //world.add(make_shared<rectangle>(point3(0, 0, 0), point3(1, 0, 0), point3(1, -1, 0), point3(0, -1, 0)));
-    world.add(make_shared<rectangle>(point3(0, -1, -1), point3(1, -1, -1), point3(1, 0, -1), point3(0, 0, -1)));
+    //world.add(make_shared<rectangle>(point3(0, -1, -1), point3(1, -1, -1), point3(1, 0, -1), point3(0, 0, -1)));
+
+    // Example of simple scene with all shapes.
+    world.add(make_shared<sphere>(point3(0, -100.5, -1), 100));
+    world.add(make_shared<rectangle>(point3(0, -0.5, -1), point3(1, -0.5, -1), point3(1, 0.5, -1), point3(0, 0.5, -1)));
+    world.add(make_shared<sphere>(point3(-1, 0, -1), 0.5));
+    world.add(make_shared<triangle>(point3(2.2, -0.5, -2), point3(3.2, 0, -2), point3(2.2, 1, -2)));
 
     camera cam;
 

@@ -105,17 +105,23 @@ private:
 
         if (world.hit(r, interval(0.001, infinity), rec)) {
             if (rec.object_type == "plane") {
-                return color(1.0, 1.0, 0.0); // Change color to yellow for hits
+                //return color(1.0, 1.0, 0.0); // Change color to yellow for hits
+                vec3 direction = rec.normal + random_unit_vector();
+                return 0.1 * ray_color(ray(rec.p, direction), depth - 1, world);
             }
             else if (rec.object_type == "sphere") {
                 vec3 direction = rec.normal + random_unit_vector();
                 return 0.1 * ray_color(ray(rec.p, direction), depth - 1, world);
             }
             else if (rec.object_type == "triangle") {
-                return 0.5 * (rec.normal + color(1, 0, 0)); // Change color to red for hits
+                //return 0.5 * (rec.normal + color(1, 0, 0)); // Change color to red for hits
+                vec3 direction = rec.normal + random_unit_vector();
+                return 0.1 * ray_color(ray(rec.p, direction), depth - 1, world);
             }
             else if (rec.object_type == "rectangle") {
-                return 0.5 * (rec.normal + color(1.0, 0.0, 1.0)); // Change color to magenta for hits
+                //return 0.5 * (rec.normal + color(1.0, 0.0, 1.0)); // Change color to magenta for hits
+                vec3 direction = rec.normal + random_unit_vector();
+                return 0.1 * ray_color(ray(rec.p, direction), depth - 1, world);
             }
         }
 
