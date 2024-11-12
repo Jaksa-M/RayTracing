@@ -5,7 +5,7 @@
 
 class triangle : public hittable {
 public:
-    triangle(const point3& p1, const point3& p2, const point3& p3) : A(p1), B(p2), C(p3) {
+    triangle(const point3& p1, const point3& p2, const point3& p3, shared_ptr<material> mat) : A(p1), B(p2), C(p3), mat(mat) {
         triangle_normal = unit_vector(cross(p2 - p1, p3 - p1));
     }
 
@@ -109,6 +109,7 @@ private:
     point3 B;
     point3 C;
     point3 triangle_normal;
+    shared_ptr<material> mat;
 };
 
 #endif
