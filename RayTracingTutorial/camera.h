@@ -8,44 +8,53 @@ class camera {
 public:
     double aspect_ratio = 1.0;  // Ratio of image width over height
     int    image_width = 100;  // Rendered image width in pixel count
+    int    image_height;   // Rendered image height
     int    samples_per_pixel = 10;   // Count of random samples for each pixel
     int    max_depth = 10;   // Maximum number of ray bounces into scene
 
-    void render(const hittable_list& world) {
+    std::vector<unsigned char> render(const hittable_list& world, std::vector<float>& image_data_acc) {
         initialize();
 
-        std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
+        //std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
 
         // Create a vector to hold the pixel data (3 channels for RGB)
         std::vector<unsigned char> image_data(image_width * image_height * 3);
+        if (image_data_acc.empty()) {
+            image_data_acc.assign(image_width * image_height * 4, 0.0f);
+        }
+        //std::vector<float> image_data_acc(image_width * image_height * 4, 0.0f);
 
+        // This will all be called for every frame (like a while loop that executes every frame)
+        auto offset = sample_square();
         for (int j = 0; j < image_height; j++) {
-            //std::clog << "\rScanlines remaining: " << (image_height - j) << ' ' << std::flush;
+            int flipped_j = image_height - j - 1;  // Flip the row index
             for (int i = 0; i < image_width; i++) {
-                int index = (j * image_width + i) * 3;
+                int index = (flipped_j * image_width + i) * 3;
+                int index_acc = (flipped_j * image_width + i) * 4;
 
                 color pixel_color(0, 0, 0);
-                for (int sample = 0; sample < samples_per_pixel; sample++) {
-                    ray ra = get_ray(i, j);
-                    pixel_color += ray_color(ra, max_depth, world);
-                }
-                write_color(image_data, pixel_samples_scale * pixel_color, index);
+                ray ra = get_ray(i, j, offset);
+                pixel_color = ray_color(ra, max_depth, world);
+                /*if (camera_moved)
+                    std::fill(image_data_acc.begin(), image_data_acc.end(), 0.0f);*/
+
+                write_color(image_data, image_data_acc, pixel_color, index, index_acc);
             }
         }
+        return image_data;
 
         // Write the image to a BMP file
-        if (stbi_write_bmp("output.bmp", image_width, image_height, 3, image_data.data())) {
+        /*if (stbi_write_bmp("output.bmp", image_width, image_height, 3, image_data.data())) {
             std::cout << "Image saved to output.bmp\n";
         }
         else {
             std::cerr << "Failed to save the image.\n";
         }
-
-        std::clog << "\rDone.                 \n";
+        std::clog << "\rDone.                 \n";*/
     }
 
 private:
-    int    image_height;   // Rendered image height
+
     double pixel_samples_scale;  // Color scale factor for a sum of pixel samples
     point3 center;         // Camera center
     point3 pixel00_loc;    // Location of pixel 0, 0
@@ -53,8 +62,8 @@ private:
     vec3   pixel_delta_v;  // Offset to pixel below
 
     void initialize() {
-        image_height = int(image_width / aspect_ratio);
-        image_height = (image_height < 1) ? 1 : image_height;
+        //image_height = int(image_width / aspect_ratio);
+        //image_height = (image_height < 1) ? 1 : image_height;
 
         center = point3(0, 0, 0);
 
@@ -78,10 +87,9 @@ private:
         pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
     }
 
-    ray get_ray(int i, int j) const {
+    ray get_ray(int i, int j, vec3 offset) const {
         // Construct a camera ray originating from the origin and directed at randomly sampled point around the pixel location i, j.
 
-        auto offset = sample_square();
         auto pixel_sample = pixel00_loc
             + ((i + offset.x()) * pixel_delta_u)
             + ((j + offset.y()) * pixel_delta_v);
@@ -110,25 +118,6 @@ private:
             if (rec.mat->scatter(r, rec, attenuation, scattered))
                 return attenuation * ray_color(scattered, depth - 1, world);
             return color(0, 0, 0);
-            //if (rec.object_type == "plane") {
-            //    //return color(1.0, 1.0, 0.0); // Change color to yellow for hits
-            //    vec3 direction = rec.normal + random_unit_vector();
-            //    return 0.1 * ray_color(ray(rec.p, direction), depth - 1, world);
-            //}
-            //else if (rec.object_type == "sphere") {
-            //    vec3 direction = rec.normal + random_unit_vector();
-            //    return 0.1 * ray_color(ray(rec.p, direction), depth - 1, world);
-            //}
-            //else if (rec.object_type == "triangle") {
-            //    //return 0.5 * (rec.normal + color(1, 0, 0)); // Change color to red for hits
-            //    vec3 direction = rec.normal + random_unit_vector();
-            //    return 0.1 * ray_color(ray(rec.p, direction), depth - 1, world);
-            //}
-            //else if (rec.object_type == "rectangle") {
-            //    //return 0.5 * (rec.normal + color(1.0, 0.0, 1.0)); // Change color to magenta for hits
-            //    vec3 direction = rec.normal + random_unit_vector();
-            //    return 0.1 * ray_color(ray(rec.p, direction), depth - 1, world);
-            //}
         }
 
         // Background gradient if no object is hit

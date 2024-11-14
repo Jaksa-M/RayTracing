@@ -129,4 +129,17 @@ inline vec3 reflect(const vec3& v, const vec3& n) {
     return v - 2 * dot(v, n) * n;
 }
 
+class vec4 : public vec3 {
+public:
+    double e3;  // Only adding the fourth component here (that is w - number of samples)
+
+    vec4() : vec3(), e3(0) {}
+    vec4(double e0, double e1, double e2, double e3) : vec3(e0, e1, e2), e3(e3) {}
+
+    double x() const { return e[0]; }
+    double y() const { return e[1]; }
+    double z() const { return e[2]; }
+    double w() const { return e3; }
+};
+
 #endif
