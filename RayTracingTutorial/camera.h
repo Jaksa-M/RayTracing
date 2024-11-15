@@ -4,6 +4,8 @@
 #include "hittable.h"
 #include "material.h"
 
+#define TRACING_PERCENTAGE 0.0
+
 class camera {
 public:
     double aspect_ratio = 1.0;  // Ratio of image width over height
@@ -12,17 +14,14 @@ public:
     int    samples_per_pixel = 10;   // Count of random samples for each pixel
     int    max_depth = 10;   // Maximum number of ray bounces into scene
 
-    std::vector<unsigned char> render(const hittable_list& world, std::vector<float>& image_data_acc) {
+    std::vector<unsigned char> render(const hittable_list& world, std::vector<float>& image_data_acc, float& trace_percentage) {
         initialize();
-
-        //std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
 
         // Create a vector to hold the pixel data (3 channels for RGB)
         std::vector<unsigned char> image_data(image_width * image_height * 3);
         if (image_data_acc.empty()) {
             image_data_acc.assign(image_width * image_height * 4, 0.0f);
         }
-        //std::vector<float> image_data_acc(image_width * image_height * 4, 0.0f);
 
         // This will all be called for every frame (like a while loop that executes every frame)
         auto offset = sample_square();
@@ -31,26 +30,24 @@ public:
             for (int i = 0; i < image_width; i++) {
                 int index = (flipped_j * image_width + i) * 3;
                 int index_acc = (flipped_j * image_width + i) * 4;
-
                 color pixel_color(0, 0, 0);
+
+                // decides whether to trace current pixel or skip it and go on next
+                double trace_pixel = random_double(0, 1);
+                if (trace_pixel > trace_percentage) {
+                    write_color(image_data, image_data_acc, pixel_color, index, index_acc, true);
+                    continue;
+                }
+                
                 ray ra = get_ray(i, j, offset);
                 pixel_color = ray_color(ra, max_depth, world);
                 /*if (camera_moved)
                     std::fill(image_data_acc.begin(), image_data_acc.end(), 0.0f);*/
 
-                write_color(image_data, image_data_acc, pixel_color, index, index_acc);
+                write_color(image_data, image_data_acc, pixel_color, index, index_acc, false);
             }
         }
         return image_data;
-
-        // Write the image to a BMP file
-        /*if (stbi_write_bmp("output.bmp", image_width, image_height, 3, image_data.data())) {
-            std::cout << "Image saved to output.bmp\n";
-        }
-        else {
-            std::cerr << "Failed to save the image.\n";
-        }
-        std::clog << "\rDone.                 \n";*/
     }
 
 private:

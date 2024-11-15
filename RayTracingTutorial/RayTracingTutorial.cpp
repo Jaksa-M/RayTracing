@@ -124,6 +124,9 @@ int main(int, char**)
     cam.max_depth = 50;
     std::vector<float> image_data_acc;
 
+    // Decides how much pixels will be traced
+    float trace_percentage;
+
     // Main loop
     while (!glfwWindowShouldClose(window))
     {
@@ -162,13 +165,15 @@ int main(int, char**)
             ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
             ImGui::Checkbox("Another Window", &show_another_window);
 
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);            // Edit 1 float using a slider from 0.0f to 1.0f
             ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 
             if (ImGui::Button("Button"))                            // Buttons return true when clicked (most widgets return true when edited/activated)
                 counter++;
             ImGui::SameLine();
             ImGui::Text("counter = %d", counter);
+
+            // Slider for percentage of pixels that should be traced
+            ImGui::SliderFloat("pixel_traced", &trace_percentage, 0.0f, 1.0f);
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
             ImGui::End();
@@ -193,31 +198,9 @@ int main(int, char**)
         cam.image_height = display_h;
         //glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
         //glClear(GL_COLOR_BUFFER_BIT);
-        /*
-        std::vector<GLubyte> bytes(display_w * display_h * 3);
-
-        static int anim = 0;
-        for(int y = 0; y < display_h; y++)
-        {
-            for (int x = 0; x < display_w; x++)
-            {
-                float xx = x / float(display_w);
-                float yy = y / float(display_h);
-                bytes[x * 3 + y * display_w * 3 + 0] = (GLubyte)(xx * 255);
-                bytes[x * 3 + y * display_w * 3 + 1] = (GLubyte)(yy * 255);
-                bytes[x * 3 + y * display_w * 3 + 2] = (GLubyte)(anim * 255);
-            }
-        }
-        anim++;
-        anim = anim % 256;
-
-        glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, bytes.data());
-        */
-
         
-
         std::vector<GLubyte> image_data(display_w * display_h * 3);
-        image_data = cam.render(world, image_data_acc);
+        image_data = cam.render(world, image_data_acc, trace_percentage);
 
         glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
