@@ -150,6 +150,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h" />
+    <ClInclude Include="CameraController.h" />
     <ClInclude Include="color.h" />
     <ClInclude Include="ExternalLibraries\imgui\imconfig.h" />
     <ClInclude Include="ExternalLibraries\imgui\imgui.h" />

@@ -10,7 +10,7 @@
 #include "triangle.h"
 #include "rectangle.h"
 #include "material.h"
-#include <algorithm>
+#include "cameraController.h"
 
 
 // Dear ImGui: standalone example application for GLFW + OpenGL 3, using programmable pipeline
@@ -39,15 +39,18 @@
 #pragma comment(lib, "legacy_stdio_definitions")
 #endif
 
-// This example can also compile and run with Emscripten! See 'Makefile.emscripten' for details.
-#ifdef __EMSCRIPTEN__
-#include "../libs/emscripten/emscripten_mainloop_stub.h"
-#endif
-
 static void glfw_error_callback(int error, const char* description)
 {
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
+
+//void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+//    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+//        double xpos, ypos;
+//        glfwGetCursorPos(window, &xpos, &ypos);
+//        std::cout << "Mouse pressed at: (" << xpos << ", " << ypos << ")" << std::endl;
+//    }
+//}
 
 // Main code
 int main(int, char**)
@@ -70,6 +73,8 @@ int main(int, char**)
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
 
+    //glfwSetMouseButtonCallback(window, mouseButtonCallback);
+
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -85,23 +90,6 @@ int main(int, char**)
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
-    // Load Fonts
-    // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
-    // - If the file cannot be loaded, the function will return a nullptr. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-    // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-    // - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use Freetype for higher quality font rendering.
-    // - Read 'docs/FONTS.md' for more instructions and details.
-    // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-    // - Our Emscripten build process allows embedding fonts to be accessible at runtime from the "fonts/" folder. See Makefile.emscripten for details.
-    //io.Fonts->AddFontDefault();
-    //io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 18.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-    //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-    //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, nullptr, io.Fonts->GetGlyphRangesJapanese());
-    //IM_ASSERT(font != nullptr);
-
     // Our state
     bool show_demo_window = true;
     bool show_another_window = false;
@@ -113,19 +101,24 @@ int main(int, char**)
     auto material_center = make_shared<lambertian>(color(0.1, 0.2, 0.5));
     auto material_left = make_shared<metal>(color(0.8, 0.8, 0.8), 0.3);
     auto material_right = make_shared<metal>(color(0.8, 0.6, 0.2), 1.0);
-    world.add(make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, material_ground));
+    //world.add(make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, material_ground));
+    //world.add(make_shared<plane>(point3(0, -1, 0), point3(0,1,0)));
     world.add(make_shared<sphere>(point3(0.0, 0.0, -1.2), 0.5, material_center));
     world.add(make_shared<sphere>(point3(-1.0, 0.0, -1.0), 0.5, material_left));
     world.add(make_shared<sphere>(point3(1.0, 0.0, -1.0), 0.5, material_right));
 
     camera cam;
 
+    cam.setInitalValues();
     cam.aspect_ratio = 16.0 / 9.0;
     cam.max_depth = 50;
     std::vector<float> image_data_acc;
 
     // Decides how much pixels will be traced
-    float trace_percentage;
+    float trace_percentage = 0.1;
+    int reflection_depth = 2;
+
+    cameraController cam_controller(cam, 2.0);
 
     // Main loop
     while (!glfwWindowShouldClose(window))
@@ -152,7 +145,7 @@ int main(int, char**)
 
         // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
         if (show_demo_window)
-            ImGui::ShowDemoWindow(&show_demo_window);
+            //ImGui::ShowDemoWindow(&show_demo_window);
 
         // 2. Show a simple window that we create ourselves. We use a Begin/End pair to create a named window.
         {
@@ -173,7 +166,8 @@ int main(int, char**)
             ImGui::Text("counter = %d", counter);
 
             // Slider for percentage of pixels that should be traced
-            ImGui::SliderFloat("pixel_traced", &trace_percentage, 0.0f, 1.0f);
+            ImGui::SliderFloat("pixel traced", &trace_percentage, 0.0f, 1.0f);
+            ImGui::SliderInt("relfection bounces", &reflection_depth, 0, 15);
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
             ImGui::End();
@@ -189,6 +183,14 @@ int main(int, char**)
             ImGui::End();
         }
 
+        if (!io.WantCaptureKeyboard) {
+            cam_controller.HandleKeyboardInput(io.DeltaTime);
+        }
+        if (!io.WantCaptureMouse) {
+            cam_controller.HandleMouseInput(io);
+        }
+
+
         // Rendering
         ImGui::Render();
         int display_w, display_h;
@@ -196,13 +198,18 @@ int main(int, char**)
         glViewport(0, 0, display_w, display_h);
         cam.image_width = display_w;
         cam.image_height = display_h;
-        //glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
-        //glClear(GL_COLOR_BUFFER_BIT);
         
         std::vector<GLubyte> image_data(display_w * display_h * 3);
-        image_data = cam.render(world, image_data_acc, trace_percentage);
+        image_data = cam.render(world, image_data_acc, trace_percentage, reflection_depth);
 
         glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
+
+        // Drawing lines
+        glBegin(GL_LINES);
+        glVertex2f(0, 0);
+        glVertex2f(100, 100);
+        glEnd();
+
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);

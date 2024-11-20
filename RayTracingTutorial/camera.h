@@ -14,13 +14,25 @@ public:
     int    samples_per_pixel = 10;   // Count of random samples for each pixel
     int    max_depth = 10;   // Maximum number of ray bounces into scene
 
-    std::vector<unsigned char> render(const hittable_list& world, std::vector<float>& image_data_acc, float& trace_percentage) {
+    void setInitalValues() {
+        vec3 cameraTarget = vec3(0.0f, 0.0f, -3.0f);
+        camera_direction = unit_vector(center - cameraTarget);
+        camera_up = vec3(0.0f, 1.0f, 0.0f);
+        camera_right = unit_vector(cross(camera_up, camera_direction)); // the result is vec3 (1,0,0)
+    }
+
+    std::vector<unsigned char> render(const hittable_list& world, std::vector<float>& image_data_acc, float& trace_percentage, int& reflection_depth) {
         initialize();
 
         // Create a vector to hold the pixel data (3 channels for RGB)
         std::vector<unsigned char> image_data(image_width * image_height * 3);
         if (image_data_acc.empty()) {
             image_data_acc.assign(image_width * image_height * 4, 0.0f);
+        }
+
+        if (camera_moved == true) {
+            std::fill(image_data_acc.begin(), image_data_acc.end(), 0.0f);
+            camera_moved = false;
         }
 
         // This will all be called for every frame (like a while loop that executes every frame)
@@ -40,9 +52,7 @@ public:
                 }
                 
                 ray ra = get_ray(i, j, offset);
-                pixel_color = ray_color(ra, max_depth, world);
-                /*if (camera_moved)
-                    std::fill(image_data_acc.begin(), image_data_acc.end(), 0.0f);*/
+                pixel_color = ray_color(ra, reflection_depth, world);
 
                 write_color(image_data, image_data_acc, pixel_color, index, index_acc, false);
             }
@@ -50,37 +60,94 @@ public:
         return image_data;
     }
 
-private:
+    void setCenterX(double val) {
+        center.setX(val);
+    }
 
-    double pixel_samples_scale;  // Color scale factor for a sum of pixel samples
-    point3 center;         // Camera center
+    void setCenterY(double val) {
+        center.setY(val);
+    }
+
+    void setCenterZ(double val) {
+        center.setZ(val);
+    }
+
+    double getCenterX() {
+        return center.x();
+    }
+
+    double getCenterY() {
+        return center.y();
+    }
+
+    double getCenterZ() {
+        return center.z();
+    }
+
+    point3 getPosition() {
+        return center;
+    }
+
+    void setPosition(point3 pos) {
+        center = pos;
+    }
+
+    void setCameraMoved(bool val) {
+        camera_moved = val;
+    }
+
+    vec3 getDirection() {
+        return camera_direction;
+    }
+
+    void setDirection(vec3 direction) {
+        camera_direction = direction;
+    }
+
+    vec3 getUpVector() {
+        return camera_up;
+    }
+
+    void setUpVector(vec3 direction) {
+        camera_up = direction;
+    }
+
+    vec3 getRightVector() {
+        return camera_right;
+    }
+
+    void setRightVector(vec3 direction) {
+        camera_right = direction;
+    }
+
+private:
+    point3 center = point3(0, 0, 0);         // Camera center
     point3 pixel00_loc;    // Location of pixel 0, 0
     vec3   pixel_delta_u;  // Offset to pixel to the right
     vec3   pixel_delta_v;  // Offset to pixel below
+    bool camera_moved = false;
+    vec3 camera_direction;
+    vec3 camera_up;
+    vec3 camera_right;
 
     void initialize() {
-        //image_height = int(image_width / aspect_ratio);
-        //image_height = (image_height < 1) ? 1 : image_height;
-
-        center = point3(0, 0, 0);
-
+        
         // Determine viewport dimensions.
         auto focal_length = 1.0; // distance from z-axis
         auto viewport_height = 2.0;
         auto viewport_width = viewport_height * (double(image_width) / image_height);
 
         // Calculate the vectors across the horizontal and down the vertical viewport edges.
-        auto viewport_u = vec3(viewport_width, 0, 0);
-        auto viewport_v = vec3(0, -viewport_height, 0);
+        auto viewport_u = camera_right * viewport_width;
+        auto viewport_v = camera_up * viewport_height;
 
         // Calculate the horizontal and vertical delta vectors from pixel to pixel.
         pixel_delta_u = viewport_u / image_width;
         pixel_delta_v = viewport_v / image_height;
-        pixel_samples_scale = 1.0 / samples_per_pixel;
 
         // Calculate the location of the upper left pixel.
-        auto viewport_upper_left =
-            center - vec3(0, 0, focal_length) - viewport_u / 2 - viewport_v / 2;
+        auto viewport_upper_left = center - camera_direction * focal_length - viewport_u / 2 - viewport_v / 2;
+        //std::cout << viewport_upper_left << std::endl;
         pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
     }
 
@@ -106,6 +173,7 @@ private:
     color ray_color(const ray& r, int depth, const hittable_list& world) const {
         // If we've exceeded the ray bounce limit, no more light is gathered.
         if (depth <= 0) return color(0, 0, 0);
+        if (depth > 15) depth = 15;
 
         hit_record rec;
 
