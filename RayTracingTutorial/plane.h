@@ -13,6 +13,10 @@ public:
 
     plane(const point3& p1, const point3& normal) : plane_point1(p1), plane_normal(normal) {}
 
+    std::string object_type() const override { return "plane"; }
+
+    void transform(const matrix4x4& m) override {}
+
     bool hit(const ray& r, interval ray_t, hit_record& rec) const override {
         double denominator = dot(plane_normal, r.direction()); // Imenilac (ispod razlomka)
 

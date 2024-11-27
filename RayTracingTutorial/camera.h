@@ -8,11 +8,8 @@
 
 class camera {
 public:
-    double aspect_ratio = 1.0;  // Ratio of image width over height
     int    image_width = 100;  // Rendered image width in pixel count
     int    image_height;   // Rendered image height
-    int    samples_per_pixel = 10;   // Count of random samples for each pixel
-    int    max_depth = 10;   // Maximum number of ray bounces into scene
 
     void setInitalValues() {
         vec3 cameraTarget = vec3(0.0f, 0.0f, -3.0f);
@@ -22,6 +19,7 @@ public:
     }
 
     std::vector<unsigned char> render(const hittable_list& world, std::vector<float>& image_data_acc, float& trace_percentage, int& reflection_depth) {
+        
         initialize();
 
         // Create a vector to hold the pixel data (3 channels for RGB)
@@ -147,7 +145,6 @@ private:
 
         // Calculate the location of the upper left pixel.
         auto viewport_upper_left = center - camera_direction * focal_length - viewport_u / 2 - viewport_v / 2;
-        //std::cout << viewport_upper_left << std::endl;
         pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
     }
 
@@ -173,7 +170,7 @@ private:
     color ray_color(const ray& r, int depth, const hittable_list& world) const {
         // If we've exceeded the ray bounce limit, no more light is gathered.
         if (depth <= 0) return color(0, 0, 0);
-        if (depth > 15) depth = 15;
+        //if (depth > 15) depth = 15;
 
         hit_record rec;
 

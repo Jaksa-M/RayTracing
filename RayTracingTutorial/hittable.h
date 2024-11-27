@@ -4,6 +4,7 @@
 #include "ray.h"
 
 class material;
+class matrix4x4;
 
 class hit_record {
 public:
@@ -27,6 +28,10 @@ public:
 class hittable {
 public:
     virtual ~hittable() = default;
+
+    virtual std::string object_type() const { return "hittable"; }
+
+    virtual void transform(const matrix4x4& m) {}
 
     virtual bool hit(const ray& r, interval ray_t, hit_record& rec) const = 0;
 };
