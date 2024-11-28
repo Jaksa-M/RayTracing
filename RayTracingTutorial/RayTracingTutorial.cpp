@@ -1,22 +1,11 @@
-#include "rtweekend.h"
-#include <vector>
+// Not using anymore, was using for writing image to a file
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
-#include "hittable.h"
-#include "hittable_list.h"
+
+// Includes for my code
+#include <vector>
 #include "camera.h"
-#include "material.h"
 #include "cameraController.h"
-#include "matrix.h"
-#include "transformations.h"
-
-// Shapes
-#include "sphere.h"
-#include "plane.h"
-#include "triangle.h"
-#include "rectangle.h"
-
-// Scenes
 #include "scene_transformations.h"
 
 

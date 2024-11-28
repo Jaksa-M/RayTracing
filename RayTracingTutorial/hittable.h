@@ -2,7 +2,6 @@
 #define HITTABLE_H
 
 #include <memory>
-
 #include "ray.h"
 
 class material;

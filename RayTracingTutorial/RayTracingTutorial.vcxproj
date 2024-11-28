@@ -143,6 +143,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="camera.cpp" />
+    <ClCompile Include="CameraController.cpp" />
     <ClCompile Include="ExternalLibraries\imgui\imgui.cpp" />
     <ClCompile Include="ExternalLibraries\imgui\imgui_demo.cpp" />
     <ClCompile Include="ExternalLibraries\imgui\imgui_draw.cpp" />
@@ -150,9 +152,16 @@
     <ClCompile Include="ExternalLibraries\imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="ExternalLibraries\imgui\imgui_tables.cpp" />
     <ClCompile Include="ExternalLibraries\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="hittable_list.cpp" />
     <ClCompile Include="interval.cpp" />
+    <ClCompile Include="matrix.cpp" />
+    <ClCompile Include="plane.cpp" />
     <ClCompile Include="RayTracingTutorial.cpp" />
+    <ClCompile Include="rectangle.cpp" />
     <ClCompile Include="scene_transformations.cpp" />
+    <ClCompile Include="sphere.cpp" />
+    <ClCompile Include="transformations.cpp" />
+    <ClCompile Include="triangle.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h" />
@@ -176,7 +185,6 @@
     <ClInclude Include="plane.h" />
     <ClInclude Include="ray.h" />
     <ClInclude Include="rectangle.h" />
-    <ClInclude Include="rtweekend.h" />
     <ClInclude Include="scene.h" />
     <ClInclude Include="scene_transformations.h" />
     <ClInclude Include="sphere.h" />
