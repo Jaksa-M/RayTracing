@@ -15,7 +15,7 @@ inline double linear_to_gamma(double linear_component)
     return 0;
 }
 
-void write_color(std::vector<unsigned char>& image_data, std::vector<float>& image_data_acc, const color& pixel_color, int index, int index_acc, bool skip) {
+inline void write_color(std::vector<unsigned char>& image_data, std::vector<float>& image_data_acc, const color& pixel_color, int index, int index_acc, bool skip) {
     if (skip == false) {
         image_data_acc[index_acc + 0] += pixel_color.x();  // Red channel
         image_data_acc[index_acc + 1] += pixel_color.y();  // Green channel

@@ -48,6 +48,12 @@
     <ClCompile Include="ExternalLibraries\imgui\imgui_widgets.cpp">
       <Filter>External Libraries\imgui</Filter>
     </ClCompile>
+    <ClCompile Include="interval.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="scene_transformations.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_image_write.h">
@@ -132,6 +138,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="scene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="math_constants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

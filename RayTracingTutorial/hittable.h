@@ -1,16 +1,19 @@
 #ifndef HITTABLE_H
 #define HITTABLE_H
 
+#include <memory>
+
 #include "ray.h"
 
 class material;
 class matrix4x4;
+class interval;
 
 class hit_record {
 public:
     point3 p;
     vec3 normal;
-    shared_ptr<material> mat;
+    std::shared_ptr<material> mat;
     double t;
     bool front_face;
     std::string object_type;

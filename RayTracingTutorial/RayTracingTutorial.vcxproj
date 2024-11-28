@@ -150,7 +150,9 @@
     <ClCompile Include="ExternalLibraries\imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="ExternalLibraries\imgui\imgui_tables.cpp" />
     <ClCompile Include="ExternalLibraries\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="interval.cpp" />
     <ClCompile Include="RayTracingTutorial.cpp" />
+    <ClCompile Include="scene_transformations.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h" />
@@ -169,6 +171,7 @@
     <ClInclude Include="hittable_list.h" />
     <ClInclude Include="interval.h" />
     <ClInclude Include="material.h" />
+    <ClInclude Include="math_constants.h" />
     <ClInclude Include="matrix.h" />
     <ClInclude Include="plane.h" />
     <ClInclude Include="ray.h" />

@@ -1,6 +1,8 @@
 #ifndef TRANSFORMATIONS_H
 #define TRANSFORMATIONS_H
 	
+#include "matrix.h"
+
 class transformation { // Every matrix has to be stored column major because thats how OpenGl reads them
 public:
     transformation(camera& cam): cam(cam){}

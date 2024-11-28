@@ -1,11 +1,12 @@
 #ifndef SPHERE_H
 #define SPHERE_H
 
+#include <memory>
 #include "hittable.h"
 
 class sphere : public hittable {
 public:
-    sphere(const point3& center, double radius, shared_ptr<material> mat) : center(center), radius(std::fmax(0, radius)), mat(mat) {
+    sphere(const point3& center, double radius, std::shared_ptr<material> mat) : center(center), radius(std::fmax(0, radius)), mat(mat) {
         boxAround();
     }
 
@@ -69,7 +70,7 @@ public:
 private:
     point3 center;
     double radius;
-    shared_ptr<material> mat;
+    std::shared_ptr<material> mat;
     std::vector<vec3> edges;
 };
 

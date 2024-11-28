@@ -2,6 +2,11 @@
 #define SCENE_TRANSFORMATIONS_H
 
 #include "scene.h"
+#include "color.h"
+#include "material.h"
+#include "transformations.h"
+#include "triangle.h"
+#include "imgui/imgui.h"
 
 class SceneTransformations: public Scene{
 private:
@@ -9,10 +14,10 @@ private:
 
 public:
     void initialize() override {
-        auto material_ground = make_shared<lambertian>(color(0.8, 0.8, 0.0));
-        auto material_center = make_shared<lambertian>(color(0.1, 0.2, 0.5));
-        auto material_left = make_shared<metal>(color(0.8, 0.8, 0.8), 0.3);
-        auto material_right = make_shared<metal>(color(0.8, 0.6, 0.2), 1.0);
+        auto material_ground = std::make_shared<lambertian>(color(0.8, 0.8, 0.0));
+        auto material_center = std::make_shared<lambertian>(color(0.1, 0.2, 0.5));
+        auto material_left = std::make_shared<metal>(color(0.8, 0.8, 0.8), 0.3);
+        auto material_right = std::make_shared<metal>(color(0.8, 0.6, 0.2), 1.0);
         //world.add(make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, material_ground));
         //world.add(make_shared<sphere>(point3(0.0, 0.0, -1.2), 0.5, material_center));
         //world.add(make_shared<sphere>(point3(-1.0, 0.0, -1.0), 0.5, material_left));
@@ -21,7 +26,7 @@ public:
 
         //Triangle testing
         //world.add(make_shared<triangle>(point3(1.6, 0.0, -1.0), point3(2.0, 0.0, -0.5), point3(1.8, 1.0, 0.0), material_right));
-        world.add(make_shared<triangle>(point3(0.6, 0.0, -1.0), point3(1.0, 0.0, -1.0), point3(0.8, 1.0, -1.0), material_right));
+        world.add(std::make_shared<triangle>(point3(0.6, 0.0, -1.0), point3(1.0, 0.0, -1.0), point3(0.8, 1.0, -1.0), material_right));
     }
 
     std::vector<unsigned char> update(int display_w, int display_h, camera& cam, float& trace_percentage, int& reflection_depth) override {

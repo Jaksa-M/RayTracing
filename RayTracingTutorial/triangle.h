@@ -1,13 +1,16 @@
 #ifndef TRIANGLE_H
 #define TRIANGLE_H
 
+#include <memory>
+#include "matrix.h"
+#include "vec3.h"
 #include "hittable.h"
 
 class matrix4x4;
 
 class triangle : public hittable {
 public:
-    triangle(const point3& p1, const point3& p2, const point3& p3, shared_ptr<material> mat) : A_original(p1), B_original(p2), C_original(p3), mat(mat) {
+    triangle(const point3& p1, const point3& p2, const point3& p3, std::shared_ptr<material> mat) : A_original(p1), B_original(p2), C_original(p3), mat(mat) {
         triangle_normal = unit_vector(cross(p2 - p1, p3 - p1));
         A = A_original;
         B = B_original;
@@ -77,7 +80,7 @@ private:
     point3 B_original;
     point3 C_original;
     point3 triangle_normal;
-    shared_ptr<material> mat;
+    std::shared_ptr<material> mat;
 };
 
 #endif

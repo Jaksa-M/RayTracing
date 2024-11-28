@@ -1,12 +1,13 @@
 #ifndef PLANE_H
 #define PLANE_H
 
+#include <memory>
 #include "hittable.h"
 
 class plane : public hittable {
 public:
     // Plane is defined by 3 points on it or 1 point and normal
-    plane(const point3& p1, const point3& p2, const point3& p3, shared_ptr<material> mat) : 
+    plane(const point3& p1, const point3& p2, const point3& p3, std::shared_ptr<material> mat) : 
             plane_point1(p1), plane_point2(p2), plane_point3(p3), mat(mat) {
         plane_normal = unit_vector(cross(p2 - p1, p3 - p1));
     }
@@ -46,7 +47,7 @@ private:
     point3 plane_point2;
     point3 plane_point3;
     point3 plane_normal;
-    shared_ptr<material> mat;
+    std::shared_ptr<material> mat;
 };
 
 #endif

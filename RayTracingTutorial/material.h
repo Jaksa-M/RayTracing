@@ -2,6 +2,7 @@
 #define MATERIAL_H
 
 #include "hittable.h"
+#include "color.h"
 
 class material {
 public:

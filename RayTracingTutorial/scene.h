@@ -2,6 +2,7 @@
 #define SCENE_H
 
 #include "hittable_list.h"
+#include "camera.h"
 
 class Scene {
 protected:
