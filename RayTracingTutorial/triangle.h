@@ -9,6 +9,8 @@ public:
 
     std::string object_type() const override { return "triangle"; }
 
+    virtual std::vector<vec3> boxAround() override;
+
     bool hit(const ray& r, interval ray_t, hit_record& rec) const override;
 
     void transform(const matrix4x4& m) override;

@@ -2,6 +2,7 @@
 #define MATRIX_H
 
 #include "vec3.h"
+#include <iostream>
 
 class matrix4x4 {
 public:
@@ -16,6 +17,8 @@ public:
     vec3 operator*(const vec3& v) const;
 
     static matrix4x4 identity();
+
+    friend std::ostream& operator<<(std::ostream& os, const matrix4x4& matrix);
 };
 
 

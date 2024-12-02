@@ -14,7 +14,7 @@ public:
 
     bool hit(const ray& r, interval ray_t, hit_record& rec) const override;
 
-    std::vector<vec3> boxAround();
+    std::vector<vec3> boxAround() override;
 
 private:
     point3 center;

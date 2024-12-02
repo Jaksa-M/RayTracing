@@ -13,6 +13,11 @@ triangle::triangle(const point3& p1, const point3& p2, const point3& p3, std::sh
     C = C_original;
 }
 
+std::vector<vec3> triangle::boxAround() // YET TO BE DEFINED
+{
+    return std::vector<vec3>();
+}
+
 bool triangle::hit(const ray& r, interval ray_t, hit_record& rec) const {
     // Formula for intersecting with the plane is t = (c - p*n) / d*n
     // denominator d is ray direction, p is ray origin, n is normal, c is constant

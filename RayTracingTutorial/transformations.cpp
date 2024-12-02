@@ -1,54 +1,92 @@
 #include "transformations.h"
-#include "camera.h"
 
-transformation::transformation(camera& c): cam(c) {}
+transformation::transformation() {}
 
-matrix4x4 transformation::MakeViewMatrix() {
-    vec3 cam_forward = cam.getDirection();
-    vec3 cam_right = cam.getRightVector();
-    vec3 cam_up = cam.getUpVector();
-    vec3 cam_position = cam.getPosition();
-
+matrix4x4 transformation::makeViewMatrix(const vec3& cam_forward, const vec3& cam_right, const vec3& cam_up, const vec3& cam_position) {
+    
     matrix4x4 view;
 
+    // Column-major
+    //view(0, 0) = cam_right.x();
+    //view(0, 1) = cam_up.x();
+    //view(0, 2) = -cam_forward.x();
+    //view(0, 3) = 0;
+
+    //view(1, 0) = cam_right.y();
+    //view(1, 1) = cam_up.y();
+    //view(1, 2) = -cam_forward.y();
+    //view(1, 3) = 0;
+
+    //view(2, 0) = cam_right.z();
+    //view(2, 1) = cam_up.z();
+    //view(2, 2) = -cam_forward.z();
+    //view(2, 3) = 0;
+
+    //view(3, 0) = -dot(cam_right, cam_position);
+    //view(3, 1) = -dot(cam_up, cam_position);
+    //view(3, 2) = dot(cam_forward, cam_position);
+    //view(3, 3) = 1;
+
+    // Row-major
     view(0, 0) = cam_right.x();
-    view(0, 1) = cam_up.x();
-    view(0, 2) = -cam_forward.x();
-    view(0, 3) = 0;
+    view(0, 1) = cam_right.y();
+    view(0, 2) = cam_right.z();
 
-    view(1, 0) = cam_right.y();
+    view(1, 0) = cam_up.x();
     view(1, 1) = cam_up.y();
-    view(1, 2) = -cam_forward.y();
-    view(1, 3) = 0;
+    view(1, 2) = cam_up.z();
 
-    view(2, 0) = cam_right.z();
-    view(2, 1) = cam_up.z();
-    view(2, 2) = -cam_forward.z();
-    view(2, 3) = 0;
+    view(2, 0) = cam_forward.x();
+    view(2, 1) = cam_forward.y();
+    view(2, 2) = cam_forward.z();
 
-    view(3, 0) = -dot(cam_right, cam_position);
-    view(3, 1) = -dot(cam_up, cam_position);
-    view(3, 2) = dot(cam_forward, cam_position);
+    view(0, 3) = -dot(cam_right, cam_position);
+    view(1, 3) = -dot(cam_up, cam_position);
+    view(2, 3) = dot(cam_forward, cam_position);
     view(3, 3) = 1;
-
     return view;
 }
 
-matrix4x4 transformation::MakeInfinitePerspectiveMatrix(float n, vec3 sensor_size, vec3 lens_shift, float focal_length) {
-    // we will use senzor size as vec2, but i used vec3 with z = 0 because it was easier right now instead of creating vec2 class.
+// Sensor size is { 0.036f, 0.024f } (default full frame sensor 36x24 mm) and shift is zero
+matrix4x4 transformation::makeInfinitePerspectiveMatrix(float near_plane, vec3 sensor_size, vec3 lens_shift, float focal_length) {
+    // we will use sensor size as vec2, but i used vec3 with z = 0 because it was easier right now instead of creating vec2 class.
     matrix4x4 m;
 
-    /*m.m00 = 2.f * focal_length / sensor_size.x;
-    m.m11 = -2.f * focal_length / sensor_size.y;
+    m(0,0) = 2.0f * focal_length / sensor_size.x();
+    m(1,1) = -2.0f * focal_length / sensor_size.y();
 
-    m.m02 = 2.f * lens_shift.x / sensor_size.x;
-    m.m12 = -2.f * lens_shift.y / sensor_size.y;
+    m(0,2) = 2.0f * lens_shift.x() / sensor_size.x();
+    m(1,2) = -2.0f * lens_shift.y() / sensor_size.y();
 
-    m.m22 = 0.0f;
-    m.m23 = n;
+    m(2,2) = 0.0f;
+    m(2,3) = near_plane;
 
-    m.m32 = -1.0f;
-    m.m33 = 0.0f;*/
+    m(3,2) = 1.0f;
+    m(3,3) = 0.0f;
+     
+    //m(0,0) = 2.0f * focal_length / sensor_size.x();
+    //m(1,1) = -2.0f * focal_length / sensor_size.y();
+
+    //m(0,2) = 2.0f * lens_shift.x() / sensor_size.x();
+    //m(1,2) = -2.0f * lens_shift.y() / sensor_size.y();
+
+    //m(2,2) = 0.0f;
+    //m(2,3) = near_plane;
+
+    //m(3,2) = -1.0f;
+    //m(3,3) = 0.0f;
+
+    //m(0, 0) = 2.0f * focal_length / sensor_size.x();
+    //m(1, 1) = -2.0f * focal_length / sensor_size.y();
+
+    //m(2, 0) = 2.0f * lens_shift.x() / sensor_size.x();
+    //m(2, 1) = -2.0f * lens_shift.y() / sensor_size.y();
+
+    //m(2, 2) = 0.0f;
+    //m(3, 2) = near_plane;
+
+    //m(2, 3) = -1.0f;
+    //m(3, 3) = 0.0f;
 
     return m;
 }
@@ -109,4 +147,26 @@ matrix4x4 transformation::create_rotation_matrix(float alpha, float beta, float 
     m(3, 2) = 0;
     m(3, 3) = 0;
     return m;
+}
+
+void transformation::boxTransformations(std::vector<vec3>& edges, matrix4x4 view_matrix, matrix4x4 projection_matrix) {
+    matrix4x4 vp = projection_matrix * view_matrix;
+    
+    //edges[0] = vp * edges[0];
+    edges[0] = view_matrix * edges[0];
+    edges[0] = projection_matrix * edges[0];
+    
+    edges[1] = vp * edges[1];
+
+    edges[2] = vp * edges[2];
+
+    edges[3] = vp * edges[3];
+
+    edges[4] = vp * edges[4];
+
+    edges[5] = vp * edges[5];
+
+    edges[6] = vp * edges[6];
+
+    edges[7] = vp * edges[7];
 }

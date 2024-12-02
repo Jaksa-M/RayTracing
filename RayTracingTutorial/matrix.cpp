@@ -33,7 +33,7 @@ vec3 matrix4x4::operator*(const vec3& v) const {
     float w = data[3][0] * v.x() + data[3][1] * v.y() + data[3][2] * v.z() + data[3][3] * 1.0f;
 
     // Convert back to 3D coordinates (will be used for perspective division)
-    if (w != 0.0f) {
+    if (w != 0.0f && w != 1.0f) {
         x /= w;
         y /= w;
         z /= w;
@@ -49,4 +49,15 @@ matrix4x4 matrix4x4::identity() {
         identityMatrix(i, i) = 1.0f; // Set diagonal elements to 1
     }
     return identityMatrix;
+}
+
+std::ostream& operator<<(std::ostream& os, const matrix4x4& matrix) {
+    for (int i = 0; i < 4; i++) {
+        os << "| ";
+        for (int j = 0; j < 4; j++) {
+            os << matrix(i, j) << " ";
+        }
+        os << "|" << std::endl;
+    }
+    return os;
 }

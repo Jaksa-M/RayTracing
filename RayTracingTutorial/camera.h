@@ -4,8 +4,7 @@
 #include "hittable.h"
 #include "material.h"
 #include "hittable_list.h"
-
-#define TRACING_PERCENTAGE 0.0
+#include "matrix.h"
 
 class camera {
 public:
@@ -17,7 +16,8 @@ public:
     std::vector<unsigned char> render(const hittable_list& world, std::vector<float>& image_data_acc, float& trace_percentage, int& reflection_depth);
 
 private:
-    point3 center = point3(0, 0, 0);         // Camera center
+    point3 center = point3(0, 0, -1);  // Camera center
+    float focal_length;
     point3 pixel00_loc;    // Location of pixel 0, 0
     vec3   pixel_delta_u;  // Offset to pixel to the right
     vec3   pixel_delta_v;  // Offset to pixel below
@@ -25,6 +25,8 @@ private:
     vec3 camera_direction;
     vec3 camera_up;
     vec3 camera_right;
+    matrix4x4 view_matrix;
+    matrix4x4 projection_matrix;
 
     void initialize();
 
@@ -41,6 +43,8 @@ public:
     double getCenterX();
     double getCenterY();
     double getCenterZ();
+    float getFocalLength();
+    void setFocalLength(float val);
     point3 getPosition();
     void setPosition(point3 pos);
     void setCameraMoved(bool val);
@@ -50,6 +54,8 @@ public:
     void setUpVector(vec3 direction);
     vec3 getRightVector();
     void setRightVector(vec3 direction);
+    matrix4x4 getViewMatrix();
+    matrix4x4 getProjectionMatrix();
 };
 
 #endif

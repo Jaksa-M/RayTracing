@@ -158,6 +158,7 @@
     <ClCompile Include="plane.cpp" />
     <ClCompile Include="RayTracingTutorial.cpp" />
     <ClCompile Include="rectangle.cpp" />
+    <ClCompile Include="scene_boxes.cpp" />
     <ClCompile Include="scene_transformations.cpp" />
     <ClCompile Include="sphere.cpp" />
     <ClCompile Include="transformations.cpp" />
@@ -186,6 +187,7 @@
     <ClInclude Include="ray.h" />
     <ClInclude Include="rectangle.h" />
     <ClInclude Include="scene.h" />
+    <ClInclude Include="scene_boxes.h" />
     <ClInclude Include="scene_transformations.h" />
     <ClInclude Include="sphere.h" />
     <ClInclude Include="stb_image_write.h" />

@@ -7,12 +7,11 @@ class camera;
 
 class transformation { // Every matrix has to be stored column major because thats how OpenGl reads them
 public:
-    transformation(camera& c);
+    transformation();
 
-    matrix4x4 MakeViewMatrix();
+    static matrix4x4 makeViewMatrix(const vec3& cam_forward, const vec3& cam_right, const vec3& cam_up, const vec3& cam_position);
 
-    // Sensor size is { 0.036f, 0.024f } (default full frame sensor 36x24 mm) and shift is zero
-    matrix4x4 MakeInfinitePerspectiveMatrix(float n, vec3 sensor_size, vec3 lens_shift, float focal_length);
+    static matrix4x4 makeInfinitePerspectiveMatrix(float n, vec3 sensor_size, vec3 lens_shift, float focal_length);
 
     static matrix4x4 create_translation_matrix(vec3 p);
 
@@ -22,8 +21,9 @@ public:
 
     static matrix4x4 create_rotation_matrix(float alpha, float beta, float gama);
 
+    static void boxTransformations(std::vector<vec3>& edges, matrix4x4 view_matrix, matrix4x4 projection_matrix);
+
 private:
-    camera& cam;
 };
 
 #endif

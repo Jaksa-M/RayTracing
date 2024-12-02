@@ -6,7 +6,8 @@
 #include <vector>
 #include "camera.h"
 #include "cameraController.h"
-#include "scene_transformations.h"
+//#include "scene_transformations.h"
+#include "scene_boxes.h"
 
 
 // ImGui things
@@ -81,8 +82,10 @@ int main(int, char**) {
     bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-    SceneTransformations scene_transf;
-    scene_transf.initialize();
+    //SceneTransformations scene_transf;
+    //scene_transf.initialize();
+    SceneBoxes scene_boxes;
+    scene_boxes.initialize();
     camera cam;
 
     cam.setInitalValues();
@@ -90,7 +93,7 @@ int main(int, char**) {
     // Decides how much pixels will be traced
     float trace_percentage = 0.1;
     int reflection_depth = 2;
-    bool reset_accumulated = true;
+    bool reset_accumulated = false;
     std::vector<unsigned char> image_data;
 
     cameraController cam_controller(cam, 2.0);
@@ -173,7 +176,7 @@ int main(int, char**) {
         glClearColor(0,0,0,0);
         glClear(GL_COLOR);
         
-        image_data = scene_transf.update(display_w, display_h, cam, trace_percentage, reflection_depth);
+        image_data = scene_boxes.update(display_w, display_h, cam, trace_percentage, reflection_depth);
         
         // Drawing boxes around spheres
         //for (int i = 0; i < world.objects.size(); i++) {
@@ -199,6 +202,7 @@ int main(int, char**) {
         ////glVertex2f(0, 0);
         //glVertex2f(cx, cx);
         //glEnd();
+        scene_boxes.draw_boxes(cam);
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 

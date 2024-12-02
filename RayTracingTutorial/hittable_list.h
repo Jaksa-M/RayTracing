@@ -14,6 +14,8 @@ public:
 
     void add(std::shared_ptr<hittable> object);
 
+    virtual std::vector<vec3> boxAround() override;
+
     bool hit(const ray& r, interval ray_t, hit_record& rec) const override;
 
 };

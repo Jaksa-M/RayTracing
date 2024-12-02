@@ -1,4 +1,5 @@
 #include "camera.h"
+#include "transformations.h"
 
 void camera::setInitalValues() {
     vec3 cameraTarget = vec3(0.0f, 0.0f, -3.0f);
@@ -19,6 +20,7 @@ std::vector<unsigned char> camera::render(const hittable_list& world, std::vecto
 
     if (camera_moved == true) {
         std::fill(image_data_acc.begin(), image_data_acc.end(), 0.0f);
+        
         camera_moved = false;
     }
 
@@ -49,7 +51,8 @@ std::vector<unsigned char> camera::render(const hittable_list& world, std::vecto
 
 void camera::initialize() {
     // Determine viewport dimensions.
-    auto focal_length = 1.0; // distance from z-axis
+    focal_length = 1; // distance from z-axis
+
     auto viewport_height = 2.0;
     auto viewport_width = viewport_height * (double(image_width) / image_height);
 
@@ -64,6 +67,10 @@ void camera::initialize() {
     // Calculate the location of the upper left pixel.
     auto viewport_upper_left = center - camera_direction * focal_length - viewport_u / 2 - viewport_v / 2;
     pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
+
+    view_matrix = transformation::makeViewMatrix(camera_direction, camera_right, camera_up, center);
+    //projection_matrix = transformation::makeInfinitePerspectiveMatrix(0.1, vec3(0.036f, 0.024f, 0), vec3(0, 0, 0), focal_length);
+    projection_matrix = transformation::makeInfinitePerspectiveMatrix(0.1, vec3(viewport_width, viewport_height, 0), vec3(0, 0, 0), focal_length);
 }
 
 ray camera::get_ray(int i, int j, vec3 offset) const {
@@ -117,6 +124,10 @@ double camera::getCenterY() { return center.y(); }
 
 double camera::getCenterZ() { return center.z(); }
 
+float camera::getFocalLength() { return focal_length; }
+
+void camera::setFocalLength(float val) { focal_length = val; }
+
 point3 camera::getPosition() { return center; }
 
 void camera::setPosition(point3 pos) { center = pos; }
@@ -134,3 +145,7 @@ void camera::setUpVector(vec3 direction) { camera_up = direction; }
 vec3 camera::getRightVector() { return camera_right; }
 
 void camera::setRightVector(vec3 direction) { camera_right = direction; }
+
+matrix4x4 camera::getViewMatrix() { return view_matrix; }
+
+matrix4x4 camera::getProjectionMatrix() { return projection_matrix; }

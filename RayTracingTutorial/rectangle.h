@@ -7,6 +7,8 @@ class rectangle : public hittable {
 public:
 	rectangle(const point3& p1, const point3& p2, const point3& p3, const point3& p4);
 
+	virtual std::vector<vec3> boxAround() override;
+
 	bool hit(const ray& r, interval ray_t, hit_record& rec) const override;
 
 private:

@@ -5,6 +5,11 @@ rectangle::rectangle(const point3& p1, const point3& p2, const point3& p3, const
 	rectangle_normal = unit_vector(cross(p2 - p1, p3 - p1));
 }
 
+std::vector<vec3> rectangle::boxAround() // YET TO BE DEFINED
+{
+    return std::vector<vec3>();
+}
+
 bool rectangle::hit(const ray& r, interval ray_t, hit_record& rec) const {
     // Formula for intersecting with the plane is t = (c - p*n) / d*n
         // denominator d is ray direction, p is ray origin, n is normal, c is constant
