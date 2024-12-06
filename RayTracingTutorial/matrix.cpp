@@ -51,6 +51,10 @@ matrix4x4 matrix4x4::identity() {
     return identityMatrix;
 }
 
+const float* matrix4x4::asPointer() const {
+    return &data[0][0];
+}
+
 std::ostream& operator<<(std::ostream& os, const matrix4x4& matrix) {
     for (int i = 0; i < 4; i++) {
         os << "| ";

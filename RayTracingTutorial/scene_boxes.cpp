@@ -10,8 +10,12 @@
 #include "color.h"
 #include "triangle.h"
 #include "sphere.h"
+#include "shader.h"
+#include "mesh.h"
 #include "imgui/imgui.h"
 #include <GLFW/glfw3.h>
+
+SceneBoxes::SceneBoxes() {}
 
 void SceneBoxes::initialize() {
     auto material_ground = std::make_shared<lambertian>(color(0.8, 0.8, 0.0));
@@ -20,9 +24,26 @@ void SceneBoxes::initialize() {
     auto material_right = std::make_shared<metal>(color(0.8, 0.6, 0.2), 1.0);
     //world.add(std::make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, material_ground));
     world.add(std::make_shared<sphere>(point3(0.0, 0.0, -1.2), 0.5, material_center));
-    //world.add(std::make_shared<sphere>(point3(-1.0, 0.0, -1.0), 0.5, material_left));
-    //world.add(std::make_shared<sphere>(point3(1.0, 0.0, -1.0), 0.5, material_right));
+    world.add(std::make_shared<sphere>(point3(-1.0, 0.0, -1.0), 0.5, material_left));
+    world.add(std::make_shared<sphere>(point3(1.0, 0.0, -1.0), 0.5, material_right));
     //world.add(std::make_shared<sphere>(point3(0.0, 0.0, 0.0), 0.5, material_right));
+
+    initShader();
+}
+
+void SceneBoxes::initShader() {
+    Shader* shader_prog = new Shader("ShaderFiles/shader.vs.txt", "ShaderFiles/shader.fs.txt");
+
+    float* vertices = new float[36]{
+        0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,    // bottom right
+        -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,   // bottom left
+        0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f,    // top right
+        -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,   // top left
+        -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,   // bottom left
+        0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f    // top right
+    };
+
+    mesh = new Mesh(shader_prog, vertices, 36, 3, 6, 0, 3);
 }
 
 std::vector<unsigned char> SceneBoxes::update(int display_w, int display_h, camera& cam, float& trace_percentage, int& reflection_depth) {
@@ -46,12 +67,11 @@ void SceneBoxes::draw_boxes(camera& cam) {
             //edges[1] = vec3(0, 1, 0);
             transformation::boxTransformations(edges, cam.getViewMatrix(), cam.getProjectionMatrix());
 
-            std::cout << edges[2] << std::endl;
             // Drawing lines
             glLineWidth(4.0);
             glPointSize(10.0);
             //glColor3f(1.0f, 0.0f, 0.0f);
-           // glBegin(GL_POINTS);
+            //glBegin(GL_POINTS);
             glBegin(GL_LINES);
             //glVertex3f(edges[0].x(), edges[0].y(), edges[0].z());
             //glVertex3f(edges[1].x(), edges[1].y(), edges[1].z());
@@ -98,4 +118,5 @@ void SceneBoxes::draw_boxes(camera& cam) {
             glEnd();
         }
     }
+    mesh->draw(GL_TRIANGLES);
 }

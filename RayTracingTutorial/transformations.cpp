@@ -36,9 +36,9 @@ matrix4x4 transformation::makeViewMatrix(const vec3& cam_forward, const vec3& ca
     view(1, 1) = cam_up.y();
     view(1, 2) = cam_up.z();
 
-    view(2, 0) = cam_forward.x();
-    view(2, 1) = cam_forward.y();
-    view(2, 2) = cam_forward.z();
+    view(2, 0) = -cam_forward.x();
+    view(2, 1) = -cam_forward.y();
+    view(2, 2) = -cam_forward.z();
 
     view(0, 3) = -dot(cam_right, cam_position);
     view(1, 3) = -dot(cam_up, cam_position);

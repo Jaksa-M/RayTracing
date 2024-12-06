@@ -18,6 +18,8 @@ public:
 
     static matrix4x4 identity();
 
+    const float* asPointer() const;
+
     friend std::ostream& operator<<(std::ostream& os, const matrix4x4& matrix);
 };
 

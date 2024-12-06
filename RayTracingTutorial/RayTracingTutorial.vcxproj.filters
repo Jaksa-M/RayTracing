@@ -22,6 +22,12 @@
     <Filter Include="External Libraries\imgui">
       <UniqueIdentifier>{b7321e53-4818-4fee-a86f-22308b06d905}</UniqueIdentifier>
     </Filter>
+    <Filter Include="External Libraries\glad">
+      <UniqueIdentifier>{508cb66a-7a97-4bb1-a1fe-575cf58d0c4d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shader Files">
+      <UniqueIdentifier>{8e31cc48-def1-4f12-8ec1-ea6119631042}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RayTracingTutorial.cpp">
@@ -82,6 +88,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="scene_boxes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="shader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -173,5 +185,22 @@
     <ClInclude Include="scene_boxes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ExternalLibraries\glad\gl.h">
+      <Filter>External Libraries\glad</Filter>
+    </ClInclude>
+    <ClInclude Include="shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ShaderFiles\shader.fs.txt">
+      <Filter>Shader Files</Filter>
+    </Text>
+    <Text Include="ShaderFiles\shader.vs.txt">
+      <Filter>Shader Files</Filter>
+    </Text>
   </ItemGroup>
 </Project>

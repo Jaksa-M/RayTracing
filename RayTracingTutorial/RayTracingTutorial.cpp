@@ -1,14 +1,25 @@
+// Necessary glad macros
+#define GLAD_GL_IMPLEMENTATION // Necessary for headeronly version
+// [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
+// To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma. 
+// Your own project should not be affected, as you are likely to link with a newer binary of GLFW that is adequate for your version of Visual Studio.
+#if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
+#pragma comment(lib, "legacy_stdio_definitions")
+#endif
+#include <glad/gl.h>
+#undef GLAD_GL_IMPLEMENTATION //must stay here because of multiple gl.h includes
+
 // Not using anymore, was using for writing image to a file
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
 // Includes for my code
 #include <vector>
+//#include "shader.h"
 #include "camera.h"
 #include "cameraController.h"
 //#include "scene_transformations.h"
 #include "scene_boxes.h"
-
 
 // ImGui things
 #include "imgui/imgui.h"
@@ -55,10 +66,14 @@ int main(int, char**) {
 
     // Create window with graphics context
     GLFWwindow* window = glfwCreateWindow(1280, 720, "Dear ImGui GLFW+OpenGL3 example", nullptr, nullptr);
-    if (window == nullptr)
-        return 1;
+    if (window == nullptr) return 1;
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
+
+    if (!gladLoadGL((GLADloadfunc)glfwGetProcAddress)) {
+        std::cerr << "Failed to initialize GLAD2\n";
+        return -1;
+    }
 
     //glfwSetMouseButtonCallback(window, mouseButtonCallback);
 
@@ -91,7 +106,7 @@ int main(int, char**) {
     cam.setInitalValues();
 
     // Decides how much pixels will be traced
-    float trace_percentage = 0.1;
+    float trace_percentage = 0.1f;
     int reflection_depth = 2;
     bool reset_accumulated = false;
     std::vector<unsigned char> image_data;
@@ -99,19 +114,12 @@ int main(int, char**) {
     cameraController cam_controller(cam, 2.0);
 
     // Main loop
-    while (!glfwWindowShouldClose(window))
-    {
-        // Poll and handle events (inputs, window resize, etc.)
-        // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
-        // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application, or clear/overwrite your copy of the mouse data.
-        // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application, or clear/overwrite your copy of the keyboard data.
-        // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
+    while (!glfwWindowShouldClose(window)) {
         glfwPollEvents(); //any pending events like keyboard or mouse inputs, window resize...
         
         //If the window is minimized (GLFW_ICONIFIED), the application waits (sleeps) for 10 milliseconds and skips the rest of the loop iteration. 
         // This helps reduce CPU usage when the window is not actively visible.
-        if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0)
-        {
+        if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0) {
             ImGui_ImplGlfw_Sleep(10);
             continue;
         }
@@ -142,22 +150,13 @@ int main(int, char**) {
 
             // Slider for percentage of pixels that should be traced
             ImGui::SliderFloat("pixel traced", &trace_percentage, 0.0f, 1.0f);
-            ImGui::SliderInt("relfection bounces", &reflection_depth, 0, 15);
+            ImGui::SliderInt("reflection bounces", &reflection_depth, 0, 15);
             ImGui::Checkbox("Reset accumulated", &reset_accumulated);
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
             ImGui::End();
         }
         
-        if (show_another_window)  // 3. Show another simple window.
-        {
-            ImGui::Begin("Another Window", &show_another_window);   // Pass a pointer to our bool variable (the window will have a closing button that will clear the bool when clicked)
-            ImGui::Text("Hello from another window!");
-            if (ImGui::Button("Close Me"))
-                show_another_window = false;
-            ImGui::End();
-        }
-
         if (!io.WantCaptureKeyboard) {
             cam_controller.HandleKeyboardInput(io.DeltaTime);
         }
@@ -173,39 +172,20 @@ int main(int, char**) {
         glViewport(0, 0, display_w, display_h);
         cam.image_width = display_w;
         cam.image_height = display_h;
-        glClearColor(0,0,0,0);
-        glClear(GL_COLOR);
+        //glClearColor(0,0,0,0);
+        //glClear(GL_COLOR);
+        /*glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);*/
+
         
         image_data = scene_boxes.update(display_w, display_h, cam, trace_percentage, reflection_depth);
-        
-        // Drawing boxes around spheres
-        //for (int i = 0; i < world.objects.size(); i++) {
-        //    std::vector<vec3> edges;
-        //    auto sphere_ptr = std::dynamic_pointer_cast<sphere>(world.objects[i]);
-        //    if (sphere_ptr) {
-        //        edges = sphere_ptr->boxAround();
-        //    }
-        //    // Apply transformations
-
-        //}
-
         glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
 
-        //glOrtho(0, display_w, 0, )
-        // Drawing lines
-        //glLineWidth(10.0);
-        //glBegin(GL_LINES);
-        //float cx = 0.0, cy = 0.0;
-        //float a = ImGui::GetTime() * 0.5;
-        //float r = 0.1;
-        //glVertex2f(cx + r * cos(a), cy + r * sin(a));
-        ////glVertex2f(0, 0);
-        //glVertex2f(cx, cx);
-        //glEnd();
+        
+
         scene_boxes.draw_boxes(cam);
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
         glfwSwapBuffers(window);
         if(reset_accumulated == true) cam.setCameraMoved(true); // Reseting accumulating buffer every frame to better view rotation... etc
     }
@@ -214,6 +194,9 @@ int main(int, char**) {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
+
+    /*glDeleteVertexArrays(1, &VAO);
+    glDeleteBuffers(1, &VBO);*/
 
     glfwDestroyWindow(window);
     glfwTerminate();
