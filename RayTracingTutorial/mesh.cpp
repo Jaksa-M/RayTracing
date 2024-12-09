@@ -1,16 +1,14 @@
 #include "mesh.h"
-#include "shader.h"
 #include "glad/gl.h"
 
-Mesh::Mesh(Shader* shader_prog, float* vertices, int num_of_vertices, int size, int stride, int offset_pos, int offset_col) {
-    this->shader_prog = shader_prog;
+Mesh::Mesh(std::span<float> vertices, int size, int stride, int offset_pos, int offset_col) {
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
 
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, num_of_vertices * sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
 
     //glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glVertexAttribPointer(0, size, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(offset_pos * sizeof(float)));
@@ -24,11 +22,9 @@ Mesh::Mesh(Shader* shader_prog, float* vertices, int num_of_vertices, int size, 
 }
 
 void Mesh::draw(unsigned int shape) {
-    shader_prog->bind();
     glBindVertexArray(VAO);
     glDrawArrays(shape, 0, 3);
     glBindVertexArray(0);
-    shader_prog->unbind();
 }
 
 Mesh::~Mesh() {

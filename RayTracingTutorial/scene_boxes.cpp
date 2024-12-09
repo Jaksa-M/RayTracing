@@ -1,6 +1,7 @@
 #include "scene_boxes.h"
 #include <vector>
 #include <cmath>
+#include <memory>
 #include "hittable.h"
 #include "hittable_list.h"
 #include "camera.h"
@@ -10,8 +11,6 @@
 #include "color.h"
 #include "triangle.h"
 #include "sphere.h"
-#include "shader.h"
-#include "mesh.h"
 #include "imgui/imgui.h"
 #include <GLFW/glfw3.h>
 
@@ -32,9 +31,9 @@ void SceneBoxes::initialize() {
 }
 
 void SceneBoxes::initShader() {
-    Shader* shader_prog = new Shader("ShaderFiles/shader.vs.txt", "ShaderFiles/shader.fs.txt");
-
-    float* vertices = new float[36]{
+    shader_prog = std::make_unique<Shader>("ShaderFiles/shader.vs.txt", "ShaderFiles/shader.fs.txt");
+    
+    std::vector<float> vertices = std::vector<float>{
         0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,    // bottom right
         -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,   // bottom left
         0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f,    // top right
@@ -43,7 +42,7 @@ void SceneBoxes::initShader() {
         0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f    // top right
     };
 
-    mesh = new Mesh(shader_prog, vertices, 36, 3, 6, 0, 3);
+    mesh = std::make_unique<Mesh>(std::span(vertices), 3, 6, 0, 3);
 }
 
 std::vector<unsigned char> SceneBoxes::update(int display_w, int display_h, camera& cam, float& trace_percentage, int& reflection_depth) {
@@ -63,8 +62,6 @@ void SceneBoxes::draw_boxes(camera& cam) {
             edges = object->boxAround();
 
             // Apply transformations (view and perspective matrix)
-            //edges[0] = vec3(0, 0, 0);
-            //edges[1] = vec3(0, 1, 0);
             transformation::boxTransformations(edges, cam.getViewMatrix(), cam.getProjectionMatrix());
 
             // Drawing lines
@@ -73,8 +70,6 @@ void SceneBoxes::draw_boxes(camera& cam) {
             //glColor3f(1.0f, 0.0f, 0.0f);
             //glBegin(GL_POINTS);
             glBegin(GL_LINES);
-            //glVertex3f(edges[0].x(), edges[0].y(), edges[0].z());
-            //glVertex3f(edges[1].x(), edges[1].y(), edges[1].z());
 
             //// Top side
             glVertex3f(edges[0].x(), edges[0].y(), edges[0].z());
@@ -118,5 +113,7 @@ void SceneBoxes::draw_boxes(camera& cam) {
             glEnd();
         }
     }
+    shader_prog->bind();
     mesh->draw(GL_TRIANGLES);
+    shader_prog->unbind();
 }

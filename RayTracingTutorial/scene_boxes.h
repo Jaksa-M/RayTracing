@@ -2,14 +2,13 @@
 #define SCENE_BOXES_H
 
 #include "scene.h"
-
-class Mesh;
-
-class Shader;
+#include "shader.h"
+#include "mesh.h"
 
 class SceneBoxes : public Scene {
 private:
-    Mesh* mesh;
+    std::unique_ptr<Mesh> mesh;
+    std::unique_ptr<Shader> shader_prog;
 
 public:
     SceneBoxes();
