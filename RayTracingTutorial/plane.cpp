@@ -14,9 +14,9 @@ std::string plane::object_type() const {
     return "plane";
 }
 
-std::vector<vec3> plane::boxAround() // YET TO BE DEFINED
+void plane::boxAround(std::span<vec3> edges) // YET TO BE DEFINED
 {
-    return std::vector<vec3>();
+    
 }
 
 bool plane::hit(const ray& r, interval ray_t, hit_record& rec) const {

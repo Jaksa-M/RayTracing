@@ -2,6 +2,7 @@
 #define TRIANGLE_H
 
 #include "hittable.h"
+#include <span>
 
 class triangle : public hittable {
 public:
@@ -9,7 +10,7 @@ public:
 
     std::string object_type() const override { return "triangle"; }
 
-    virtual std::vector<vec3> boxAround() override;
+    void boxAround(std::span<vec3> edges) override;
 
     bool hit(const ray& r, interval ray_t, hit_record& rec) const override;
 

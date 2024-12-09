@@ -21,9 +21,17 @@ Mesh::Mesh(std::span<float> vertices, int size, int stride, int offset_pos, int 
     glBindVertexArray(0);
 }
 
+void Mesh::updateVBO(std::span<float> vertices) {
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
 void Mesh::draw(unsigned int shape) {
+    glLineWidth(5.0f); // Set the line width to 5.0 pixels
     glBindVertexArray(VAO);
-    glDrawArrays(shape, 0, 3);
+    //glDrawArrays(shape, 0, 3);
+    glDrawArrays(shape, 0, 24);
     glBindVertexArray(0);
 }
 

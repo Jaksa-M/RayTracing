@@ -2,6 +2,7 @@
 #define HITTABLE_H
 
 #include <memory>
+#include <span>
 #include "ray.h"
 
 class material;
@@ -35,7 +36,7 @@ public:
 
     virtual void transform(const matrix4x4& m) {}
 
-    virtual std::vector<vec3> boxAround() = 0;
+    virtual void boxAround(std::span<vec3> edges) = 0;
 
     virtual bool hit(const ray& r, interval ray_t, hit_record& rec) const = 0;
 };

@@ -14,6 +14,7 @@
 #include "imgui/imgui.h"
 #include <GLFW/glfw3.h>
 
+
 SceneBoxes::SceneBoxes() {}
 
 void SceneBoxes::initialize() {
@@ -39,10 +40,10 @@ void SceneBoxes::initShader() {
         0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f,    // top right
         -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,   // top left
         -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,   // bottom left
-        0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f    // top right
+        0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f     // top right
     };
-
-    mesh = std::make_unique<Mesh>(std::span(vertices), 3, 6, 0, 3);
+   
+    mesh = std::make_unique<Mesh>(vertices, 3, 6, 0, 3);
 }
 
 std::vector<unsigned char> SceneBoxes::update(int display_w, int display_h, camera& cam, float& trace_percentage, int& reflection_depth) {
@@ -57,63 +58,30 @@ void SceneBoxes::draw_boxes(camera& cam) {
     // Drawing boxes around spheres
     for (int i = 0; i < world.objects.size(); i++) {
         auto& object = world.objects[i];
-        std::vector<vec3> edges;
+        std::vector<vec3> edges(24);
         if (object->object_type() == "sphere") {
-            edges = object->boxAround();
+            object->boxAround(edges);
 
             // Apply transformations (view and perspective matrix)
-            transformation::boxTransformations(edges, cam.getViewMatrix(), cam.getProjectionMatrix());
+            //transformation::boxTransformations(edges, cam.getViewMatrix(), cam.getProjectionMatrix());
 
-            // Drawing lines
-            glLineWidth(4.0);
-            glPointSize(10.0);
-            //glColor3f(1.0f, 0.0f, 0.0f);
-            //glBegin(GL_POINTS);
-            glBegin(GL_LINES);
+            std::vector<float> flatEdges;
+            for (const vec3& edge : edges) {
+                flatEdges.push_back(edge.x());
+                flatEdges.push_back(edge.y());
+                flatEdges.push_back(edge.z());
+                flatEdges.push_back(1.0f);
+                flatEdges.push_back(0.0f);
+                flatEdges.push_back(0.0f);
+            }
+            mesh->updateVBO(flatEdges);
 
-            //// Top side
-            glVertex3f(edges[0].x(), edges[0].y(), edges[0].z());
-            glVertex3f(edges[1].x(), edges[1].y(), edges[1].z());
-
-            glVertex3f(edges[1].x(), edges[1].y(), edges[1].z());
-            glVertex3f(edges[2].x(), edges[2].y(), edges[2].z());
-
-            glVertex3f(edges[2].x(), edges[2].y(), edges[2].z());
-            glVertex3f(edges[3].x(), edges[3].y(), edges[3].z());
-
-            glVertex3f(edges[3].x(), edges[3].y(), edges[3].z());
-            glVertex3f(edges[0].x(), edges[0].y(), edges[0].z());
-
-            // Bottom side
-            glVertex3f(edges[4].x(), edges[4].y(), edges[4].z());
-            glVertex3f(edges[5].x(), edges[5].y(), edges[5].z());
-
-            glVertex3f(edges[5].x(), edges[5].y(), edges[5].z());
-            glVertex3f(edges[6].x(), edges[6].y(), edges[6].z());
-
-            glVertex3f(edges[6].x(), edges[6].y(), edges[6].z());
-            glVertex3f(edges[7].x(), edges[7].y(), edges[7].z());
-
-            glVertex3f(edges[7].x(), edges[7].y(), edges[7].z());
-            glVertex3f(edges[4].x(), edges[4].y(), edges[4].z());
-
-            // Connect top and bottom sides
-            glVertex3f(edges[0].x(), edges[0].y(), edges[0].z());
-            glVertex3f(edges[4].x(), edges[4].y(), edges[4].z());
-
-            glVertex3f(edges[1].x(), edges[1].y(), edges[1].z());
-            glVertex3f(edges[5].x(), edges[5].y(), edges[5].z());
-
-            glVertex3f(edges[2].x(), edges[2].y(), edges[2].z());
-            glVertex3f(edges[6].x(), edges[6].y(), edges[6].z());
-
-            glVertex3f(edges[3].x(), edges[3].y(), edges[3].z());
-            glVertex3f(edges[7].x(), edges[7].y(), edges[7].z());
-
-            glEnd();
+            shader_prog->bind();
+            shader_prog->setMat4("view", cam.getViewMatrix().asPointer());
+            shader_prog->setMat4("projection", cam.getProjectionMatrix().asPointer());
+            mesh->draw(GL_LINES);
+            shader_prog->unbind();
         }
     }
-    shader_prog->bind();
-    mesh->draw(GL_TRIANGLES);
-    shader_prog->unbind();
+    
 }

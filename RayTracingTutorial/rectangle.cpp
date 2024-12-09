@@ -5,9 +5,9 @@ rectangle::rectangle(const point3& p1, const point3& p2, const point3& p3, const
 	rectangle_normal = unit_vector(cross(p2 - p1, p3 - p1));
 }
 
-std::vector<vec3> rectangle::boxAround() // YET TO BE DEFINED
+void rectangle::boxAround(std::span<vec3> edges) // YET TO BE DEFINED
 {
-    return std::vector<vec3>();
+
 }
 
 bool rectangle::hit(const ray& r, interval ray_t, hit_record& rec) const {

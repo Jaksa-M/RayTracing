@@ -2,6 +2,7 @@
 #define SPHERE_H
 
 #include "hittable.h"
+#include <span>
 
 
 class sphere : public hittable {
@@ -14,7 +15,7 @@ public:
 
     bool hit(const ray& r, interval ray_t, hit_record& rec) const override;
 
-    std::vector<vec3> boxAround() override;
+    void boxAround(std::span<vec3> edges) override;
 
 private:
     point3 center;

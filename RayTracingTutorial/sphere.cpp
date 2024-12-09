@@ -4,7 +4,7 @@
 #include <vector>
 
 sphere::sphere(const point3& center, double radius, std::shared_ptr<material> mat) : center(center), radius(std::fmax(0, radius)), mat(mat) {
-    boxAround();
+   //boxAround();
 }
 
 bool sphere::hit(const ray& r, interval ray_t, hit_record& rec) const {
@@ -37,8 +37,7 @@ bool sphere::hit(const ray& r, interval ray_t, hit_record& rec) const {
     return true;
 }
 
-std::vector<vec3> sphere::boxAround() {
-    edges.clear();
+void sphere::boxAround(std::span<vec3> edges) {
     double x_min = center.x() - radius;
     double x_max = center.x() + radius;
     double y_min = center.y() - radius;
@@ -47,14 +46,56 @@ std::vector<vec3> sphere::boxAround() {
     double z_max = center.z() + radius;
 
     // Add all 8 corners of the box
-    edges.emplace_back(x_min, y_max, z_min); // top, front left
-    edges.emplace_back(x_max, y_max, z_min); // top, front right
-    edges.emplace_back(x_max, y_max, z_max); // top, back right
-    edges.emplace_back(x_min, y_max, z_max); // top, back left
-    edges.emplace_back(x_min, y_min, z_min); // bottom, front left
-    edges.emplace_back(x_max, y_min, z_min); // bottom, front right
-    edges.emplace_back(x_max, y_min, z_max); // bottom, back right
-    edges.emplace_back(x_min, y_min, z_max); // bottom, back left
+    //edges.emplace_back(x_min, y_max, z_min); // top, front left
+    //edges.emplace_back(x_max, y_max, z_min); // top, front right
+    //edges.emplace_back(x_max, y_max, z_max); // top, back right
+    //edges.emplace_back(x_min, y_max, z_max); // top, back left
+    //edges.emplace_back(x_min, y_min, z_min); // bottom, front left
+    //edges.emplace_back(x_max, y_min, z_min); // bottom, front right
+    //edges.emplace_back(x_max, y_min, z_max); // bottom, back right
+    //edges.emplace_back(x_min, y_min, z_max); // bottom, back left
+
+    // Define the 8 corners of the box
+    vec3 top_front_left(x_min, y_max, z_min);
+    vec3 top_front_right(x_max, y_max, z_min);
+    vec3 top_back_right(x_max, y_max, z_max);
+    vec3 top_back_left(x_min, y_max, z_max);
+    vec3 bottom_front_left(x_min, y_min, z_min);
+    vec3 bottom_front_right(x_max, y_min, z_min);
+    vec3 bottom_back_right(x_max, y_min, z_max);
+    vec3 bottom_back_left(x_min, y_min, z_max);
+
+    /*
+            TFL------------TFR
+          /  |            / |
+      TBL--- |--------TBR   |
+       |     |         |    |
+       |     |         |    |
+       |     |         |    |
+       |    BFL------------BFR
+       |  /            |  /
+      BBL-------------BBR
+    */
     
-    return edges;
+    edges[0] = top_front_left; edges[1] = top_front_right;  // top front
+    edges[2] = top_front_right; edges[3] = bottom_front_right;  // right front
+    edges[4] = bottom_front_right; edges[5] = bottom_front_left;  // bottom front
+    edges[6] = bottom_front_left; edges[7] = top_front_left;  // left front
+
+    // Back face edges
+    edges[8] = top_back_left; edges[9] = top_back_right;  // top back
+    edges[10] = top_back_right; edges[11] = bottom_back_right;  // right back
+    edges[12] = bottom_back_right; edges[13] = bottom_back_left;  // bottom back
+    edges[14] = bottom_back_left; edges[15] = top_back_left;  // left back
+
+    // Connecting front and back faces (vertical edges)
+    edges[16] = top_front_left; edges[17] = top_back_left;  // left vertical
+    edges[18] = top_front_right; edges[19] = top_back_right;  // right vertical
+    edges[20] = bottom_front_left; edges[21] = bottom_back_left;  // bottom left vertical
+    edges[22] = bottom_front_right; edges[23] = bottom_back_right;  // bottom right vertical
+
+    //matrix m;
+    // scale = radius
+    // t = center
+
 }
