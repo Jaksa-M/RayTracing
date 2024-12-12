@@ -160,10 +160,12 @@
     <ClCompile Include="interval.cpp" />
     <ClCompile Include="matrix.cpp" />
     <ClCompile Include="mesh.cpp" />
+    <ClCompile Include="mesh_utils.cpp" />
     <ClCompile Include="plane.cpp" />
     <ClCompile Include="RayTracingTutorial.cpp" />
     <ClCompile Include="rectangle.cpp" />
     <ClCompile Include="scene_boxes.cpp" />
+    <ClCompile Include="scene_meshes.cpp" />
     <ClCompile Include="scene_transformations.cpp" />
     <ClCompile Include="shader.cpp" />
     <ClCompile Include="sphere.cpp" />
@@ -191,11 +193,13 @@
     <ClInclude Include="math_constants.h" />
     <ClInclude Include="matrix.h" />
     <ClInclude Include="mesh.h" />
+    <ClInclude Include="mesh_utils.h" />
     <ClInclude Include="plane.h" />
     <ClInclude Include="ray.h" />
     <ClInclude Include="rectangle.h" />
     <ClInclude Include="scene.h" />
     <ClInclude Include="scene_boxes.h" />
+    <ClInclude Include="scene_meshes.h" />
     <ClInclude Include="scene_transformations.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="sphere.h" />
@@ -207,6 +211,8 @@
   <ItemGroup>
     <Text Include="ShaderFiles\shader.fs.txt" />
     <Text Include="ShaderFiles\shader.vs.txt" />
+    <Text Include="ShaderFiles\shader_mesh.fs.txt" />
+    <Text Include="ShaderFiles\shader_mesh.vs.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

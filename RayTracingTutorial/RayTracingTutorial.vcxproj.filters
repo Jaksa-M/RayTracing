@@ -96,6 +96,12 @@
     <ClCompile Include="mesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="scene_meshes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mesh_utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_image_write.h">
@@ -194,12 +200,24 @@
     <ClInclude Include="mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="scene_meshes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mesh_utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ShaderFiles\shader.fs.txt">
       <Filter>Shader Files</Filter>
     </Text>
     <Text Include="ShaderFiles\shader.vs.txt">
+      <Filter>Shader Files</Filter>
+    </Text>
+    <Text Include="ShaderFiles\shader_mesh.fs.txt">
+      <Filter>Shader Files</Filter>
+    </Text>
+    <Text Include="ShaderFiles\shader_mesh.vs.txt">
       <Filter>Shader Files</Filter>
     </Text>
   </ItemGroup>

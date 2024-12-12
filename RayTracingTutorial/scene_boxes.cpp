@@ -43,7 +43,7 @@ void SceneBoxes::initShader() {
         0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f     // top right
     };
    
-    mesh = std::make_unique<Mesh>(vertices, 3, 6, 0, 3);
+    mesh = std::make_unique<Mesh>(vertices, 3, 6, 0, 3, false, std::span<unsigned int>{});
 }
 
 std::vector<unsigned char> SceneBoxes::update(int display_w, int display_h, camera& cam, float& trace_percentage, int& reflection_depth) {
@@ -83,5 +83,4 @@ void SceneBoxes::draw_boxes(camera& cam) {
             shader_prog->unbind();
         }
     }
-    
 }

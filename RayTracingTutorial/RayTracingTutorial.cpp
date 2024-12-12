@@ -19,7 +19,8 @@
 #include "camera.h"
 #include "cameraController.h"
 //#include "scene_transformations.h"
-#include "scene_boxes.h"
+//#include "scene_boxes.h"
+#include "scene_meshes.h"
 
 // ImGui things
 #include "imgui/imgui.h"
@@ -99,10 +100,12 @@ int main(int, char**) {
 
     //SceneTransformations scene_transf;
     //scene_transf.initialize();
-    SceneBoxes scene_boxes;
-    scene_boxes.initialize();
-    camera cam;
+    /*SceneBoxes scene_boxes;
+    scene_boxes.initialize();*/
+    SceneMeshes scene_meshes;
+    scene_meshes.initialize();
 
+    camera cam;
     cam.setInitalValues();
 
     // Decides how much pixels will be traced
@@ -178,12 +181,12 @@ int main(int, char**) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);*/
 
         
-        image_data = scene_boxes.update(display_w, display_h, cam, trace_percentage, reflection_depth);
+        image_data = scene_meshes.update(display_w, display_h, cam, trace_percentage, reflection_depth);
         glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
 
         
 
-        scene_boxes.draw_boxes(cam);
+        scene_meshes.draw_mesh(cam);
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
