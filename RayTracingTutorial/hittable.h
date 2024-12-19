@@ -12,20 +12,25 @@ class interval;
 class hit_record {
 public:
     point3 p;
-    vec3 normal;
+    vec3 face_normal;
+    vec3 shading_normal;
+    bool type_of_normal = false;
     std::shared_ptr<material> mat;
     double t;
     bool front_face;
     std::string object_type;
 
     void set_face_normal(const ray& r, const vec3& outward_normal) {
-        // Sets the hit record normal vector.
         // NOTE: the parameter `outward_normal` is assumed to have unit length.
-
         front_face = dot(r.direction(), outward_normal) < 0;
-        normal = front_face ? outward_normal : -outward_normal;
+        face_normal = front_face ? outward_normal : -outward_normal;
     }
 
+    void set_shading_normal(const ray& r, const vec3& outward_normal) {
+        // NOTE: the parameter `outward_normal` is assumed to have unit length.
+        front_face = dot(r.direction(), outward_normal) < 0;
+        shading_normal = front_face ? outward_normal : -outward_normal;
+    }
 };
 
 class hittable {

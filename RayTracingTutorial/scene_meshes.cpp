@@ -50,7 +50,7 @@ void SceneMeshes::initShader() {
     //mesh = MeshUtils::GenerateTriangleCube(7);
     //mesh = MeshUtils::GenerateLineCube(7);
     //mesh = MeshUtils::GenerateSphere(7,vec3(1,1,-2));
-    mesh = MeshUtils::GenerateSphereLines(7);
+    //mesh = MeshUtils::GenerateSphereLines(60);
 }
 
 std::vector<unsigned char> SceneMeshes::update(int display_w, int display_h, camera& cam, float& trace_percentage, int& reflection_depth) {

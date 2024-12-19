@@ -20,7 +20,8 @@
 #include "cameraController.h"
 //#include "scene_transformations.h"
 //#include "scene_boxes.h"
-#include "scene_meshes.h"
+//#include "scene_meshes.h"
+#include "scene_rt_meshes.h"
 
 // ImGui things
 #include "imgui/imgui.h"
@@ -102,8 +103,10 @@ int main(int, char**) {
     //scene_transf.initialize();
     /*SceneBoxes scene_boxes;
     scene_boxes.initialize();*/
-    SceneMeshes scene_meshes;
-    scene_meshes.initialize();
+    /*SceneMeshes scene_meshes;
+    scene_meshes.initialize();*/
+    SceneRtMeshes scene_rt_meshes;
+    scene_rt_meshes.initialize();
 
     camera cam;
     cam.setInitalValues();
@@ -175,18 +178,10 @@ int main(int, char**) {
         glViewport(0, 0, display_w, display_h);
         cam.image_width = display_w;
         cam.image_height = display_h;
-        //glClearColor(0,0,0,0);
-        //glClear(GL_COLOR);
-        /*glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);*/
-
         
-        image_data = scene_meshes.update(display_w, display_h, cam, trace_percentage, reflection_depth);
+        image_data = scene_rt_meshes.update(display_w, display_h, cam, trace_percentage, reflection_depth);
         glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
 
-        
-
-        scene_meshes.draw_mesh(cam);
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
