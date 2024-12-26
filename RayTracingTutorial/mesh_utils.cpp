@@ -43,17 +43,22 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(const std::shared_ptr<ma
     }
 
     // Calculate normals for each vertex
-    std::vector<vec3> vertex_normal(normals.size(), vec3(0, 0, 0));
-    for (int i = 0; i < indices.size(); i++) {
-        vertex_normal[indices[i]] += normals[i * 3];
+    std::vector<vec3> vertex_normals(vertices.size() / 6, vec3(0, 0, 0));
+
+    // For each vertex add triangle normal of the triangle it belongs to (1 vertex can be part of multiple triangles, so we add all those normals together)
+    for (int i = 0; i < indices.size(); i += 3) {
+        const vec3& triangle_normal = normals[i / 3];
+        vertex_normals[indices[i]] += triangle_normal;
+        vertex_normals[indices[i + 1]] += triangle_normal;
+        vertex_normals[indices[i + 2]] += triangle_normal;
     }
 
-    // Normalize the normals
-    for (int i = 0; i < indices.size(); i++) {
-        vertex_normal[i] = unit_vector(vertex_normal[i]);
+    // Normalize the vertex normals
+    for (int i = 0; i < vertex_normals.size(); i++) {
+        vertex_normals[i] = unit_vector(vertex_normals[i]);
     }
 
-    std::size_t mesh_handle = mesh_buf_manager->addToBuffer(vertices, 2, indices, vertex_normal);
+    std::size_t mesh_handle = mesh_buf_manager->addToBuffer(vertices, 2, indices, vertex_normals);
 
     std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, 3, 6, 0, 3, mat);
     return mesh;
@@ -340,26 +345,25 @@ void MeshUtils::addVertex(bool normalize, const vec3& center, std::vector<float>
 }
 
 void MeshUtils::generateTriangleVertexNormals(std::vector<vec3>& vertex_normals, std::vector<float>& vertices, std::vector<std::uint32_t>& indices, int stride) {
-    // generating normals
     std::vector<vec3> normals(indices.size() / 3);
 
-    for (int i = 0; i < indices.size(); i += 3) {
+    for (int i = 0; i < indices.size(); i += 3) { // calculating triangle normals
         const point3 p1 = point3(vertices[indices[i] * stride], vertices[indices[i] * stride + 1], vertices[indices[i] * stride + 2]);
         const point3 p2 = point3(vertices[indices[i + 1] * stride], vertices[indices[i + 1] * stride + 1], vertices[indices[i + 1] * stride + 2]);
         const point3 p3 = point3(vertices[indices[i + 2] * stride], vertices[indices[i + 2] * stride + 1], vertices[indices[i + 2] * stride + 2]);
         point3 triangle_normal = unit_vector(cross(p2 - p1, p3 - p1));
         normals[i / 3] = triangle_normal;
-        //normals.emplace_back(triangle_normal);
     }
 
-    for (int i = 0; i < indices.size(); i += 3) {
+    // For each vertex add triangle normal of the triangle it belongs to (1 vertex can be part of multiple triangles, so we add all those normals together)
+    for (int i = 0; i < indices.size(); i += 3) { 
         const vec3& triangle_normal = normals[i / 3];
         vertex_normals[indices[i]] += triangle_normal;
         vertex_normals[indices[i + 1]] += triangle_normal;
         vertex_normals[indices[i + 2]] += triangle_normal;
     }
 
-    // Normalize the normals
+    // Normalize the vertex normals
     for (int i = 0; i < vertex_normals.size(); i++) {
         vertex_normals[i] = unit_vector(vertex_normals[i]);
     }

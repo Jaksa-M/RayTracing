@@ -37,6 +37,4 @@ std::vector<unsigned char> SceneRtMeshes::update(int display_w, int display_h, c
     return image_data;
 }
 
-void SceneRtMeshes::draw_mesh(camera& cam) {
-
-}
+void SceneRtMeshes::draw_mesh(camera& cam) {}
