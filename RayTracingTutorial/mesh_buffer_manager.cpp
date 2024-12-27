@@ -27,7 +27,7 @@ MeshBufferManager::MeshHandle MeshBufferManager::addToBuffer(std::span<float> ve
     for (std::uint32_t attr = 0; attr < attribute_count; attr++) {
         // Record the starting offset for this attribute in the buffer
         std::size_t attribute_start = buffer.size();
-        mesh_info.offsets_v[attr] = attribute_start;
+        mesh_info.offsets_v[attr] = static_cast<std::uint32_t>(attribute_start);
 
         buffer.resize(attribute_start + vertex_count * 3);
 
@@ -44,7 +44,7 @@ MeshBufferManager::MeshHandle MeshBufferManager::addToBuffer(std::span<float> ve
     // Insert vertex normals into the buffer
     std::size_t normal_start = buffer.size();
     mesh_info.offset_n = normal_start;
-    mesh_info.count_n = vertex_count * 3;
+    mesh_info.count_n = static_cast<std::uint32_t>(vertex_count * 3);
 
     buffer.resize(normal_start + vertex_count * 3);  // Normals have 3 components (x, y, z)
     for (std::size_t v = 0; v < vertex_count; v++) {
@@ -61,7 +61,7 @@ MeshBufferManager::MeshHandle MeshBufferManager::addToBuffer(std::span<float> ve
     buffer.resize(offs + indices.size());
     std::memcpy(buffer.data() + offs, indices.data(), indices.size() * sizeof(std::uint32_t));
     mesh_info.offset_i = offs;
-    mesh_info.count_i = indices.size();
+    mesh_info.count_i = static_cast<std::uint32_t>(indices.size());
 
     return new_handle;
 }

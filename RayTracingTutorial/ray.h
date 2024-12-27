@@ -12,7 +12,7 @@ public:
     inline const point3& origin() const { return orig; }
     inline const vec3& direction() const { return dir; }
 
-    inline point3 at(double t) const {
+    inline point3 at(float t) const {
         return orig + t * dir;
     }
 

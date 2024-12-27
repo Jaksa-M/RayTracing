@@ -14,6 +14,6 @@ public:
 	~Mesh();
 private:
 	unsigned int VBO, VAO, EBO;
-	int indices_size;
+	std::uint32_t indices_size;
 };
 #endif

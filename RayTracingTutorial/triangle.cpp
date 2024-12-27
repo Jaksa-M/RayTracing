@@ -21,11 +21,11 @@ void triangle::boxAround(std::span<vec3> edges) // YET TO BE DEFINED
 bool triangle::hit(const ray& r, interval ray_t, hit_record& rec) const {
     // Formula for intersecting with the plane is t = (c - p*n) / d*n
     // denominator d is ray direction, p is ray origin, n is normal, c is constant
-    double c = dot(triangle_normal, A);
-    double denominator = dot(triangle_normal, r.direction());
+    float c = dot(triangle_normal, A);
+    float denominator = dot(triangle_normal, r.direction());
     if (fabs(denominator) < 1e-8) return false;
 
-    double t = (c - dot(triangle_normal, r.origin())) / denominator;
+    float t = (c - dot(triangle_normal, r.origin())) / denominator;
 
     if (!ray_t.surrounds(t)) { // Check if the intersection is within the ray's valid range
         return false;
@@ -51,9 +51,9 @@ bool triangle::hit(const ray& r, interval ray_t, hit_record& rec) const {
     // beta = ([(A-C) x (Q-C)] * n) / ([(B-A) x (C-A)] * n)
     // gama = ([(B-A) x (Q-A)] * n) / ([(B-A) x (C-A)] * n)
 
-    double alpha = dot(cross((C - B), (Q - B)), triangle_normal) / dot(cross((B - A), (C - A)), triangle_normal);
-    double beta = dot(cross((A - C), (Q - C)), triangle_normal) / dot(cross((B - A), (C - A)), triangle_normal);
-    double gama = dot(cross((B - A), (Q - A)), triangle_normal) / dot(cross((B - A), (C - A)), triangle_normal);
+    float alpha = dot(cross((C - B), (Q - B)), triangle_normal) / dot(cross((B - A), (C - A)), triangle_normal);
+    float beta = dot(cross((A - C), (Q - C)), triangle_normal) / dot(cross((B - A), (C - A)), triangle_normal);
+    float gama = dot(cross((B - A), (Q - A)), triangle_normal) / dot(cross((B - A), (C - A)), triangle_normal);
 
     rec.t = t;
     rec.p = Q;

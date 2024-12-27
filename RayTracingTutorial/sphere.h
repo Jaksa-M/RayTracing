@@ -7,7 +7,7 @@
 
 class sphere : public hittable {
 public:
-    sphere(const point3& center, double radius, std::shared_ptr<material> mat);
+    sphere(const point3& center, float radius, std::shared_ptr<material> mat);
 
     std::string object_type() const override { return "sphere"; }
 
@@ -19,7 +19,7 @@ public:
 
 private:
     point3 center;
-    double radius;
+    float radius;
     std::shared_ptr<material> mat;
     std::vector<vec3> edges;
 };

@@ -71,8 +71,8 @@ std::vector<float> SceneMeshes::createVerticesArr(int num_of_vert) {
     float col_z = 0.0f;
     for (int i = 0; i < num_of_vert; i++) {
         for (int j = 0; j < num_of_vert; j++) {
-            float val_x = x + 0.2 * j;
-            float val_y = y - 0.2 * i;
+            float val_x = x + 0.2f * j;
+            float val_y = y - 0.2f * i;
             vertices.emplace_back(val_x);
             vertices.emplace_back(val_y);
             vertices.emplace_back(z);

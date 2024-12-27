@@ -21,10 +21,10 @@ SceneRtMeshes::SceneRtMeshes() {
 
 void SceneRtMeshes::initialize() {
     mesh_buf_manager = std::make_unique<MeshBufferManager>();
-    auto mat = std::make_shared<lambertian>(color(0.8, 0.8, 0.0));
+    auto mat = std::make_shared<lambertian>(color(0.8f, 0.8f, 0.0f));
     //cube_mesh = MeshUtils::GenerateTriangleCube(mat, mesh_buf_manager.get(), 2);
     //cube_sphere = MeshUtils::GenerateTriangleSphere(mat, mesh_buf_manager.get(), 4);
-    //ico_sphere = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2, vec3(2,0,0));
+    //ico_sphere = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2, vec3(2.0f,0.0f,0.0f));
     ico_sphere = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2);
     world.add(ico_sphere);
 }

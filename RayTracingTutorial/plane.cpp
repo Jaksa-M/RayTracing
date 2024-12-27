@@ -20,7 +20,7 @@ void plane::boxAround(std::span<vec3> edges) // YET TO BE DEFINED
 }
 
 bool plane::hit(const ray& r, interval ray_t, hit_record& rec) const {
-    double denominator = dot(plane_normal, r.direction()); // Imenilac (ispod razlomka)
+    float denominator = dot(plane_normal, r.direction()); // Imenilac (ispod razlomka)
 
     if (fabs(denominator) < 1e-8) {  // Close to zero, that means parallel and there is no hit
         return false;
@@ -28,7 +28,7 @@ bool plane::hit(const ray& r, interval ray_t, hit_record& rec) const {
 
     // This variable represents the vector from the origin of the ray to a point on the plane.
     vec3 origin_to_plane = plane_point1 - r.origin(); // Any plane_point can be chosen the result will be the same.
-    double t = dot(origin_to_plane, plane_normal) / denominator;
+    float t = dot(origin_to_plane, plane_normal) / denominator;
 
 
     if (!ray_t.surrounds(t)) {  // Check if `t` is within the valid range

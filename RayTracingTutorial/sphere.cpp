@@ -3,7 +3,7 @@
 #include <memory>
 #include <vector>
 
-sphere::sphere(const point3& center, double radius, std::shared_ptr<material> mat) : center(center), radius(std::fmax(0, radius)), mat(mat) {
+sphere::sphere(const point3& center, float radius, std::shared_ptr<material> mat) : center(center), radius(std::fmax(0.0f, radius)), mat(mat) {
 
 }
 
@@ -38,12 +38,12 @@ bool sphere::hit(const ray& r, interval ray_t, hit_record& rec) const {
 }
 
 void sphere::boxAround(std::span<vec3> edges) {
-    double x_min = center.x() - radius;
-    double x_max = center.x() + radius;
-    double y_min = center.y() - radius;
-    double y_max = center.y() + radius;
-    double z_min = center.z() - radius;
-    double z_max = center.z() + radius;
+    float x_min = center.x() - radius;
+    float x_max = center.x() + radius;
+    float y_min = center.y() - radius;
+    float y_max = center.y() + radius;
+    float z_min = center.z() - radius;
+    float z_max = center.z() + radius;
 
     // Define the 8 corners of the box
     vec3 top_front_left(x_min, y_max, z_min);

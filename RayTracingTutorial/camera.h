@@ -16,7 +16,7 @@ public:
     std::vector<unsigned char> render(const hittable_list& world, std::vector<float>& image_data_acc, float& trace_percentage, int& reflection_depth);
 
 private:
-    point3 center = point3(0, 0, 1);  // Camera center
+    point3 center = point3(0.0f, 0.0f, 1.0f);  // Camera center
     float focal_length;
     point3 pixel00_loc;    // Location of pixel 0, 0
     vec3   pixel_delta_u;  // Offset to pixel to the right
@@ -37,12 +37,12 @@ private:
     color ray_color(const ray& r, int depth, const hittable_list& world) const;
 
 public:
-    void setCenterX(double val);
-    void setCenterY(double val);
-    void setCenterZ(double val);
-    double getCenterX();
-    double getCenterY();
-    double getCenterZ();
+    void setCenterX(float val);
+    void setCenterY(float val);
+    void setCenterZ(float val);
+    float getCenterX();
+    float getCenterY();
+    float getCenterZ();
     float getFocalLength();
     void setFocalLength(float val);
     point3 getPosition();

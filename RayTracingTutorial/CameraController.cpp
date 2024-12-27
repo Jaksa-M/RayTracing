@@ -25,7 +25,7 @@ void cameraController::HandleKeyboardInput(float dt) {
         moveForward();
     }
     if (ImGui::IsKeyDown(ImGuiKey_X)) {
-        yaw += 45;
+        yaw += 45.0f;
         // This clamping is needed only if yaw value exceeds certain value for precision (can be done without it)
         yaw = fmod(yaw, 360.0f);
         if (yaw < 0) yaw += 360.0f;
@@ -36,7 +36,7 @@ void cameraController::HandleKeyboardInput(float dt) {
         direction.setZ(sin(degrees_to_radians(yaw)) * cos(degrees_to_radians(pitch)));
         cam.setDirection(unit_vector(direction));
 
-        cam.setRightVector(unit_vector(cross(vec3(0, 1, 0), cam.getDirection()))); // New right vector (we can use arbitrary up vector)
+        cam.setRightVector(unit_vector(cross(vec3(0.0f, 1.0f, 0.0f), cam.getDirection()))); // New right vector (we can use arbitrary up vector)
 
         cam.setCameraMoved(true); // To clear out accumulated buffer
     }
@@ -84,7 +84,7 @@ void cameraController::HandleMouseInput(ImGuiIO& io) {
             direction.setZ(sin(degrees_to_radians(yaw)) * cos(degrees_to_radians(pitch)));
             cam.setDirection(unit_vector(direction));
 
-            cam.setRightVector(unit_vector(cross(vec3(0, 1, 0), cam.getDirection()))); // New right vector (we can use arbitrary up vector)
+            cam.setRightVector(unit_vector(cross(vec3(0.0f, 1.0f, 0.0f), cam.getDirection()))); // New right vector (we can use arbitrary up vector)
             cam.setUpVector(unit_vector(cross(cam.getDirection(), cam.getRightVector()))); // New up vector
 
             cam.setCameraMoved(true); // To clear out accumulated buffer

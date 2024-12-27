@@ -60,9 +60,9 @@ void RTMesh::transformToTriangles() {
 }
 
 void RTMesh::buildBVH() {
-    std::uint32_t N = indices.size() / 3;
+    std::uint32_t N = static_cast<std::uint32_t>(indices.size() / 3);
 
-    for (int i = 0; i < 2 * N - 1; i++) {
+    for (std::uint32_t i = 0; i < 2 * N - 1; i++) {
         bvh_nodes.push_back(BVHNode());
     }
     BVHNode& root = bvh_nodes[0];
@@ -196,7 +196,7 @@ bool RTMesh::intersectAABB(const ray& r, interval ray_t, const vec3& bmin, const
 
 bool RTMesh::intersectTriangle(const ray& r, interval ray_t, hit_record& rec, const Triangle& triangle) const {
     bool hit = false;
-    double min = ray_t.max;
+    float min = ray_t.max;
     const point3& p1 = triangle.v0;
     const point3& p2 = triangle.v1;
     const point3& p3 = triangle.v2;
@@ -204,11 +204,11 @@ bool RTMesh::intersectTriangle(const ray& r, interval ray_t, hit_record& rec, co
     // Formula for intersecting with the plane is t = (c - p*n) / d*n
     // denominator d is ray direction, p is ray origin, n is normal, c is constant
     point3 triangle_normal = unit_vector(cross(p2 - p1, p3 - p1));
-    double c = dot(triangle_normal, p1);
-    double denominator = dot(triangle_normal, r.direction());
+    float c = dot(triangle_normal, p1);
+    float denominator = dot(triangle_normal, r.direction());
     if (fabs(denominator) < 1e-8) return false;
 
-    double t = (c - dot(triangle_normal, r.origin())) / denominator;
+    float t = (c - dot(triangle_normal, r.origin())) / denominator;
     if (!ray_t.surrounds(t)) { // Check if the intersection is within the ray's valid range
         return false;
     }
@@ -232,10 +232,10 @@ bool RTMesh::intersectTriangle(const ray& r, interval ray_t, hit_record& rec, co
     // alpha = ([(C-B) x (Q-B)] * n) / ([(B-A) x (C-A)] * n)
     // beta = ([(A-C) x (Q-C)] * n) / ([(B-A) x (C-A)] * n)
     // gamma = ([(B-A) x (Q-A)] * n) / ([(B-A) x (C-A)] * n)
-    const double area = dot(cross((p2 - p1), (p3 - p1)), triangle_normal);
-    double alpha = dot(cross((p3 - p2), (Q - p2)), triangle_normal) / area;
-    double beta = dot(cross((p1 - p3), (Q - p3)), triangle_normal) / area;
-    double gamma = dot(cross((p2 - p1), (Q - p1)), triangle_normal) / area;
+    const float area = dot(cross((p2 - p1), (p3 - p1)), triangle_normal);
+    float alpha = dot(cross((p3 - p2), (Q - p2)), triangle_normal) / area;
+    float beta = dot(cross((p1 - p3), (Q - p3)), triangle_normal) / area;
+    float gamma = dot(cross((p2 - p1), (Q - p1)), triangle_normal) / area;
 
 
     //const point3 n1 = point3(vertex_normals[indices[i] * 3], vertex_normals[indices[i] * 3 + 1], vertex_normals[indices[i] * 3 + 2]);

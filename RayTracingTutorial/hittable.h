@@ -16,7 +16,7 @@ public:
     vec3 shading_normal;
     bool type_of_normal = false;
     std::shared_ptr<material> mat;
-    double t;
+    float t;
     bool front_face;
     std::string object_type;
 

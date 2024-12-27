@@ -43,7 +43,7 @@ matrix4x4 transformation::makeViewMatrix(const vec3& cam_forward, const vec3& ca
     view(0, 3) = -dot(cam_right, cam_position);
     view(1, 3) = -dot(cam_up, cam_position);
     view(2, 3) = dot(cam_forward, cam_position);
-    view(3, 3) = 1;
+    view(3, 3) = 1.0f;
     return view;
 }
 
@@ -109,22 +109,22 @@ matrix4x4 transformation::create_scaling_matrix(float sx, float sy, float sz) {
 
 matrix4x4 transformation::rotation_x(float angle) {
     matrix4x4 m;
-    m(0, 0) = 1;
-    m(0, 1) = 0;
-    m(0, 2) = 0;
-    m(0, 3) = 0;
-    m(1, 0) = 0;
+    m(0, 0) = 1.0f;
+    m(0, 1) = 0.0f;
+    m(0, 2) = 0.0f;
+    m(0, 3) = 0.0f;
+    m(1, 0) = 0.0f;
     m(1, 1) = cos(angle);
     m(1, 2) = -sin(angle);
-    m(1, 3) = 0;
-    m(2, 0) = 0;
+    m(1, 3) = 0.0f;
+    m(2, 0) = 0.0f;
     m(2, 1) = sin(angle);
     m(2, 2) = cos(angle);
-    m(2, 3) = 0;
-    m(3, 0) = 0;
-    m(3, 1) = 0;
-    m(3, 2) = 0;
-    m(3, 3) = 0;
+    m(2, 3) = 0.0f;
+    m(3, 0) = 0.0f;
+    m(3, 1) = 0.0f;
+    m(3, 2) = 0.0f;
+    m(3, 3) = 0.0f;
     return m;
 }
 
@@ -133,19 +133,19 @@ matrix4x4 transformation::create_rotation_matrix(float alpha, float beta, float 
     m(0, 0) = cos(alpha) * cos(beta);
     m(0, 1) = cos(alpha) * sin(beta) * sin(gama) - sin(alpha) * cos(gama);
     m(0, 2) = cos(alpha) * sin(beta) * cos(gama) + sin(alpha) * sin(gama);
-    m(0, 3) = 0;
+    m(0, 3) = 0.0f;
     m(1, 0) = cos(beta) * sin(gama);
     m(1, 1) = sin(alpha) * sin(beta) * sin(gama) + cos(alpha) * cos(gama);
     m(1, 2) = cos(alpha) * sin(beta) * sin(gama) - sin(alpha) * cos(gama);
-    m(1, 3) = 0;
+    m(1, 3) = 0.0f;
     m(2, 0) = -sin(beta);
     m(2, 1) = sin(alpha) * cos(beta);
     m(2, 2) = cos(alpha) * cos(beta);
-    m(2, 3) = 0;
-    m(3, 0) = 0;
-    m(3, 1) = 0;
-    m(3, 2) = 0;
-    m(3, 3) = 0;
+    m(2, 3) = 0.0f;
+    m(3, 0) = 0.0f;
+    m(3, 1) = 0.0f;
+    m(3, 2) = 0.0f;
+    m(3, 3) = 0.0f;
     return m;
 }
 

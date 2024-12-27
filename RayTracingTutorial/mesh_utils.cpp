@@ -12,7 +12,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(const std::shared_ptr<ma
 
     vec3 min = center - (size * 0.5);
     vec3 max = center + (size * 0.5);
-    vec3 d = (max - min) / (num_of_vert - 1);
+    vec3 d = (max - min) / static_cast<float>(num_of_vert - 1);
 
     // center and normalize variables are not used here, since we are drawing cube
     createFaceVertices(false, center, vertices, num_of_vert, min.x(), max.y(), max.z(), d.x(), -d.y(), 0.0f, 1.0f, 0.0f, 0.0f); // front
@@ -69,7 +69,7 @@ std::unique_ptr<Mesh> MeshUtils::GenerateLineCube(unsigned int num_of_vert, vec3
 
     vec3 min = center - (size * 0.5);
     vec3 max = center + (size * 0.5);
-    vec3 d = (max - min) / (num_of_vert - 1);
+    vec3 d = (max - min) / static_cast<float>(num_of_vert - 1);
 
     // Define vertex positions for the cube corners
     vec3 corners[] = {
@@ -108,7 +108,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(const std::shared_ptr<
 
     vec3 min = center - (size * 0.5);
     vec3 max = center + (size * 0.5);
-    vec3 d = (max - min) / (num_of_vert - 1);
+    vec3 d = (max - min) / static_cast<float>(num_of_vert - 1);
 
     createFaceVertices(true, center, vertices, num_of_vert, min.x(), max.y(), max.z(), d.x(), -d.y(), 0.0f, 1.0f, 0.0f, 0.0f); // front
     createFaceVertices(true, center, vertices, num_of_vert, min.x(), max.y(), min.z(), d.x(), -d.y(), 0.0f, 0.0f, 1.0f, 0.0f); // back
@@ -260,7 +260,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateIcosphere(const std::shared_ptr<mater
 
     icosahedron(vertices, indices);
 
-    for (int i = 0; i < subdivisions; i++) { // Subdivide triangles into smaller triangles (each iteration 1 triangle becomes 4)
+    for (std::uint32_t i = 0; i < subdivisions; i++) { // Subdivide triangles into smaller triangles (each iteration 1 triangle becomes 4)
         loopSubdivision(vertices, indices);
         projectToUnitSphere(vertices);
     }
@@ -429,7 +429,7 @@ std::uint32_t MeshUtils::getMidpoint(std::uint32_t v1, std::uint32_t v2, std::ve
     vertices.push_back(midpoint.y());
     vertices.push_back(midpoint.z());
 
-    int index = vertices.size() / 3 - 1;
+    int index = static_cast<int>(vertices.size() / 3) - 1;
     midpoint_cache[key] = index;  // Cache the midpoint index
 
     return index;

@@ -18,15 +18,15 @@
 SceneBoxes::SceneBoxes() {}
 
 void SceneBoxes::initialize() {
-    auto material_ground = std::make_shared<lambertian>(color(0.8, 0.8, 0.0));
-    auto material_center = std::make_shared<lambertian>(color(0.1, 0.2, 0.5));
-    auto material_left = std::make_shared<metal>(color(0.8, 0.8, 0.8), 0.3);
-    auto material_right = std::make_shared<metal>(color(0.8, 0.6, 0.2), 1.0);
-    //world.add(std::make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, material_ground));
-    world.add(std::make_shared<sphere>(point3(0.0, 0.0, -1.2), 0.5, material_center));
-    world.add(std::make_shared<sphere>(point3(-1.0, 0.0, -1.0), 0.5, material_left));
-    world.add(std::make_shared<sphere>(point3(1.0, 0.0, -1.0), 0.5, material_right));
-    //world.add(std::make_shared<sphere>(point3(0.0, 0.0, 0.0), 0.5, material_right));
+    auto material_ground = std::make_shared<lambertian>(color(0.8f, 0.8f, 0.0f));
+    auto material_center = std::make_shared<lambertian>(color(0.1f, 0.2f, 0.5f));
+    auto material_left = std::make_shared<metal>(color(0.8f, 0.8f, 0.8f), 0.3f);
+    auto material_right = std::make_shared<metal>(color(0.8f, 0.6f, 0.2f), 1.0f);
+    //world.add(std::make_shared<sphere>(point3(0.0f, -100.5f, -1.0f), 100.0f, material_ground));
+    world.add(std::make_shared<sphere>(point3(0.0f, 0.0f, -1.2f), 0.5f, material_center));
+    world.add(std::make_shared<sphere>(point3(-1.0f, 0.0f, -1.0f), 0.5f, material_left));
+    world.add(std::make_shared<sphere>(point3(1.0f, 0.0f, -1.0f), 0.5f, material_right));
+    //world.add(std::make_shared<sphere>(point3(0.0f, 0.0f, 0.0f), 0.5f, material_right));
 
     initShader();
 }

@@ -1,7 +1,9 @@
 #include "mesh.h"
 #include "glad/gl.h"
 
-Mesh::Mesh(std::span<float> vertices, int size, int stride, int offset_pos, int offset_col, bool with_EBO, std::span<unsigned int> indices) {
+Mesh::Mesh(std::span<float> vertices, int size, int stride, int offset_pos, int offset_col, bool with_EBO, std::span<unsigned int> indices):
+    VBO(0), VAO(0), EBO(0), indices_size(0)
+{
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
 
@@ -14,7 +16,7 @@ Mesh::Mesh(std::span<float> vertices, int size, int stride, int offset_pos, int 
         glGenBuffers(1, &EBO);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() *  sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
-        indices_size = indices.size();
+        indices_size = static_cast<std::uint32_t>(indices.size());
     }
 
     //glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
