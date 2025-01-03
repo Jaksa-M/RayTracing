@@ -5,7 +5,7 @@
 
 class camera;
 
-class transformation { // Every matrix has to be stored column major because thats how OpenGl reads them
+class transformation { // Every matrix has to be stored column major because that's how OpenGl reads them
 public:
     transformation();
 

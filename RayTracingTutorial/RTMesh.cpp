@@ -1,21 +1,22 @@
 #include "RTMesh.h"
 #include "ray.h"
 #include "math_constants.h"
-#include "matrix.h"
 #include "vec3.h"
 #include "interval.h"
 #include "mesh_buffer_manager.h"
 #include <algorithm>
 
+#include "transformations.h"
 
-RTMesh::RTMesh(MeshBufferManager* mesh_buf_manager, std::size_t mesh_handle, int size, int stride, int offset_pos, int offset_col, std::shared_ptr<material> mat) :
-    mesh_buf_manager(mesh_buf_manager), mesh_handle(mesh_handle), size(size), stride(stride), mat(mat) 
+RTMesh::RTMesh(MeshBufferManager* mesh_buf_manager, std::size_t mesh_handle, std::shared_ptr<material> mat) :
+    mesh_buf_manager(mesh_buf_manager), mesh_handle(mesh_handle), mat(mat) 
 {
     vertices = mesh_buf_manager->getVerts(mesh_handle, 0);
     indices = mesh_buf_manager->getIndices(mesh_handle);
     vertex_normals = mesh_buf_manager->getNormals(mesh_handle, 2);
-    transformToTriangles(); // from indices and vertices creates vector of triangles
-    buildBVH();
+    transformToTriangles(); // from indices and vertices, creates vector of triangles
+    
+    //buildBVH();
 }
 
 void RTMesh::boxAround(std::span<vec3> edges) {}
@@ -28,7 +29,21 @@ bool RTMesh::hit(const ray& r, interval ray_t, hit_record& rec) const {
     return hit;
 }
 
-void RTMesh::transform(const matrix4x4& m) {}
+void RTMesh::transform(const matrix4x4& m) {
+    for (int i = 0; i < triangles.size(); i++) {
+        Triangle& tri = triangles[i];
+        tri.v0 = m * tri.v0;
+        tri.v1 = m * tri.v1;
+        tri.v2 = m * tri.v2;
+        tri.centroid = (tri.v0 + tri.v1 + tri.v2) * (1.0f / 3.0f);
+    }
+}
+
+void RTMesh::applyTransformations(std::vector<matrix4x4>& transformations) {
+    for (int i = 0; i < transformations.size(); i++) {
+        transform(transformations[i]);
+    }
+}
 
 void RTMesh::transformToTriangles() {
     // Calculate each triangle centroid and insert that, coordinates and vertex normals into triangles vector
@@ -196,7 +211,6 @@ bool RTMesh::intersectAABB(const ray& r, interval ray_t, const vec3& bmin, const
 
 bool RTMesh::intersectTriangle(const ray& r, interval ray_t, hit_record& rec, const Triangle& triangle) const {
     bool hit = false;
-    float min = ray_t.max;
     const point3& p1 = triangle.v0;
     const point3& p2 = triangle.v1;
     const point3& p3 = triangle.v2;
@@ -237,24 +251,16 @@ bool RTMesh::intersectTriangle(const ray& r, interval ray_t, hit_record& rec, co
     float beta = dot(cross((p1 - p3), (Q - p3)), triangle_normal) / area;
     float gamma = dot(cross((p2 - p1), (Q - p1)), triangle_normal) / area;
 
-
-    //const point3 n1 = point3(vertex_normals[indices[i] * 3], vertex_normals[indices[i] * 3 + 1], vertex_normals[indices[i] * 3 + 2]);
-    //const point3 n2 = point3(vertex_normals[indices[i + 1] * 3], vertex_normals[indices[i + 1] * 3 + 1], vertex_normals[indices[i + 1] * 3 + 2]);
-    //const point3 n3 = point3(vertex_normals[indices[i + 2] * 3], vertex_normals[indices[i + 2] * 3 + 1], vertex_normals[indices[i + 2] * 3 + 2]);
-
-
     vec3 n = unit_vector(triangle.n0 * alpha + triangle.n1 * beta + triangle.n2 * gamma); // barycentric interpolation
     
-    //if (t <= min) {
-        rec.t = t;
-        rec.p = Q;
-        rec.set_face_normal(r, triangle_normal);
-        rec.set_shading_normal(r, n);
-        rec.type_of_normal = false;
-        rec.object_type = "triangle";
-        rec.mat = mat;
-        hit = true;
-        min = t;
-    //}
+    rec.t = t;
+    rec.p = Q;
+    rec.set_face_normal(r, triangle_normal);
+    rec.set_shading_normal(r, n);
+    rec.type_of_normal = false;
+    rec.object_type = "triangle";
+    rec.mat = mat;
+    hit = true;
+
     return hit;
 }

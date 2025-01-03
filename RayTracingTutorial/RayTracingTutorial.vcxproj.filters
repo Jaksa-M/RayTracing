@@ -111,6 +111,9 @@
     <ClCompile Include="scene_rt_meshes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="scene_cornell_box.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stb_image_write.h">
@@ -222,6 +225,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="scene_rt_meshes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scene_cornell_box.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

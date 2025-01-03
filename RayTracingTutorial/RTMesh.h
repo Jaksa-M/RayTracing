@@ -3,6 +3,7 @@
 
 #include "hittable.h"
 #include <span>
+#include "matrix.h"
 
 class MeshBufferManager;
 
@@ -22,8 +23,7 @@ struct Triangle {
 
 class RTMesh: public hittable {
 public:
-    RTMesh(MeshBufferManager* mesh_buf_manager, std::size_t mesh_handle,
-        int size, int stride, int offset_pos, int offset_col, std::shared_ptr<material> mat);
+    RTMesh(MeshBufferManager* mesh_buf_manager, std::size_t mesh_handle, std::shared_ptr<material> mat);
 
     std::string object_type() const override { return "cube triangle mesh"; }
 
@@ -33,11 +33,11 @@ public:
 
     void transform(const matrix4x4& m) override;
 
+    void applyTransformations(std::vector<matrix4x4>& transformations);
+    void buildBVH();
 private:
     MeshBufferManager* mesh_buf_manager;
     std::size_t mesh_handle;
-    int stride;
-    int size; // size of vertex attribute (vec3 in our case, so size is 3)
     std::shared_ptr<material> mat;
     std::span<const float> vertices;
     std::span<const std::uint32_t> indices;
@@ -49,7 +49,7 @@ private:
     std::uint32_t nodesUsed = 1;
 
     void transformToTriangles();
-    void buildBVH();
+    
     void createBoundBox(std::uint32_t node_index);
     void subdivide(std::uint32_t node_index);
     void intersectBVH(const ray& r, interval ray_t, hit_record& rec, const std::uint32_t nodeIdx, bool& hit, float& closest_hit_t) const;

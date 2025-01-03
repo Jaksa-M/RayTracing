@@ -7,24 +7,27 @@
 #include "RTMesh.h"
 #include "mesh_buffer_manager.h"
 
-class SceneRtMeshes: public Scene {
+class SceneCornellBox: public Scene {
 private:
-    std::shared_ptr<RTMesh> cube_mesh;
-    std::shared_ptr<RTMesh> cube_sphere;
-    std::shared_ptr<RTMesh> ico_sphere;
-    std::shared_ptr<RTMesh> rectangle_mesh;
-    std::shared_ptr<RTMesh> rect_prism_mesh;
-    std::unique_ptr<Shader> shader_prog;
     std::unique_ptr<MeshBufferManager> mesh_buf_manager;
 
+    std::shared_ptr<RTMesh> rect_prism_mesh;
+    std::shared_ptr<RTMesh> cube_mesh;
+    std::shared_ptr<RTMesh> rect_mesh_top;
+    std::shared_ptr<RTMesh> rect_mesh_bottom;
+    std::shared_ptr<RTMesh> rect_mesh_left;
+    std::shared_ptr<RTMesh> rect_mesh_right;
+    std::shared_ptr<RTMesh> rect_mesh_back;
+    
+    
 public:
-    SceneRtMeshes();
+    SceneCornellBox();
 
     void initialize() override;
 
     std::vector<unsigned char> update(int display_w, int display_h, camera& cam, float& trace_percentage, int& reflection_depth) override;
 
-    void draw_mesh(camera& cam);
+    void createTransformations();
 };
 
 #endif

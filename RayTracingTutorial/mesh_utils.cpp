@@ -15,12 +15,12 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(const std::shared_ptr<ma
     vec3 d = (max - min) / static_cast<float>(num_of_vert - 1);
 
     // center and normalize variables are not used here, since we are drawing cube
-    createFaceVertices(false, center, vertices, num_of_vert, min.x(), max.y(), max.z(), d.x(), -d.y(), 0.0f, 1.0f, 0.0f, 0.0f); // front
-    createFaceVertices(false, center, vertices, num_of_vert, min.x(), max.y(), min.z(), d.x(), -d.y(), 0.0f, 0.0f, 1.0f, 0.0f); // back
-    createFaceVertices(false, center, vertices, num_of_vert, min.x(), max.y(), max.z(), 0.0f, -d.y(), -d.z(), 0.0f, 0.0f, 1.0f); // left
-    createFaceVertices(false, center, vertices, num_of_vert, max.x(), max.y(), max.z(), 0.0f, -d.y(), -d.z(), 1.0f, 1.0f, 0.0f); // right
-    createFaceVertices(false, center, vertices, num_of_vert, max.x(), max.y(), max.z(), -d.x(), 0.0f, -d.z(), 1.0f, 0.0f, 1.0f); // top
-    createFaceVertices(false, center, vertices, num_of_vert, max.x(), min.y(), max.z(), -d.x(), 0.0f, -d.z(), 0.0f, 1.0f, 1.0f); // bottom
+    createFaceVertices(false, center, vertices, num_of_vert, num_of_vert, min.x(), max.y(), max.z(), d.x(), -d.y(), 0.0f, 1.0f, 0.0f, 0.0f); // front
+    createFaceVertices(false, center, vertices, num_of_vert, num_of_vert, min.x(), max.y(), min.z(), d.x(), -d.y(), 0.0f, 0.0f, 1.0f, 0.0f); // back
+    createFaceVertices(false, center, vertices, num_of_vert, num_of_vert, min.x(), max.y(), max.z(), 0.0f, -d.y(), -d.z(), 0.0f, 0.0f, 1.0f); // left
+    createFaceVertices(false, center, vertices, num_of_vert, num_of_vert, max.x(), max.y(), max.z(), 0.0f, -d.y(), -d.z(), 1.0f, 1.0f, 0.0f); // right
+    createFaceVertices(false, center, vertices, num_of_vert, num_of_vert, max.x(), max.y(), max.z(), -d.x(), 0.0f, -d.z(), 1.0f, 0.0f, 1.0f); // top
+    createFaceVertices(false, center, vertices, num_of_vert, num_of_vert, max.x(), min.y(), max.z(), -d.x(), 0.0f, -d.z(), 0.0f, 1.0f, 1.0f); // bottom
     
     std::vector<unsigned int> indices = createFaceIndices(num_of_vert);
 
@@ -60,7 +60,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(const std::shared_ptr<ma
 
     std::size_t mesh_handle = mesh_buf_manager->addToBuffer(vertices, 2, indices, vertex_normals);
 
-    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, 3, 6, 0, 3, mat);
+    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat);
     return mesh;
 }
 
@@ -110,12 +110,12 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(const std::shared_ptr<
     vec3 max = center + (size * 0.5);
     vec3 d = (max - min) / static_cast<float>(num_of_vert - 1);
 
-    createFaceVertices(true, center, vertices, num_of_vert, min.x(), max.y(), max.z(), d.x(), -d.y(), 0.0f, 1.0f, 0.0f, 0.0f); // front
-    createFaceVertices(true, center, vertices, num_of_vert, min.x(), max.y(), min.z(), d.x(), -d.y(), 0.0f, 0.0f, 1.0f, 0.0f); // back
-    createFaceVertices(true, center, vertices, num_of_vert, min.x(), max.y(), max.z(), 0.0f, -d.y(), -d.z(), 0.0f, 0.0f, 1.0f); // left
-    createFaceVertices(true, center, vertices, num_of_vert, max.x(), max.y(), max.z(), 0.0f, -d.y(), -d.z(), 1.0f, 1.0f, 0.0f); // right
-    createFaceVertices(true, center, vertices, num_of_vert, max.x(), max.y(), max.z(), -d.x(), 0.0f, -d.z(), 1.0f, 0.0f, 1.0f); // top
-    createFaceVertices(true, center, vertices, num_of_vert, max.x(), min.y(), max.z(), -d.x(), 0.0f, -d.z(), 0.0f, 1.0f, 1.0f); // bottom
+    createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, min.x(), max.y(), max.z(), d.x(), -d.y(), 0.0f, 1.0f, 0.0f, 0.0f); // front
+    createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, min.x(), max.y(), min.z(), d.x(), -d.y(), 0.0f, 0.0f, 1.0f, 0.0f); // back
+    createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, min.x(), max.y(), max.z(), 0.0f, -d.y(), -d.z(), 0.0f, 0.0f, 1.0f); // left
+    createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, max.x(), max.y(), max.z(), 0.0f, -d.y(), -d.z(), 1.0f, 1.0f, 0.0f); // right
+    createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, max.x(), max.y(), max.z(), -d.x(), 0.0f, -d.z(), 1.0f, 0.0f, 1.0f); // top
+    createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, max.x(), min.y(), max.z(), -d.x(), 0.0f, -d.z(), 0.0f, 1.0f, 1.0f); // bottom
 
     std::vector<unsigned int> indices = createFaceIndices(num_of_vert);
 
@@ -181,7 +181,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(const std::shared_ptr<
 
     std::size_t mesh_handle = mesh_buf_manager->addToBuffer(vertices, 2, indices, vertex_normals);
 
-    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, 3, 6, 0, 3, mat);
+    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat);
     return mesh;
 }
 
@@ -271,15 +271,76 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateIcosphere(const std::shared_ptr<mater
     generateTriangleVertexNormals(vertex_normals, vertices, indices, 3);
 
     std::size_t mesh_handle = mesh_buf_manager->addToBuffer(vertices, 1, indices, vertex_normals);
-    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, 3, 6, 0, 3, mat);
+    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat);
     return mesh;
 }
 
-void MeshUtils::createFaceVertices(bool normalize, const vec3& center, std::vector<float>& vertices, int num_of_vert, float start_x, float start_y,
-    float start_z, float step_x, float step_y, float step_z, float col_x, float col_y, float col_z)
+std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager, std::uint32_t num_of_vert_row,
+    std::uint32_t num_of_vert_col, vec3 center, vec3 size)
 {
-    for (int i = 0; i < num_of_vert; i++) {
-        for (int j = 0; j < num_of_vert; j++) {
+    std::vector<float> vertices;
+
+    vec3 min = center - (size * 0.5);
+    vec3 max = center + (size * 0.5);
+    vec3 d; //= (max - min) / static_cast<float>(num_of_vert - 1);
+    d.setX((max.x() - min.x()) / (num_of_vert_col - 1));
+    d.setY((max.y() - min.y()) / (num_of_vert_row - 1));
+
+    // center and normalize variables are not used here, since we are drawing cube
+    createFaceVertices(false, center, vertices, num_of_vert_row, num_of_vert_col, min.x(), max.y(), max.z(), d.x(), -d.y(), 0.0f, 1.0f, 0.0f, 0.0f); // front
+
+    std::vector<std::uint32_t> indices;
+
+    for (std::uint32_t i = 0; i < num_of_vert_row - 1; i++) {
+        for (std::uint32_t j = 0; j < num_of_vert_col - 1; j++) {
+            // first triangle (bottom-left triangle)
+            indices.emplace_back(i * num_of_vert_col + j);
+            indices.emplace_back((i + 1) * num_of_vert_col + j);
+            indices.emplace_back((i + 1) * num_of_vert_col + j + 1);
+            // second triangle (top-right triangle)
+            indices.emplace_back(i * num_of_vert_col + j);
+            indices.emplace_back((i + 1) * num_of_vert_col + j + 1);
+            indices.emplace_back(i * num_of_vert_col + j + 1);
+        }
+    }
+
+    std::vector<vec3> normals;
+
+    for (int i = 0; i < indices.size(); i += 3) {
+        const point3 p1 = point3(vertices[indices[i] * 6], vertices[indices[i] * 6 + 1], vertices[indices[i] * 6 + 2]);
+        const point3 p2 = point3(vertices[indices[i + 1] * 6], vertices[indices[i + 1] * 6 + 1], vertices[indices[i + 1] * 6 + 2]);
+        const point3 p3 = point3(vertices[indices[i + 2] * 6], vertices[indices[i + 2] * 6 + 1], vertices[indices[i + 2] * 6 + 2]);
+        point3 triangle_normal = unit_vector(cross(p2 - p1, p3 - p1));
+        normals.emplace_back(triangle_normal);
+    }
+
+    // Calculate normals for each vertex
+    std::vector<vec3> vertex_normals(vertices.size() / 6, vec3(0, 0, 0));
+
+    // For each vertex add triangle normal of the triangle it belongs to (1 vertex can be part of multiple triangles, so we add all those normals together)
+    for (int i = 0; i < indices.size(); i += 3) {
+        const vec3& triangle_normal = normals[i / 3];
+        vertex_normals[indices[i]] += triangle_normal;
+        vertex_normals[indices[i + 1]] += triangle_normal;
+        vertex_normals[indices[i + 2]] += triangle_normal;
+    }
+
+    // Normalize the vertex normals
+    for (int i = 0; i < vertex_normals.size(); i++) {
+        vertex_normals[i] = unit_vector(vertex_normals[i]);
+    }
+
+    std::size_t mesh_handle = mesh_buf_manager->addToBuffer(vertices, 2, indices, vertex_normals);
+
+    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat);
+    return mesh;
+}
+
+void MeshUtils::createFaceVertices(bool normalize, const vec3& center, std::vector<float>& vertices, int num_of_vert_row, int num_of_vert_col, float start_x,
+    float start_y, float start_z, float step_x, float step_y, float step_z, float col_x, float col_y, float col_z)
+{
+    for (int i = 0; i < num_of_vert_row; i++) {
+        for (int j = 0; j < num_of_vert_col; j++) {
             float val_x = start_x + step_x * j;
             float val_y = start_y + step_y * i;
             float val_z;
@@ -305,7 +366,7 @@ void MeshUtils::createFaceVertices(bool normalize, const vec3& center, std::vect
     }
 }
 
-std::vector<unsigned int> MeshUtils::createFaceIndices(int num_of_vert) { // Filling indices vector with triangles
+std::vector<unsigned int> MeshUtils::createFaceIndices(int num_of_vert) { // Filling indices vector with triangles (for cube)
     std::vector<unsigned int> indices;
     int face_vertex_count = num_of_vert * num_of_vert; // Total vertices per face
 

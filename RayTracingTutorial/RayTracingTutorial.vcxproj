@@ -167,6 +167,7 @@
     <ClCompile Include="rectangle.cpp" />
     <ClCompile Include="RTMesh.cpp" />
     <ClCompile Include="scene_boxes.cpp" />
+    <ClCompile Include="scene_cornell_box.cpp" />
     <ClCompile Include="scene_meshes.cpp" />
     <ClCompile Include="scene_rt_meshes.cpp" />
     <ClCompile Include="scene_transformations.cpp" />
@@ -204,6 +205,7 @@
     <ClInclude Include="RTMesh.h" />
     <ClInclude Include="scene.h" />
     <ClInclude Include="scene_boxes.h" />
+    <ClInclude Include="scene_cornell_box.h" />
     <ClInclude Include="scene_meshes.h" />
     <ClInclude Include="scene_rt_meshes.h" />
     <ClInclude Include="scene_transformations.h" />

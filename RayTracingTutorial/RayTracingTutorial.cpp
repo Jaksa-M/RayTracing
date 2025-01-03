@@ -21,7 +21,8 @@
 //#include "scene_transformations.h"
 //#include "scene_boxes.h"
 //#include "scene_meshes.h"
-#include "scene_rt_meshes.h"
+//#include "scene_rt_meshes.h"
+#include "scene_cornell_box.h"
 
 // ImGui things
 #include "imgui/imgui.h"
@@ -105,8 +106,10 @@ int main(int, char**) {
     scene_boxes.initialize();*/
     /*SceneMeshes scene_meshes;
     scene_meshes.initialize();*/
-    SceneRtMeshes scene_rt_meshes;
-    scene_rt_meshes.initialize();
+    /*SceneRtMeshes scene_rt_meshes;
+    scene_rt_meshes.initialize();*/
+    SceneCornellBox scene_cornell_box;
+    scene_cornell_box.initialize();
 
     camera cam;
     cam.setInitalValues();
@@ -179,7 +182,7 @@ int main(int, char**) {
         cam.image_width = display_w;
         cam.image_height = display_h;
         
-        image_data = scene_rt_meshes.update(display_w, display_h, cam, trace_percentage, reflection_depth);
+        image_data = scene_cornell_box.update(display_w, display_h, cam, trace_percentage, reflection_depth);
         glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
 
 

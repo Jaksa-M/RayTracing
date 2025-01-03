@@ -27,8 +27,11 @@ public:
 	static std::shared_ptr<RTMesh> GenerateIcosphere(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager, std::uint32_t subdivisions, 
 		vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
 
+	static std::shared_ptr<RTMesh> GenerateTriangleRectangle(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager, std::uint32_t num_of_vert_row,
+		std::uint32_t num_of_vert_col, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
+
 private: // helper functions
-	static void createFaceVertices(bool normalize, const vec3& center, std::vector<float>& vertices, int num_of_vert,
+	static void createFaceVertices(bool normalize, const vec3& center, std::vector<float>& vertices, int num_of_vert_col, int num_of_vert_row,
 		float start_x, float start_y, float start_z, float step_x, float step_y, float step_z, float col_x, float col_y, float col_z);
 	static std::vector<unsigned int> createFaceIndices(int num_of_vert);
 	static void PrintVertices(const std::vector<float>& vertices);
