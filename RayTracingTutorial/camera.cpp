@@ -51,7 +51,7 @@ std::vector<unsigned char> camera::render(const hittable_list& world, std::vecto
 
 void camera::initialize() {
     // Determine viewport dimensions.
-    focal_length = 1;
+    focal_length = 1.0f;
 
     float viewport_height = 2.0f;
     float viewport_width = viewport_height * (float(image_width) / image_height);
@@ -91,6 +91,24 @@ vec3 camera::sample_square() const {
 }
 
 color camera::ray_color(const ray& r, int depth, const hittable_list& world) const {
+    // If we've exceeded the ray bounce limit, no more light is gathered.
+    //if (depth <= 0) return color(0.0f, 0.0f, 0.0f);
+
+    // Showing colors based on normals
+    /*hit_record rec;
+    if (world.hit(r, interval(0.001f, infinity), rec)) {
+        return rec.face_normal * 0.5 + vec3(0.5f, 0.5f, 0.5f);
+    }
+    return vec3(0.0f, 0.0f, 0.0f);*/
+
+    //// Showing colors based on the depth
+    //hit_record rec;
+    //if (world.hit(r, interval(0.001f, infinity), rec)) {
+    //    float tt = rec.t / 100.0f;
+    //    return vec3(tt, tt, tt);
+    //}
+    //return vec3(0.0f, 0.0f, 0.0f);
+
     // If we've exceeded the ray bounce limit, no more light is gathered.
     if (depth <= 0) return color(0.0f, 0.0f, 0.0f);
 

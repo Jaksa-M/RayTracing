@@ -23,19 +23,22 @@ struct Triangle {
 
 class RTMesh: public hittable {
 public:
+    RTMesh(MeshBufferManager* mesh_buf_manager, std::size_t mesh_handle, std::shared_ptr<material> mat, bool& enable_BVH);
     RTMesh(MeshBufferManager* mesh_buf_manager, std::size_t mesh_handle, std::shared_ptr<material> mat);
 
     std::string object_type() const override { return "cube triangle mesh"; }
 
     void boxAround(std::span<vec3> edges) override;
 
-    bool hit(const ray& r, interval ray_t, hit_record& rec) const override;
+    bool hit(const ray& r, interval ray_t, hit_record& rec) const override; // Without BVH
+    bool hit_BVH(const ray& r, interval ray_t, hit_record& rec) const; // With BVH
 
     void transform(const matrix4x4& m) override;
 
     void applyTransformations(std::vector<matrix4x4>& transformations);
     void buildBVH();
 private:
+    bool& enable_BVH;
     MeshBufferManager* mesh_buf_manager;
     std::size_t mesh_handle;
     std::shared_ptr<material> mat;
@@ -53,7 +56,7 @@ private:
     void createBoundBox(std::uint32_t node_index);
     void subdivide(std::uint32_t node_index);
     void intersectBVH(const ray& r, interval ray_t, hit_record& rec, const std::uint32_t nodeIdx, bool& hit, float& closest_hit_t) const;
-    bool intersectAABB(const ray& r, interval ray_t, const vec3& bmin, const vec3& bmax) const;
+    bool intersectAABB(const ray& r, interval ray_t, const vec3& bmin, const vec3& bmax, float& closest_side) const;
     bool intersectTriangle(const ray& r, interval ray_t, hit_record& rec, const Triangle& triangle) const;
 };
 #endif

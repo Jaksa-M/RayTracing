@@ -18,13 +18,15 @@ private:
     std::unique_ptr<MeshBufferManager> mesh_buf_manager;
 
 public:
+    bool enable_BVH = true;
+
     SceneRtMeshes();
 
     void initialize() override;
 
     std::vector<unsigned char> update(int display_w, int display_h, camera& cam, float& trace_percentage, int& reflection_depth) override;
 
-    void draw_mesh(camera& cam);
+    void draw_mesh_gizmos(camera& cam) override;
 };
 
 #endif

@@ -15,20 +15,20 @@ class Mesh;
 class MeshUtils {
 public:
 	static std::shared_ptr<RTMesh> GenerateTriangleCube(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager, unsigned int num_of_vert,
-		vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
+		bool& enable_BVH, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
 
 	static std::unique_ptr<Mesh> GenerateLineCube(unsigned int num_of_vert, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
 
 	static std::shared_ptr<RTMesh> GenerateTriangleSphere(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager, unsigned int num_of_vert,
-		vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
+		bool& enable_BVH, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
 
 	static std::unique_ptr<Mesh> GenerateSphereLines(unsigned int num_of_vert, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
 
 	static std::shared_ptr<RTMesh> GenerateIcosphere(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager, std::uint32_t subdivisions, 
-		vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
+		bool& enable_BVH, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
 
 	static std::shared_ptr<RTMesh> GenerateTriangleRectangle(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager, std::uint32_t num_of_vert_row,
-		std::uint32_t num_of_vert_col, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
+		std::uint32_t num_of_vert_col, bool& enable_BVH, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
 
 private: // helper functions
 	static void createFaceVertices(bool normalize, const vec3& center, std::vector<float>& vertices, int num_of_vert_col, int num_of_vert_row,

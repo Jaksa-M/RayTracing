@@ -6,7 +6,7 @@
 #include <cmath>
 
 std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager,
-        unsigned int num_of_vert, vec3 center , vec3 size)  // creating an unit cube
+        unsigned int num_of_vert, bool& enable_BVH, vec3 center , vec3 size)  // creating an unit cube
 {
     std::vector<float> vertices;
 
@@ -60,7 +60,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(const std::shared_ptr<ma
 
     std::size_t mesh_handle = mesh_buf_manager->addToBuffer(vertices, 2, indices, vertex_normals);
 
-    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat);
+    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat, enable_BVH);
     return mesh;
 }
 
@@ -102,7 +102,7 @@ std::unique_ptr<Mesh> MeshUtils::GenerateLineCube(unsigned int num_of_vert, vec3
 }
 
 std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager,
-    unsigned int num_of_vert, vec3 center, vec3 size)
+    unsigned int num_of_vert, bool& enable_BVH, vec3 center, vec3 size)
 {
     std::vector<float> vertices;
 
@@ -181,7 +181,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(const std::shared_ptr<
 
     std::size_t mesh_handle = mesh_buf_manager->addToBuffer(vertices, 2, indices, vertex_normals);
 
-    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat);
+    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat, enable_BVH);
     return mesh;
 }
 
@@ -253,12 +253,13 @@ std::unique_ptr<Mesh> MeshUtils::GenerateSphereLines(unsigned int num_of_vert, v
 }
 
 std::shared_ptr<RTMesh> MeshUtils::GenerateIcosphere(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager,
-    std::uint32_t subdivisions, vec3 center, vec3 size)
+    std::uint32_t subdivisions, bool& enable_BVH, vec3 center, vec3 size)
 {
     std::vector<float> vertices;
     std::vector<std::uint32_t> indices;
 
     icosahedron(vertices, indices);
+    //subdivisions = 0;
 
     for (std::uint32_t i = 0; i < subdivisions; i++) { // Subdivide triangles into smaller triangles (each iteration 1 triangle becomes 4)
         loopSubdivision(vertices, indices);
@@ -271,12 +272,12 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateIcosphere(const std::shared_ptr<mater
     generateTriangleVertexNormals(vertex_normals, vertices, indices, 3);
 
     std::size_t mesh_handle = mesh_buf_manager->addToBuffer(vertices, 1, indices, vertex_normals);
-    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat);
+    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat, enable_BVH);
     return mesh;
 }
 
 std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager, std::uint32_t num_of_vert_row,
-    std::uint32_t num_of_vert_col, vec3 center, vec3 size)
+    std::uint32_t num_of_vert_col, bool& enable_BVH, vec3 center, vec3 size)
 {
     std::vector<float> vertices;
 
@@ -332,7 +333,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(const std::shared_p
 
     std::size_t mesh_handle = mesh_buf_manager->addToBuffer(vertices, 2, indices, vertex_normals);
 
-    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat);
+    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat, enable_BVH);
     return mesh;
 }
 
@@ -431,9 +432,9 @@ void MeshUtils::generateTriangleVertexNormals(std::vector<vec3>& vertex_normals,
 }
 
 void MeshUtils::icosahedron(std::vector<float>& vertices, std::vector<std::uint32_t>& indices) {
-    const float phi = (1.0f + std::sqrt(5.0f)) / 2.0f; // Golden ratio
+    //const float phi = (1.0f + std::sqrt(5.0f)) / 2.0f; // Golden ratio
     const float a = 1.0f;
-    const float b = 1.0f / phi;
+    const float b = 1.0f; // const float b = 1.0f / phi; other approach that is not working
 
     // 12 vertices of the icosahedron
     vertices = {

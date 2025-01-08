@@ -1,5 +1,5 @@
-#ifndef SCENE_RT_MESHES_H
-#define SCENE_RT_MESHES_H
+#ifndef SCENE_CORNELL_BOX_H
+#define SCENE_CORNELL_BOX_H
 
 #include "scene.h"
 #include "shader.h"
@@ -21,6 +21,8 @@ private:
     
     
 public:
+    bool enable_BVH = true;
+
     SceneCornellBox();
 
     void initialize() override;

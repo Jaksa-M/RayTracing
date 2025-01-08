@@ -84,7 +84,7 @@ std::vector<float> SceneMeshes::createVerticesArr(int num_of_vert) {
     return vertices;
 }
 
-std::vector<unsigned int> SceneMeshes::createIndicessArr(int num_of_vert) {
+std::vector<unsigned int> SceneMeshes::createIndicesArr(int num_of_vert) {
     std::vector<unsigned int> indices;
     for (int i = 0; i < num_of_vert - 1; i++) {
         for (int j = 0; j < num_of_vert - 1; j++) {
@@ -101,7 +101,7 @@ std::vector<unsigned int> SceneMeshes::createIndicessArr(int num_of_vert) {
     return indices;
 }
 
-void SceneMeshes::draw_mesh(camera& cam) {
+void SceneMeshes::draw_mesh_gizmos(camera& cam) {
     shader_prog->bind();
     shader_prog->setMat4("view", cam.getViewMatrix().asPointer());
     shader_prog->setMat4("projection", cam.getProjectionMatrix().asPointer());

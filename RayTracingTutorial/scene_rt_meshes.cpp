@@ -27,16 +27,37 @@ void SceneRtMeshes::initialize() {
     //ico_sphere = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2, vec3(2.0f,0.0f,0.0f));
     //ico_sphere = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2);
     //rectangle_mesh = MeshUtils::GenerateTriangleRectangle(mat, mesh_buf_manager.get(), 6, 3);
-    rect_prism_mesh = MeshUtils::GenerateTriangleCube(mat, mesh_buf_manager.get(), 2, vec3(0.0f, 0.0f, 0.0f), vec3(0.5f, 1.2f, 0.5f));
-    world.add(cube_mesh);
+
+    /*rect_prism_mesh = MeshUtils::GenerateTriangleCube(mat, mesh_buf_manager.get(), 2, enable_BVH, vec3(0.0f, 0.0f, 0.0f), vec3(0.5f, 1.2f, 0.5f));
+    world.add(rect_prism_mesh);
+    rect_prism_mesh->buildBVH();*/
+
+    ico_sphere = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2, enable_BVH);
+    world.add(ico_sphere);
+    ico_sphere->buildBVH();
+
+    /*cube_sphere = MeshUtils::GenerateTriangleSphere(mat, mesh_buf_manager.get(), 4);
+    world.add(cube_sphere);
+    cube_sphere->buildBVH();*/
 }
 
 std::vector<unsigned char> SceneRtMeshes::update(int display_w, int display_h, camera& cam, float& trace_percentage, int& reflection_depth) {
-    std::vector<unsigned char> image_data(display_w * display_h * 3);
+    std::vector<unsigned char> image_data;
 
     image_data = cam.render(world, image_data_acc, trace_percentage, reflection_depth);
 
     return image_data;
 }
 
-void SceneRtMeshes::draw_mesh(camera& cam) {}
+void SceneRtMeshes::draw_mesh_gizmos(camera& cam)
+{
+    //std::vector<vec3> lines(vertex_normals.size() * 2);
+    //for (std::uint32_t i = 0; i < vertex_normals.size(); i++)
+    //{
+    //    const point3 v = point3(vertices[i * 3], vertices[i * 3 + 1], vertices[i * 3 + 2]);
+    //    lines[i * 2 + 0] = v;
+    //    lines[i * 2 + 1] = v + vertex_normals[i] * 0.1f;
+    //}
+
+
+}

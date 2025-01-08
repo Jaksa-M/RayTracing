@@ -21,8 +21,8 @@ public:
 
     std::vector<float> createVerticesArr(int num_of_vert);
 
-    std::vector<unsigned int> createIndicessArr(int num_of_vert);
+    std::vector<unsigned int> createIndicesArr(int num_of_vert);
 
-    void draw_mesh(camera& cam);
+    void draw_mesh_gizmos(camera& cam) override;
 };
 #endif

@@ -13,6 +13,8 @@ public:
 	virtual std::vector<unsigned char> update(int display_w, int display_h, camera& cam, float& trace_percentage, int& reflection_depth) = 0;
 
 	virtual ~Scene() = default;
+
+	virtual void draw_mesh_gizmos(camera& cam){}
 };
 
 #endif
