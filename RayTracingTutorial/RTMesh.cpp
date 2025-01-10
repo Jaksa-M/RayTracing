@@ -38,10 +38,11 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, hit_record& rec) const {
 
     intersectBVH(r, ray_t, rec, 0, hit, closest_hit_t);
 
-    //if (hit)
-    //{
-    //    //rec = ...
-    //}
+    if (hit) {
+        rec.type_of_normal = false;
+        rec.object_type = "triangle";
+        rec.mat = mat;
+    }
 
     return hit;
 }
@@ -166,8 +167,8 @@ void RTMesh::buildBVH() {
         bvh_nodes.push_back(BVHNode());
     }
     BVHNode& root = bvh_nodes[0];
-    root.leftChild = 0;
-    root.rightChild = 0;
+    root.left_child = 0;
+    root.right_child = 0;
     root.first_triangle_index = 0;
     root.triangle_cnt = N; // root node holds all triangles
 
@@ -237,8 +238,8 @@ void RTMesh::subdivide(std::uint32_t node_index) {
     // Create child nodes
     int left_child_index = nodesUsed++;
     int right_child_index = nodesUsed++;
-    node.leftChild = left_child_index;
-    node.rightChild = right_child_index;
+    node.left_child = left_child_index;
+    node.right_child = right_child_index;
     bvh_nodes[left_child_index].first_triangle_index = node.first_triangle_index;
     bvh_nodes[left_child_index].triangle_cnt = leftCount;
     bvh_nodes[right_child_index].first_triangle_index = i;
@@ -262,7 +263,6 @@ void RTMesh::intersectBVH(const ray& r, interval ray_t, hit_record& rec, const s
     hit_record rec2 = rec;
 
     if (node.isLeaf() == true) {
-        //if (closest_side >= closest_hit_t) return;
         for (std::uint32_t i = 0; i < node.triangle_cnt; i++) {
             if (intersectTriangle(r, ray_t, rec2, triangles[triangle_indices[node.first_triangle_index + i]]) == true) {
                 if (rec2.t < closest_hit_t) {  // Update only if this hit is closer
@@ -276,21 +276,30 @@ void RTMesh::intersectBVH(const ray& r, interval ray_t, hit_record& rec, const s
     }
     // These 2 variables check if there was a hit inside left or right child
     bool leftHit = false, rightHit = false;
-    // perf: if closest side of node.left is smaller than closest_hit_t, then visit left
+
     float closest_side_left;
     float closest_side_right;
-    const BVHNode& node_left = bvh_nodes[node.leftChild];
-    const BVHNode& node_right = bvh_nodes[node.rightChild];
-    bool left_check = intersectAABB(r, ray_t, node_left.aabbMin, node_left.aabbMax, closest_side_left);
-    bool right_check = intersectAABB(r, ray_t, node_right.aabbMin, node_right.aabbMax, closest_side_right);
+    const BVHNode* node_left = &bvh_nodes[node.left_child];
+    const BVHNode* node_right = &bvh_nodes[node.right_child];
+    bool left_check = intersectAABB(r, ray_t, node_left->aabbMin, node_left->aabbMax, closest_side_left);
+    bool right_check = intersectAABB(r, ray_t, node_right->aabbMin, node_right->aabbMax, closest_side_right);
+    
+    std::uint32_t left_child = node.left_child;
+    std::uint32_t right_child = node.right_child;
 
+    if (closest_side_right < closest_side_left) { // If closest side of node.right is smaller than closest side of node.left, then swap them
+        std::swap(node_left, node_right);
+        std::swap(left_check, right_check);
+        std::swap(closest_side_left, closest_side_right);
+        std::swap(left_child, right_child);
+    }
     if (left_check == true && closest_side_left < closest_hit_t) {
-        intersectBVH(r, ray_t, rec, node.leftChild, leftHit, closest_hit_t);
+        intersectBVH(r, ray_t, rec, left_child, leftHit, closest_hit_t);
     }
     if (right_check == true && closest_side_right < closest_hit_t) {
-        intersectBVH(r, ray_t, rec, node.rightChild, rightHit, closest_hit_t);
+        intersectBVH(r, ray_t, rec, right_child, rightHit, closest_hit_t);
     }
-
+   
     hit = leftHit || rightHit; // Combine results from child nodes
 }
 
@@ -359,9 +368,6 @@ bool RTMesh::intersectTriangle(const ray& r, interval ray_t, hit_record& rec, co
     rec.p = Q;
     rec.set_face_normal(r, triangle_normal);
     rec.set_shading_normal(r, n);
-    rec.type_of_normal = false;
-    rec.object_type = "triangle";
-    rec.mat = mat;
 
     return true;
 }

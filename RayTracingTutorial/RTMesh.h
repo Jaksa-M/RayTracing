@@ -9,7 +9,7 @@ class MeshBufferManager;
 
 struct BVHNode {
     vec3 aabbMin, aabbMax;
-    std::uint32_t leftChild, rightChild;
+    std::uint32_t left_child, right_child;
     std::uint32_t first_triangle_index, triangle_cnt;
 
     bool isLeaf() const { return triangle_cnt > 0; }
@@ -48,7 +48,7 @@ private:
 
     std::vector<BVHNode> bvh_nodes;
     std::vector<Triangle> triangles; // contains triangles (their coordinates) formed from indices and vertices arrays
-    std::vector<std::uint32_t> triangle_indices; // in order not to swap whole triangles, we will just swap these indices
+    mutable std::vector<std::uint32_t> triangle_indices; // in order not to swap whole triangles, we will just swap these indices
     std::uint32_t nodesUsed = 1;
 
     void transformToTriangles();
