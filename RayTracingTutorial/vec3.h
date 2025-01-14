@@ -10,6 +10,7 @@ public:
     float e[3];
 
     vec3() : e{ 0,0,0 } {}
+    vec3(float e0) : e{ e0, e0, e0 } {}
     vec3(float e0, float e1, float e2) : e{ e0, e1, e2 } {}
 
     float x() const { return e[0]; }

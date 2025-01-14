@@ -19,6 +19,8 @@ private:
 
 public:
     bool enable_BVH = true;
+    int BVH_technique = 0;
+    int prev_BVH_technique;
 
     SceneRtMeshes();
 

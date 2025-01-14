@@ -1,30 +1,14 @@
 #ifndef RT_MESH_H
 #define RT_MESH_H
 
-#include "hittable.h"
-#include <span>
 #include "matrix.h"
+#include "bvh_builder.h"
 
 class MeshBufferManager;
 
-struct BVHNode {
-    vec3 aabbMin, aabbMax;
-    std::uint32_t left_child, right_child;
-    std::uint32_t first_triangle_index, triangle_cnt;
-
-    bool isLeaf() const { return triangle_cnt > 0; }
-};
-
-struct Triangle {
-    point3 v0, v1, v2; // Triangle vertices
-    vec3 n0, n1, n2;   // Normal of every vertex of this triangle
-    point3 centroid;   // Center of the triangle
-};
-
 class RTMesh: public hittable {
 public:
-    RTMesh(MeshBufferManager* mesh_buf_manager, std::size_t mesh_handle, std::shared_ptr<material> mat, bool& enable_BVH);
-    RTMesh(MeshBufferManager* mesh_buf_manager, std::size_t mesh_handle, std::shared_ptr<material> mat);
+    RTMesh(MeshBufferManager* mesh_buf_manager, std::size_t mesh_handle, std::shared_ptr<material> mat, bool& enable_BVH, int& BVH_technique);
 
     std::string object_type() const override { return "cube triangle mesh"; }
 
@@ -36,9 +20,13 @@ public:
     void transform(const matrix4x4& m) override;
 
     void applyTransformations(std::vector<matrix4x4>& transformations);
+
     void buildBVH();
+
 private:
     bool& enable_BVH;
+    int& BVH_technique;
+
     MeshBufferManager* mesh_buf_manager;
     std::size_t mesh_handle;
     std::shared_ptr<material> mat;
@@ -49,14 +37,9 @@ private:
     std::vector<BVHNode> bvh_nodes;
     std::vector<Triangle> triangles; // contains triangles (their coordinates) formed from indices and vertices arrays
     mutable std::vector<std::uint32_t> triangle_indices; // in order not to swap whole triangles, we will just swap these indices
-    std::uint32_t nodesUsed = 1;
-
-    void transformToTriangles();
     
-    void createBoundBox(std::uint32_t node_index);
-    void subdivide(std::uint32_t node_index);
+    void transformToTriangles();
     void intersectBVH(const ray& r, interval ray_t, hit_record& rec, const std::uint32_t nodeIdx, bool& hit, float& closest_hit_t) const;
     bool intersectAABB(const ray& r, interval ray_t, const vec3& bmin, const vec3& bmax, float& closest_side) const;
-    bool intersectTriangle(const ray& r, interval ray_t, hit_record& rec, const Triangle& triangle) const;
 };
 #endif

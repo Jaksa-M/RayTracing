@@ -118,8 +118,8 @@ int main(int, char**) {
     float trace_percentage = 0.1f;
     int reflection_depth = 2;
     bool reset_accumulated = false;
-    //bool enable_BVH = true;
     int selected_scene_index = 0;
+    int chosen_technique_index = 0;
     std::vector<unsigned char> image_data;
 
     cameraController cam_controller(cam, 2.0f);
@@ -144,8 +144,8 @@ int main(int, char**) {
             //ImGui::ShowDemoWindow(&show_demo_window);
         {
             static float f = 0.0f;
-            static int counter = 0;
-            const char* items[] = { "scene_rt_meshes", "scene_cornell_box" }; // Dropdown list (combo) items
+            const char* scenes[] = { "scene_rt_meshes", "scene_cornell_box" }; // Dropdown list (combo) items for scene selection
+            const char* techniques[] = { "midpoint split", "SAH" }; // Dropdown list (combo) items for technique selection
             
             ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
 
@@ -159,15 +159,18 @@ int main(int, char**) {
             ImGui::SliderFloat("pixel traced", &trace_percentage, 0.0f, 1.0f);
             ImGui::SliderInt("reflection bounces", &reflection_depth, 0, 15);
             ImGui::Checkbox("Reset accumulated", &reset_accumulated);
-            ImGui::Combo("Scene", &selected_scene_index, items, IM_ARRAYSIZE(items));
+            ImGui::Combo("Scene", &selected_scene_index, scenes, IM_ARRAYSIZE(scenes));
+            ImGui::Combo("BVH technique", &chosen_technique_index, techniques, IM_ARRAYSIZE(techniques));
 
-            // Enable/Disable BVH for active scene
+            // Enable/Disable BVH for active scene + assign the BVH technique
             switch (selected_scene_index) {
                 case 0: // scene_rt_meshes
                     ImGui::Checkbox("Enable BVH", &scene_rt_meshes.enable_BVH);
+                    scene_rt_meshes.BVH_technique = chosen_technique_index;
                     break;
                 case 1: // scene_cornell_box
                     ImGui::Checkbox("Enable BVH", &scene_cornell_box.enable_BVH);
+                    scene_cornell_box.BVH_technique = chosen_technique_index;
                     break;
             }
 

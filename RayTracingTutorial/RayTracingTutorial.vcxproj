@@ -147,6 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="bvh_builder.cpp" />
     <ClCompile Include="camera.cpp" />
     <ClCompile Include="CameraController.cpp" />
     <ClCompile Include="ExternalLibraries\imgui\imgui.cpp" />
@@ -177,6 +178,7 @@
     <ClCompile Include="triangle.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="bvh_builder.h" />
     <ClInclude Include="camera.h" />
     <ClInclude Include="CameraController.h" />
     <ClInclude Include="color.h" />

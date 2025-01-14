@@ -6,6 +6,8 @@
 // Constants
 
 const float infinity = std::numeric_limits<float>::infinity();
+const float float_max = std::numeric_limits<float>::max();
+const float float_min = std::numeric_limits<float>::min();
 const float pi = 3.141592653f;
 
 // Utility Functions

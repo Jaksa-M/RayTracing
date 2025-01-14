@@ -20,6 +20,8 @@ SceneRtMeshes::SceneRtMeshes() {
 }
 
 void SceneRtMeshes::initialize() {
+    prev_BVH_technique = BVH_technique;
+
     mesh_buf_manager = std::make_unique<MeshBufferManager>();
     auto mat = std::make_shared<lambertian>(color(0.8f, 0.8f, 0.0f));
     //cube_mesh = MeshUtils::GenerateTriangleCube(mat, mesh_buf_manager.get(), 2);
@@ -32,7 +34,7 @@ void SceneRtMeshes::initialize() {
     world.add(rect_prism_mesh);
     rect_prism_mesh->buildBVH();*/
 
-    ico_sphere = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2, enable_BVH);
+    ico_sphere = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2, enable_BVH, BVH_technique);
     world.add(ico_sphere);
     ico_sphere->buildBVH();
 
@@ -42,8 +44,13 @@ void SceneRtMeshes::initialize() {
 }
 
 std::vector<unsigned char> SceneRtMeshes::update(int display_w, int display_h, camera& cam, float& trace_percentage, int& reflection_depth) {
-    std::vector<unsigned char> image_data;
+    if (prev_BVH_technique != BVH_technique) {
+        std::cout << "Promena tehnike" << std::endl;
+        world.clear();
+        initialize();
+    }
 
+    std::vector<unsigned char> image_data;
     image_data = cam.render(world, image_data_acc, trace_percentage, reflection_depth);
 
     return image_data;
