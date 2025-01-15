@@ -120,6 +120,7 @@ int main(int, char**) {
     bool reset_accumulated = false;
     int selected_scene_index = 0;
     int chosen_technique_index = 0;
+    int selected_option = -1;
     std::vector<unsigned char> image_data;
 
     cameraController cam_controller(cam, 2.0f);
@@ -162,15 +163,25 @@ int main(int, char**) {
             ImGui::Combo("Scene", &selected_scene_index, scenes, IM_ARRAYSIZE(scenes));
             ImGui::Combo("BVH technique", &chosen_technique_index, techniques, IM_ARRAYSIZE(techniques));
 
+
+            if (ImGui::RadioButton("Draw tree", selected_option == 0)) {
+                selected_option = (selected_option == 0) ? -1 : 0;
+            }
+            if (ImGui::RadioButton("Draw leaves", selected_option == 1)) {
+                selected_option = (selected_option == 1) ? -1 : 1;
+            }
+
             // Enable/Disable BVH for active scene + assign the BVH technique
             switch (selected_scene_index) {
                 case 0: // scene_rt_meshes
                     ImGui::Checkbox("Enable BVH", &scene_rt_meshes.enable_BVH);
                     scene_rt_meshes.BVH_technique = chosen_technique_index;
+                    scene_rt_meshes.selected_option = selected_option;
                     break;
                 case 1: // scene_cornell_box
                     ImGui::Checkbox("Enable BVH", &scene_cornell_box.enable_BVH);
                     scene_cornell_box.BVH_technique = chosen_technique_index;
+                    scene_cornell_box.selected_option = selected_option;
                     break;
             }
 
@@ -204,7 +215,7 @@ int main(int, char**) {
         }
       
         glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
-
+        scene_rt_meshes.drawBVH(cam);
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);

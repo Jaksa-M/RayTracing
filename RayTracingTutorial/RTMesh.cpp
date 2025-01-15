@@ -181,6 +181,78 @@ void RTMesh::buildBVH() {
     }
 }
 
+void RTMesh::drawBVHTree(std::span<vec3> edges, std::span<std::uint32_t> indices) {
+    size_t edgeOffset = 0;
+    size_t indexOffset = 0;
+
+    for (const auto& node : bvh_nodes) {
+        drawBox(node, edges.subspan(edgeOffset, 8), indices.subspan(indexOffset, 24), edgeOffset);
+        edgeOffset += 8;
+        indexOffset += 24;
+    }
+}
+
+void RTMesh::drawBVHLeaves(std::span<vec3> edges, std::span<std::uint32_t> indices) {
+    size_t edgeOffset = 0;
+    size_t indexOffset = 0;
+
+    for (const auto& node : bvh_nodes) {
+        if (node.isLeaf()) {
+            drawBox(node, edges.subspan(edgeOffset, 8), indices.subspan(indexOffset, 24), edgeOffset);
+            edgeOffset += 8;
+            indexOffset += 24;
+        }
+    }
+}
+
+void RTMesh::drawBox(const BVHNode& node, std::span<vec3> edges, std::span<std::uint32_t> indices, size_t vertexOffset) {
+    const vec3& min = node.aabbMin;
+    const vec3& max = node.aabbMax;
+
+    // Initialize vertices
+    edges[0] = { min.x(), min.y(), min.z() }; // Bottom front left
+    edges[1] = { max.x(), min.y(), min.z() }; // Bottom front right
+    edges[2] = { max.x(), max.y(), min.z() }; // Top front right
+    edges[3] = { min.x(), max.y(), min.z() }; // Top front left
+    edges[4] = { min.x(), min.y(), max.z() }; // Bottom back left
+    edges[5] = { max.x(), min.y(), max.z() }; // Bottom back right
+    edges[6] = { max.x(), max.y(), max.z() }; // Top back right
+    edges[7] = { min.x(), max.y(), max.z() }; // Top back left
+
+    // Front face
+    indices[0] = vertexOffset + 0; indices[1] = vertexOffset + 1;
+    indices[2] = vertexOffset + 1; indices[3] = vertexOffset + 2;
+    indices[4] = vertexOffset + 2; indices[5] = vertexOffset + 3;
+    indices[6] = vertexOffset + 3; indices[7] = vertexOffset + 0;
+
+    // Back face
+    indices[8] = vertexOffset + 4; indices[9] = vertexOffset + 5;
+    indices[10] = vertexOffset + 5; indices[11] = vertexOffset + 6;
+    indices[12] = vertexOffset + 6; indices[13] = vertexOffset + 7;
+    indices[14] = vertexOffset + 7; indices[15] = vertexOffset + 4;
+
+    // COnnecting front and back
+    indices[16] = vertexOffset + 0; indices[17] = vertexOffset + 4;
+    indices[18] = vertexOffset + 1; indices[19] = vertexOffset + 5;
+    indices[20] = vertexOffset + 2; indices[21] = vertexOffset + 6;
+    indices[22] = vertexOffset + 3; indices[23] = vertexOffset + 7;
+}
+
+std::uint32_t RTMesh::sizeBVHNodes() {
+    return bvh_nodes.size();
+}
+
+std::uint32_t RTMesh::sizeBVHLeaves() {
+    std::uint32_t leaf_count = 0;
+    for (const auto& node : bvh_nodes) {
+        if (node.isLeaf()) {
+            leaf_count++;
+        }
+    }
+    return leaf_count;
+}
+
+
 void RTMesh::transformToTriangles() {
 
     // Calculate each triangle centroid and insert that, coordinates and vertex normals into triangles vector

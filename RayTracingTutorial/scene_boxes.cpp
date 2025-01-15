@@ -65,16 +65,16 @@ void SceneBoxes::draw_boxes(camera& cam) {
             // Apply transformations (view and perspective matrix)
             //transformation::boxTransformations(edges, cam.getViewMatrix(), cam.getProjectionMatrix());
 
-            std::vector<float> flatEdges;
+            std::vector<float> flat_edges;
             for (const vec3& edge : edges) {
-                flatEdges.push_back(edge.x());
-                flatEdges.push_back(edge.y());
-                flatEdges.push_back(edge.z());
-                flatEdges.push_back(1.0f);
-                flatEdges.push_back(0.0f);
-                flatEdges.push_back(0.0f);
+                flat_edges.push_back(edge.x());
+                flat_edges.push_back(edge.y());
+                flat_edges.push_back(edge.z());
+                flat_edges.push_back(1.0f);
+                flat_edges.push_back(0.0f);
+                flat_edges.push_back(0.0f);
             }
-            mesh->updateVBO(flatEdges);
+            mesh->updateVBO(flat_edges);
 
             shader_prog->bind();
             shader_prog->setMat4("view", cam.getViewMatrix().asPointer());

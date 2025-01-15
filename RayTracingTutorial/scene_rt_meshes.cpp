@@ -41,6 +41,7 @@ void SceneRtMeshes::initialize() {
     /*cube_sphere = MeshUtils::GenerateTriangleSphere(mat, mesh_buf_manager.get(), 4);
     world.add(cube_sphere);
     cube_sphere->buildBVH();*/
+    initShader();
 }
 
 std::vector<unsigned char> SceneRtMeshes::update(int display_w, int display_h, camera& cam, float& trace_percentage, int& reflection_depth) {
@@ -56,8 +57,65 @@ std::vector<unsigned char> SceneRtMeshes::update(int display_w, int display_h, c
     return image_data;
 }
 
-void SceneRtMeshes::draw_mesh_gizmos(camera& cam)
-{
+void SceneRtMeshes::initShader() {
+    shader_prog = std::make_unique<Shader>("ShaderFiles/shader.vs.txt", "ShaderFiles/shader.fs.txt");
+
+    std::vector<float> vertices = std::vector<float>{
+        0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,    // bottom right
+        -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,   // bottom left
+        0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f,    // top right
+        -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,   // top left
+        -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,   // bottom left
+        0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f     // top right
+    };
+
+    mesh = std::make_unique<Mesh>(vertices, 3, 6, 0, 3, true, std::span<unsigned int>{});
+}
+
+void SceneRtMeshes::drawBVH(camera& cam) {
+    if (selected_option != -1) {
+        // Drawing BVH tree or leaves
+        for (int i = 0; i < world.objects.size(); i++) {
+            auto& object = world.objects[i];
+            RTMesh* rtMesh = dynamic_cast<RTMesh*>(object.get());
+            if (rtMesh) { // If the cast succeeds, the object is of type RTMesh
+                std::vector<vec3> edges;
+                std::vector<std::uint32_t> indices;
+
+                if (selected_option == 0) { // Drawing whole tree
+                    edges.resize(rtMesh->sizeBVHNodes() * 8);
+                    indices.resize(rtMesh->sizeBVHNodes() * 24);
+                    rtMesh->drawBVHTree(edges, indices);
+                }
+                else if (selected_option == 1) { // Drawing only leaves
+                    edges.resize(rtMesh->sizeBVHLeaves() * 8);
+                    indices.resize(rtMesh->sizeBVHLeaves() * 24);
+                    rtMesh->drawBVHLeaves(edges, indices);
+                }
+
+                std::vector<float> flat_edges;
+                for (const vec3& edge : edges) {
+                    flat_edges.push_back(edge.x());
+                    flat_edges.push_back(edge.y());
+                    flat_edges.push_back(edge.z());
+                    flat_edges.push_back(1.0f);
+                    flat_edges.push_back(0.0f);
+                    flat_edges.push_back(0.0f);
+                }
+                mesh->updateVBO(flat_edges);
+                mesh->updateEBO(indices);
+
+                shader_prog->bind();
+                shader_prog->setMat4("view", cam.getViewMatrix().asPointer());
+                shader_prog->setMat4("projection", cam.getProjectionMatrix().asPointer());
+                mesh->draw(GL_LINES);
+                shader_prog->unbind();
+            }
+        }
+    }
+}
+
+void SceneRtMeshes::draw_mesh_gizmos(camera& cam) {
     //std::vector<vec3> lines(vertex_normals.size() * 2);
     //for (std::uint32_t i = 0; i < vertex_normals.size(); i++)
     //{
@@ -65,6 +123,4 @@ void SceneRtMeshes::draw_mesh_gizmos(camera& cam)
     //    lines[i * 2 + 0] = v;
     //    lines[i * 2 + 1] = v + vertex_normals[i] * 0.1f;
     //}
-
-
 }

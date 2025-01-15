@@ -23,6 +23,13 @@ public:
 
     void buildBVH();
 
+    // Functions to draw box for every node inside BVH tree
+    void drawBVHTree(std::span<vec3> edges, std::span<std::uint32_t> indices);
+    void drawBVHLeaves(std::span<vec3> edges, std::span<std::uint32_t> indices);
+    void drawBox(const BVHNode& node, std::span<vec3> edges, std::span<std::uint32_t> indices, size_t vertexOffset);
+    std::uint32_t sizeBVHNodes();
+    std::uint32_t sizeBVHLeaves();
+
 private:
     bool& enable_BVH;
     int& BVH_technique;

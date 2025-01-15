@@ -204,28 +204,6 @@ void BVHBuilder::subdivideSAH(std::uint32_t node_index) {
     subdivide(right_child_index);
 }
 
-//float BVHBuilder::evaluateSAH(BVHNode& node, int axis, float pos) {
-//    // determine triangle counts and bounds for this split candidate
-//    aabb leftBox, rightBox;
-//    int leftCount = 0, rightCount = 0;
-//    for (std::uint32_t i = 0; i < node.triangle_cnt; i++) {
-//        Triangle& triangle = triangles[triangle_indices[node.left_child + i]];
-//        if (triangle.centroid[axis] < pos) {
-//            leftCount++;
-//            leftBox.grow(triangle.v0);
-//            leftBox.grow(triangle.v1);
-//            leftBox.grow(triangle.v2);
-//        }
-//        else {
-//            rightCount++;
-//            rightBox.grow(triangle.v0);
-//            rightBox.grow(triangle.v1);
-//            rightBox.grow(triangle.v2);
-//        }
-//    }
-//    float cost = leftCount * leftBox.area() + rightCount * rightBox.area();
-//    return cost > 0 ? cost : 1e30f;
-//}
 float BVHBuilder::evaluateSAH(BVHNode& node, int axis, float pos) {
     // Initialize bounds and counts
     vec3 left_box_min(float_max), left_box_max(float_min); // Left aabb (axis aligned bounding box)

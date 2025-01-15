@@ -24,6 +24,7 @@ public:
     bool enable_BVH = true;
     int BVH_technique = 0;
     int prev_BVH_technique; // used for checking whether BVH techique has changed
+    int selected_option = -1;
 
     SceneCornellBox();
 

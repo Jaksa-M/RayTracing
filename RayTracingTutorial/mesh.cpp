@@ -19,10 +19,10 @@ Mesh::Mesh(std::span<float> vertices, int size, int stride, int offset_pos, int 
         indices_size = static_cast<std::uint32_t>(indices.size());
     }
 
-    //glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    // Position attribute
     glVertexAttribPointer(0, size, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(offset_pos * sizeof(float)));
     glEnableVertexAttribArray(0);
-    //glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    // Color attribute
     glVertexAttribPointer(1, size, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(offset_col * sizeof(float)));
     glEnableVertexAttribArray(1);
 
@@ -35,6 +35,20 @@ void Mesh::updateVBO(std::span<float> vertices) {
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
+
+void Mesh::updateEBO(std::span<std::uint32_t> indices) {
+    if (EBO == 0) { // If EBO doesn't exist, generate and bind it
+        glGenBuffers(1, &EBO);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    }
+    else {
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    }
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+    indices_size = static_cast<std::uint32_t>(indices.size());
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
 
 void Mesh::draw(unsigned int shape) {
     glLineWidth(5.0f); // Set the line width to 5.0 pixels
