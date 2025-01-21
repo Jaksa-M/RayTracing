@@ -23,7 +23,7 @@ void SceneMeshes::initialize() {
     initShader();
 }
 
-void printVertices(const std::vector<float>& vertices, int num_of_vert) {
+inline void printVertices(const std::vector<float>& vertices, int num_of_vert) {
     int attributesPerVertex = 6; // Each vertex has 6 attributes: x, y, z, col_x, col_y, col_z
     int numVertices = num_of_vert * num_of_vert;
 
@@ -53,10 +53,10 @@ void SceneMeshes::initShader() {
     //mesh = MeshUtils::GenerateSphereLines(60);
 }
 
-std::vector<unsigned char> SceneMeshes::update(int display_w, int display_h, camera& cam, float& trace_percentage, int& reflection_depth) {
+std::vector<unsigned char> SceneMeshes::update(int display_w, int display_h, camera& cam) {
     std::vector<unsigned char> image_data(display_w * display_h * 3);
 
-    image_data = cam.render(world, image_data_acc, trace_percentage, reflection_depth);
+    image_data = cam.render(world, image_data_acc, settings);
 
     return image_data;
 }

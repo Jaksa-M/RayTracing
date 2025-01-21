@@ -174,14 +174,18 @@ int main(int, char**) {
             // Enable/Disable BVH for active scene + assign the BVH technique
             switch (selected_scene_index) {
                 case 0: // scene_rt_meshes
-                    ImGui::Checkbox("Enable BVH", &scene_rt_meshes.enable_BVH);
-                    scene_rt_meshes.BVH_technique = chosen_technique_index;
-                    scene_rt_meshes.selected_option = selected_option;
+                    ImGui::Checkbox("Enable BVH", &scene_rt_meshes.settings.enable_BVH);
+                    scene_rt_meshes.settings.BVH_technique = chosen_technique_index;
+                    scene_rt_meshes.settings.selected_option = selected_option;
+                   /* scene_rt_meshes.BVH_technique = chosen_technique_index;
+                    scene_rt_meshes.selected_option = selected_option;*/
                     break;
                 case 1: // scene_cornell_box
-                    ImGui::Checkbox("Enable BVH", &scene_cornell_box.enable_BVH);
-                    scene_cornell_box.BVH_technique = chosen_technique_index;
-                    scene_cornell_box.selected_option = selected_option;
+                    ImGui::Checkbox("Enable BVH", &scene_cornell_box.settings.enable_BVH);
+                    scene_cornell_box.settings.BVH_technique = chosen_technique_index;
+                    scene_cornell_box.settings.selected_option = selected_option;
+                    /*scene_cornell_box.BVH_technique = chosen_technique_index;
+                    scene_cornell_box.selected_option = selected_option;*/
                     break;
             }
 
@@ -207,15 +211,18 @@ int main(int, char**) {
         
         switch (selected_scene_index) {
             case 0:
-                image_data = scene_rt_meshes.update(display_w, display_h, cam, trace_percentage, reflection_depth);
+                scene_rt_meshes.settings.trace_percentage = trace_percentage;
+                scene_rt_meshes.settings.reflection_depth = reflection_depth;
+                image_data = scene_rt_meshes.update(display_w, display_h, cam);
                 break;
             case 1:
-                image_data = scene_cornell_box.update(display_w, display_h, cam, trace_percentage, reflection_depth);
+                image_data = scene_cornell_box.update(display_w, display_h, cam);
                 break;
         }
       
         glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
         scene_rt_meshes.drawBVH(cam);
+        //scene_rt_meshes.draw_mesh_gizmos(cam);
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);

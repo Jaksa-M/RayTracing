@@ -3,12 +3,16 @@
 
 #include "matrix.h"
 #include "bvh_builder.h"
+#include "mesh.h"
+#include "shader.h"
+#include "camera.h"
+#include "gui_settings.h"
 
 class MeshBufferManager;
 
 class RTMesh: public hittable {
 public:
-    RTMesh(MeshBufferManager* mesh_buf_manager, std::size_t mesh_handle, std::shared_ptr<material> mat, bool& enable_BVH, int& BVH_technique);
+    RTMesh(MeshBufferManager* mesh_buf_manager, std::size_t mesh_handle, std::shared_ptr<material> mat, GUISettings& settings);
 
     std::string object_type() const override { return "cube triangle mesh"; }
 
@@ -24,15 +28,13 @@ public:
     void buildBVH();
 
     // Functions to draw box for every node inside BVH tree
-    void drawBVHTree(std::span<vec3> edges, std::span<std::uint32_t> indices);
-    void drawBVHLeaves(std::span<vec3> edges, std::span<std::uint32_t> indices);
-    void drawBox(const BVHNode& node, std::span<vec3> edges, std::span<std::uint32_t> indices, size_t vertexOffset);
+    void drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, std::uint32_t index, std::unique_ptr<Shader>& shader_prog, camera& cam);
+    void drawBVHLeaves(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32_t index, std::unique_ptr<Shader>& shader_prog, camera& cam);
     std::uint32_t sizeBVHNodes();
     std::uint32_t sizeBVHLeaves();
 
 private:
-    bool& enable_BVH;
-    int& BVH_technique;
+    GUISettings& settings;
 
     MeshBufferManager* mesh_buf_manager;
     std::size_t mesh_handle;

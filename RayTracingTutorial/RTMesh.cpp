@@ -6,6 +6,9 @@
 #include "mesh_buffer_manager.h"
 #include <algorithm>
 #include "transformations.h"
+#include "mesh_utils.h"
+#include <GLFW/glfw3.h>
+#include <queue>
 
 // Inline functions
 inline IntersectResult intersectTriangle(const ray& r, interval ray_t, const Triangle& triangle) {
@@ -54,8 +57,8 @@ inline IntersectResult intersectTriangle(const ray& r, interval ray_t, const Tri
     return { t, Q, triangle_normal, n }; // same as return true
 }
 
-RTMesh::RTMesh(MeshBufferManager* mesh_buf_manager, std::size_t mesh_handle, std::shared_ptr<material> mat, bool& enable_BVH, int& BVH_technique) :
-    mesh_buf_manager(mesh_buf_manager), mesh_handle(mesh_handle), mat(mat), enable_BVH(enable_BVH), BVH_technique(BVH_technique)
+RTMesh::RTMesh(MeshBufferManager* mesh_buf_manager, std::size_t mesh_handle, std::shared_ptr<material> mat, GUISettings& settings) :
+    mesh_buf_manager(mesh_buf_manager), mesh_handle(mesh_handle), mat(mat), settings(settings)
 {
     vertices = mesh_buf_manager->getVerts(mesh_handle, 0);
     indices = mesh_buf_manager->getIndices(mesh_handle);
@@ -87,7 +90,7 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, hit_record& rec) const {
 
 // Hit function without using BVH
 bool RTMesh::hit(const ray& r, interval ray_t, hit_record& rec) const {
-    if (enable_BVH == false) {
+    if (settings.enable_BVH == false) {
         bool hit = false;
         double min = ray_t.max;
         std::span<const float> vertices = mesh_buf_manager->getVerts(mesh_handle, 0);
@@ -171,7 +174,7 @@ void RTMesh::applyTransformations(std::vector<matrix4x4>& transformations) {
 void RTMesh::buildBVH() {
     BVHBuilder bvh_builder(vertices, indices, vertex_normals, triangles, triangle_indices);
 
-    switch (BVH_technique) {
+    switch (settings.BVH_technique) {
         case 0: // midpoint split
             bvh_nodes = bvh_builder.buildBVH();
             break;
@@ -181,61 +184,88 @@ void RTMesh::buildBVH() {
     }
 }
 
-void RTMesh::drawBVHTree(std::span<vec3> edges, std::span<std::uint32_t> indices) {
-    size_t edgeOffset = 0;
-    size_t indexOffset = 0;
+//void RTMesh::drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32_t index, std::unique_ptr<Shader>& shader_prog, camera& cam) {
+//    shader_prog->bind();
+//    shader_prog->setMat4("view", cam.getViewMatrix().asPointer());
+//    shader_prog->setMat4("projection", cam.getProjectionMatrix().asPointer());
+//    bounding_boxes[index] = MeshUtils::GenerateLineCube(7);
+//    for (int i = 0; i < bvh_nodes.size(); i++) {
+//        vec3 center = (bvh_nodes[i].aabbMin + bvh_nodes[i].aabbMax) * 0.5f;
+//        vec3 scale = bvh_nodes[i].aabbMax - bvh_nodes[i].aabbMin;
+//
+//        matrix4x4 translation_matrix = transformation::create_translation_matrix(center);
+//        matrix4x4 scaling_matrix = transformation::create_scaling_matrix(scale.x(), scale.y(), scale.z());
+//        matrix4x4 model_matrix = translation_matrix * scaling_matrix;
+//
+//        shader_prog->setMat4("model_matrix", model_matrix.asPointer());
+//        bounding_boxes[index]->draw(GL_LINES);
+//    }
+//    shader_prog->unbind();
+//}
 
-    for (const auto& node : bvh_nodes) {
-        drawBox(node, edges.subspan(edgeOffset, 8), indices.subspan(indexOffset, 24), edgeOffset);
-        edgeOffset += 8;
-        indexOffset += 24;
-    }
-}
+void RTMesh::drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32_t index, std::unique_ptr<Shader>& shader_prog, camera& cam) {
+    shader_prog->bind();
+    shader_prog->setMat4("view", cam.getViewMatrix().asPointer());
+    shader_prog->setMat4("projection", cam.getProjectionMatrix().asPointer());
+    bounding_boxes[index] = MeshUtils::GenerateLineCube(7);
 
-void RTMesh::drawBVHLeaves(std::span<vec3> edges, std::span<std::uint32_t> indices) {
-    size_t edgeOffset = 0;
-    size_t indexOffset = 0;
+    // BFS traversal
+    std::queue<std::pair<std::uint32_t, int>> queue; // Each entry contains the node index and its level
+    queue.push(std::make_pair(0u, 0)); // Root node, level 0
 
-    for (const auto& node : bvh_nodes) {
-        if (node.isLeaf()) {
-            drawBox(node, edges.subspan(edgeOffset, 8), indices.subspan(indexOffset, 24), edgeOffset);
-            edgeOffset += 8;
-            indexOffset += 24;
+    while (queue.empty() == false) {
+        std::pair<std::uint32_t, int> front = queue.front();
+        std::uint32_t node_index = front.first;
+        int level = front.second;
+        queue.pop();
+
+        const BVHNode& node = bvh_nodes[node_index];
+
+        // Draw the bounding box for the current node
+        vec3 center = (node.aabbMin + node.aabbMax) * 0.5f;
+        vec3 scale = node.aabbMax - node.aabbMin;
+
+        matrix4x4 translation_matrix = transformation::create_translation_matrix(center);
+        matrix4x4 scaling_matrix = transformation::create_scaling_matrix(scale.x(), scale.y(), scale.z());
+        matrix4x4 model_matrix = translation_matrix * scaling_matrix;
+
+        // Optionally, use the level to adjust rendering properties (e.g., color)
+        vec3 color = vec3(1.0f - level * 0.1f, level * 0.1f, 0.5f); // Example: gradient based on level
+        shader_prog->setVec3("color", color.asPointer());
+
+        shader_prog->setMat4("model_matrix", model_matrix.asPointer());
+        bounding_boxes[index]->draw(GL_LINES);
+
+        // Add children to the queue if this is not a leaf node
+        if (node.isLeaf() == false) {
+            queue.push({ node.left_child, level + 1 });
+            queue.push({ node.right_child, level + 1 });
         }
     }
+    shader_prog->unbind();
 }
 
-void RTMesh::drawBox(const BVHNode& node, std::span<vec3> edges, std::span<std::uint32_t> indices, size_t vertexOffset) {
-    const vec3& min = node.aabbMin;
-    const vec3& max = node.aabbMax;
 
-    // Initialize vertices
-    edges[0] = { min.x(), min.y(), min.z() }; // Bottom front left
-    edges[1] = { max.x(), min.y(), min.z() }; // Bottom front right
-    edges[2] = { max.x(), max.y(), min.z() }; // Top front right
-    edges[3] = { min.x(), max.y(), min.z() }; // Top front left
-    edges[4] = { min.x(), min.y(), max.z() }; // Bottom back left
-    edges[5] = { max.x(), min.y(), max.z() }; // Bottom back right
-    edges[6] = { max.x(), max.y(), max.z() }; // Top back right
-    edges[7] = { min.x(), max.y(), max.z() }; // Top back left
+void RTMesh::drawBVHLeaves(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32_t index, std::unique_ptr<Shader>& shader_prog, camera& cam) {
+    shader_prog->bind();
+    shader_prog->setMat4("view", cam.getViewMatrix().asPointer());
+    shader_prog->setMat4("projection", cam.getProjectionMatrix().asPointer());
+    bounding_boxes[index] = MeshUtils::GenerateLineCube(7);
 
-    // Front face
-    indices[0] = vertexOffset + 0; indices[1] = vertexOffset + 1;
-    indices[2] = vertexOffset + 1; indices[3] = vertexOffset + 2;
-    indices[4] = vertexOffset + 2; indices[5] = vertexOffset + 3;
-    indices[6] = vertexOffset + 3; indices[7] = vertexOffset + 0;
+    for (int i = 0; i < bvh_nodes.size(); i++) {
+        if (bvh_nodes[i].isLeaf() == true) {
+            vec3 center = (bvh_nodes[i].aabbMin + bvh_nodes[i].aabbMax) * 0.5f;
+            vec3 scale = bvh_nodes[i].aabbMax - bvh_nodes[i].aabbMin;
 
-    // Back face
-    indices[8] = vertexOffset + 4; indices[9] = vertexOffset + 5;
-    indices[10] = vertexOffset + 5; indices[11] = vertexOffset + 6;
-    indices[12] = vertexOffset + 6; indices[13] = vertexOffset + 7;
-    indices[14] = vertexOffset + 7; indices[15] = vertexOffset + 4;
+            matrix4x4 translation_matrix = transformation::create_translation_matrix(center);
+            matrix4x4 scaling_matrix = transformation::create_scaling_matrix(scale.x(), scale.y(), scale.z());
+            matrix4x4 model_matrix = translation_matrix * scaling_matrix;
 
-    // COnnecting front and back
-    indices[16] = vertexOffset + 0; indices[17] = vertexOffset + 4;
-    indices[18] = vertexOffset + 1; indices[19] = vertexOffset + 5;
-    indices[20] = vertexOffset + 2; indices[21] = vertexOffset + 6;
-    indices[22] = vertexOffset + 3; indices[23] = vertexOffset + 7;
+            shader_prog->setMat4("model_matrix", model_matrix.asPointer());
+            bounding_boxes[index]->draw(GL_LINES);
+        }
+    }
+    shader_prog->unbind();
 }
 
 std::uint32_t RTMesh::sizeBVHNodes() {

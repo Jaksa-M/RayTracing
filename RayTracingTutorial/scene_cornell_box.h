@@ -21,16 +21,13 @@ private:
     
     
 public:
-    bool enable_BVH = true;
-    int BVH_technique = 0;
-    int prev_BVH_technique; // used for checking whether BVH techique has changed
-    int selected_option = -1;
+    int prev_BVH_technique; // Used for checking whether BVH techique has changed
 
     SceneCornellBox();
 
     void initialize() override;
 
-    std::vector<unsigned char> update(int display_w, int display_h, camera& cam, float& trace_percentage, int& reflection_depth) override;
+    std::vector<unsigned char> update(int display_w, int display_h, camera& cam) override;
 
     void createTransformations();
 };

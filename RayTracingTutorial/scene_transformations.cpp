@@ -28,7 +28,7 @@ void SceneTransformations::initialize() {
     world.add(std::make_shared<triangle>(point3(0.6f, 0.0f, -1.0f), point3(1.0f, 0.0f, -1.0f), point3(0.8f, 1.0f, -1.0f), material_right));
 }
 
-std::vector<unsigned char> SceneTransformations::update(int display_w, int display_h, camera& cam, float& trace_percentage, int& reflection_depth) {
+std::vector<unsigned char> SceneTransformations::update(int display_w, int display_h, camera& cam) {
     std::vector<unsigned char> image_data(display_w * display_h * 3);
 
     // Temporary code for learning translation/rotation on shapes
@@ -42,7 +42,7 @@ std::vector<unsigned char> SceneTransformations::update(int display_w, int displ
             object->transform(m);
         }
     }
-    image_data = cam.render(world, image_data_acc, trace_percentage, reflection_depth);
+    image_data = cam.render(world, image_data_acc, settings);
 
     return image_data;
 }

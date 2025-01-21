@@ -78,7 +78,12 @@ void Shader::setFloat(const std::string& name, float value) const {
     glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
 }
 
+void Shader::setVec3(const std::string& name, const float* value) const {
+    glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, value);
+}
+
 void Shader::setMat4(const std::string& name, const float* value) const {
+    // GL_TRUE specifies that matrix should be transposed when passed
     glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_TRUE, value);
 }
 

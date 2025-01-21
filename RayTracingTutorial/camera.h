@@ -5,17 +5,19 @@
 #include "material.h"
 #include "hittable_list.h"
 #include "matrix.h"
+#include "gui_settings.h"
 
 class camera {
 public:
     int    image_width = 100;  // Rendered image width in pixel count
     int    image_height;   // Rendered image height
-
+    
     void setInitalValues();
 
-    std::vector<unsigned char> render(const hittable_list& world, std::vector<float>& image_data_acc, float& trace_percentage, int& reflection_depth);
+    std::vector<unsigned char> render(const hittable_list& world, std::vector<float>& image_data_acc, GUISettings& settings);
 
 private:
+    GUISettings settings;
     point3 center = point3(0.0f, 0.0f, 1.0f);  // Camera center
     float focal_length;
     point3 pixel00_loc;    // Location of pixel 0, 0

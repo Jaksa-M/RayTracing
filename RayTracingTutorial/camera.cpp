@@ -8,8 +8,8 @@ void camera::setInitalValues() {
     camera_right = unit_vector(cross(camera_up, camera_direction)); // the result is vec3 (1,0,0)
 }
 
-std::vector<unsigned char> camera::render(const hittable_list& world, std::vector<float>& image_data_acc, float& trace_percentage, int& reflection_depth) {
-
+std::vector<unsigned char> camera::render(const hittable_list& world, std::vector<float>& image_data_acc, GUISettings& settings) {
+    this->settings = settings;
     initialize();
 
     // Create a vector to hold the pixel data (3 channels for RGB)
@@ -35,13 +35,13 @@ std::vector<unsigned char> camera::render(const hittable_list& world, std::vecto
 
             // decides whether to trace current pixel or skip it and go on next
             double trace_pixel = random_double(0.0f, 1.0f);
-            if (trace_pixel > trace_percentage) {
+            if (trace_pixel > settings.trace_percentage) {
                 write_color(image_data, image_data_acc, pixel_color, index, index_acc, true);
                 continue;
             }
 
             ray ra = get_ray(i, j, offset);
-            pixel_color = ray_color(ra, reflection_depth, world);
+            pixel_color = ray_color(ra, settings.reflection_depth, world);
 
             write_color(image_data, image_data_acc, pixel_color, index, index_acc, false);
         }

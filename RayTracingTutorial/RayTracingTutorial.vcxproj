@@ -192,6 +192,7 @@
     <ClInclude Include="ExternalLibraries\imgui\imstb_rectpack.h" />
     <ClInclude Include="ExternalLibraries\imgui\imstb_textedit.h" />
     <ClInclude Include="ExternalLibraries\imgui\imstb_truetype.h" />
+    <ClInclude Include="gui_settings.h" />
     <ClInclude Include="hittable.h" />
     <ClInclude Include="hittable_list.h" />
     <ClInclude Include="interval.h" />
@@ -221,6 +222,8 @@
   <ItemGroup>
     <Text Include="ShaderFiles\shader.fs.txt" />
     <Text Include="ShaderFiles\shader.vs.txt" />
+    <Text Include="ShaderFiles\shader_bounding_box.fs.txt" />
+    <Text Include="ShaderFiles\shader_bounding_box.vs.txt" />
     <Text Include="ShaderFiles\shader_mesh.fs.txt" />
     <Text Include="ShaderFiles\shader_mesh.vs.txt" />
   </ItemGroup>

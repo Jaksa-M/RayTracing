@@ -14,22 +14,23 @@ private:
     std::shared_ptr<RTMesh> ico_sphere;
     std::shared_ptr<RTMesh> rectangle_mesh;
     std::shared_ptr<RTMesh> rect_prism_mesh;
+    std::shared_ptr<Mesh> line_cube;
+    std::shared_ptr<RTMesh> test_mesh;
     std::unique_ptr<MeshBufferManager> mesh_buf_manager;
 
     std::unique_ptr<Mesh> mesh;
     std::unique_ptr<Shader> shader_prog;
 
+    std::vector<std::unique_ptr<Mesh>> bounding_boxes; // 1 bounding box for each object that will get translated while drawing
 public:
-    bool enable_BVH = true;
-    int BVH_technique = 0;
-    int prev_BVH_technique;
-    int selected_option = -1;
+    
+    int prev_BVH_technique; // Used for checking whether BVH techique has changed
 
     SceneRtMeshes();
 
     void initialize() override;
 
-    std::vector<unsigned char> update(int display_w, int display_h, camera& cam, float& trace_percentage, int& reflection_depth) override;
+    std::vector<unsigned char> update(int display_w, int display_h, camera& cam) override;
 
     void initShader();
     void drawBVH(camera& cam);

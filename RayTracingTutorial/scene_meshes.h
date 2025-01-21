@@ -11,13 +11,14 @@ private:
     std::unique_ptr<Shader> shader_prog;
 
 public:
+
     SceneMeshes();
 
     void initialize() override;
 
     void initShader();
 
-    std::vector<unsigned char> update(int display_w, int display_h, camera& cam, float& trace_percentage, int& reflection_depth) override;
+    std::vector<unsigned char> update(int display_w, int display_h, camera& cam) override;
 
     std::vector<float> createVerticesArr(int num_of_vert);
 

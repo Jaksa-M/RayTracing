@@ -51,16 +51,14 @@ void Mesh::updateEBO(std::span<std::uint32_t> indices) {
 
 
 void Mesh::draw(unsigned int shape) {
-    glLineWidth(5.0f); // Set the line width to 5.0 pixels
+    glLineWidth(3.0f); // Set the line width to 5.0 pixels
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glBindVertexArray(VAO);
-    //glDrawArrays(shape, 0, 3);
-    //glDrawArrays(shape, 0, 24);
-    //glDrawArrays(shape, 0, 56);
-    //glDrawArrays(shape, 0, 8);
-    //glDrawElements(shape, indices_size, GL_UNSIGNED_INT, 0);
+ 
+    // Drawing part
     glDrawElements(shape, indices_size, GL_UNSIGNED_INT, 0);
-    //glDrawArrays(GL_LINES, 0, 49);
+    //glDrawArrays(GL_LINES, 0, 8);
+
     glBindVertexArray(0);
 }
 

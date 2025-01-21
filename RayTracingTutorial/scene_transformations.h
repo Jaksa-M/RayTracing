@@ -10,7 +10,8 @@ private:
 public:
     void initialize() override;
 
-    std::vector<unsigned char> update(int display_w, int display_h, camera& cam, float& trace_percentage, int& reflection_depth) override;
+    std::vector<unsigned char> update(int display_w, int display_h, camera& cam) override;
 };
+
 
 #endif
