@@ -30,13 +30,32 @@ void SceneRtMeshes::initialize() {
     //ico_sphere = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2);
     //rectangle_mesh = MeshUtils::GenerateTriangleRectangle(mat, mesh_buf_manager.get(), 6, 3);
 
-    /*rect_prism_mesh = MeshUtils::GenerateTriangleCube(mat, mesh_buf_manager.get(), 2, enable_BVH, vec3(0.0f, 0.0f, 0.0f), vec3(0.5f, 1.2f, 0.5f));
-    world.add(rect_prism_mesh);
-    rect_prism_mesh->buildBVH();*/
+    rect_prism_mesh1 = MeshUtils::GenerateTriangleCube(mat, mesh_buf_manager.get(), 4, settings);
+    matrix4x4 m = transformation::create_rotation_matrix(0.0f, 30.0f * (3.14159f / 180.0f), 0.0f) *
+                  transformation::create_translation_matrix(vec3(-2.0f, 0.0f, 0.0f)); // 30 degree rotation on y-axis + translation on x-axis
+    rect_prism_mesh1->setTransformationMatrix(m);
+    world.add(rect_prism_mesh1);
+    rect_prism_mesh1->buildBVH();
 
-    ico_sphere = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2, settings);
-    world.add(ico_sphere);
-    ico_sphere->buildBVH();
+    rect_prism_mesh2 = std::make_shared<RTMesh>(mesh_buf_manager.get(), rect_prism_mesh1->getMeshHandle(), mat, settings);
+    m = transformation::create_rotation_matrix(0.0f, 70.0f * (3.14159f / 180.0f), 0.0f) *
+        transformation::create_translation_matrix(vec3(2.0f, 0.0f, 0.0f)); // 70 degree rotation on y-axis + translation on x-axis
+    rect_prism_mesh2->setTransformationMatrix(m);
+    world.add(rect_prism_mesh2);
+    rect_prism_mesh2->buildBVH();
+
+    /*ico_sphere1 = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2, settings);
+    matrix4x4 m = transformation::create_translation_matrix(vec3(1.0f, 0.0f, 0.0f));
+    ico_sphere1->setTransformationMatrix(m);
+    world.add(ico_sphere1);
+    ico_sphere1->buildBVH();
+
+    ico_sphere2 = std::make_shared<RTMesh>(mesh_buf_manager.get(), ico_sphere1->getMeshHandle(), mat, settings);
+    m = transformation::create_translation_matrix(vec3(-1.0f, 0.0f, 0.0f));
+    ico_sphere2->setTransformationMatrix(m);
+    world.add(ico_sphere2);
+    ico_sphere2->buildBVH();*/
+    
 
     /*cube_sphere = MeshUtils::GenerateTriangleSphere(mat, mesh_buf_manager.get(), 4);
     world.add(cube_sphere);

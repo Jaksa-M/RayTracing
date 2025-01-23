@@ -16,6 +16,14 @@ public:
         return orig + t * dir;
     }
 
+    void setOrigin(point3 val) {
+        orig = val;
+    }
+
+    void setDirection(vec3 val) {
+        dir = val;
+    }
+
 private:
     point3 orig;
     vec3 dir;

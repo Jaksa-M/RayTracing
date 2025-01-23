@@ -124,7 +124,7 @@ matrix4x4 transformation::rotation_x(float angle) {
     m(3, 0) = 0.0f;
     m(3, 1) = 0.0f;
     m(3, 2) = 0.0f;
-    m(3, 3) = 0.0f;
+    m(3, 3) = 1.0f;
     return m;
 }
 
@@ -145,7 +145,7 @@ matrix4x4 transformation::create_rotation_matrix(float alpha, float beta, float 
     m(3, 0) = 0.0f;
     m(3, 1) = 0.0f;
     m(3, 2) = 0.0f;
-    m(3, 3) = 0.0f;
+    m(3, 3) = 1.0f;
     return m;
 }
 

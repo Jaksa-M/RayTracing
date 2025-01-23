@@ -4,6 +4,7 @@
 #include <memory>
 #include <span>
 #include "ray.h"
+#include "matrix.h"
 
 class material;
 class matrix4x4;
@@ -44,6 +45,12 @@ public:
     virtual void boxAround(std::span<vec3> edges) = 0;
 
     virtual bool hit(const ray& r, interval ray_t, hit_record& rec) const = 0;
+
+    virtual void setTransformationMatrix(matrix4x4& mat) {
+        transformation_mat = mat.invert();
+    }
+protected:
+    matrix4x4 transformation_mat;
 };
 
 #endif

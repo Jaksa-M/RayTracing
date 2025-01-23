@@ -15,8 +15,11 @@ public:
     const float& operator()(int row, int col) const;
     matrix4x4 operator*(const matrix4x4& other) const;
     vec3 operator*(const vec3& v) const;
+    vec4 operator*(const vec4& v) const;
 
     static matrix4x4 identity();
+
+    matrix4x4 invert();
 
     const float* asPointer() const;
 

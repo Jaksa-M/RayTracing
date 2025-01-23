@@ -43,12 +43,54 @@ vec3 matrix4x4::operator*(const vec3& v) const {
     return vec3(x, y, z);
 }
 
+vec4 matrix4x4::operator*(const vec4& v) const {
+    float x = data[0][0] * v.x() + data[0][1] * v.y() + data[0][2] * v.z() + data[0][3] * v.w();
+    float y = data[1][0] * v.x() + data[1][1] * v.y() + data[1][2] * v.z() + data[1][3] * v.w();
+    float z = data[2][0] * v.x() + data[2][1] * v.y() + data[2][2] * v.z() + data[2][3] * v.w();
+    float w = data[3][0] * v.x() + data[3][1] * v.y() + data[3][2] * v.z() + data[3][3] * v.w();
+
+    return vec4(x, y, z, w);
+}
+
 matrix4x4 matrix4x4::identity() {
-    matrix4x4 identityMatrix;
+    matrix4x4 identity_mat;
     for (int i = 0; i < 4; i++) {
-        identityMatrix(i, i) = 1.0f; // Set diagonal elements to 1
+        identity_mat(i, i) = 1.0f; // Set diagonal elements to 1
     }
-    return identityMatrix;
+    return identity_mat;
+}
+
+matrix4x4 matrix4x4::invert() {
+    matrix4x4 result = matrix4x4::identity();
+    matrix4x4 temp = *this; // Copy of the current matrix
+
+    // Perform Gaussian elimination
+    for (int i = 0; i < 4; i++) {
+        // Find the pivot element
+        float pivot = temp(i, i);
+        if (fabs(pivot) < 1e-6) {
+            throw std::runtime_error("Matrix is singular and cannot be inverted"); // Singular matrix have the determinant 0
+        }
+
+        // Normalize the pivot row
+        for (int j = 0; j < 4; j++) {
+            temp(i, j) /= pivot;
+            result(i, j) /= pivot;
+        }
+
+        // Eliminate the other rows
+        for (int row = 0; row < 4; row++) {
+            if (row != i) {
+                float factor = temp(row, i);
+                for (int col = 0; col < 4; col++) {
+                    temp(row, col) -= factor * temp(i, col);
+                    result(row, col) -= factor * result(i, col);
+                }
+            }
+        }
+    }
+
+    return result;
 }
 
 const float* matrix4x4::asPointer() const {

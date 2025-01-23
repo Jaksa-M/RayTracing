@@ -57,6 +57,28 @@ inline IntersectResult intersectTriangle(const ray& r, interval ray_t, const Tri
     return { t, Q, triangle_normal, n }; // same as return true
 }
 
+vec3 transformOrigin(const vec3& pos, const matrix4x4& m) {
+    // Convert the position to a homogeneous coordinate (w = 1)
+    vec4 homogenous_pos = vec4(pos.x(), pos.y(), pos.z(), 1.0f);
+
+    // Apply the matrix transformation
+    vec4 transformed_pos = m * homogenous_pos;
+
+    // Convert back to a 3D position by dividing by w (perspective division, if necessary)
+    return vec3(transformed_pos.x(), transformed_pos.y(), transformed_pos.z());
+}
+
+vec3 transformDirection(const vec3& dir, const matrix4x4& m) {
+    // Convert the direction to a homogeneous coordinate (w = 0)
+    vec4 homogenous_dir = vec4(dir.x(), dir.y(), dir.z(), 0.0f);
+
+    // Apply the matrix transformation
+    vec4 transformed_dir = m * homogenous_dir;
+
+    // Convert back to a 3D direction
+    return vec3(transformed_dir.x(), transformed_dir.y(), transformed_dir.z());
+}
+
 RTMesh::RTMesh(MeshBufferManager* mesh_buf_manager, std::size_t mesh_handle, std::shared_ptr<material> mat, GUISettings& settings) :
     mesh_buf_manager(mesh_buf_manager), mesh_handle(mesh_handle), mat(mat), settings(settings)
 {
@@ -72,12 +94,20 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, hit_record& rec) const {
     bool hit = false;
     float closest_hit_t = ray_t.max;
 
+    // Create new ray that will be changing
+    ray changed_ray = r;
+
+    // Apply inversed transformation to the new ray.
+    changed_ray.setOrigin(transformOrigin(r.origin(), transformation_mat));
+    changed_ray.setDirection(transformDirection(r.direction(), transformation_mat));
+    //changed_ray.rD = vec3(1 / r.direction().x(), 1 / r.direction().y(), 1 / r.direction().z());
+
     // Check for the root node (previously inside a function) but this way it gets called only once, not every time inside a loop, to improve performance
     const BVHNode& node = bvh_nodes[0];
     float closest_side; // not even used for root node, but have to leave it for correct function call
-    if (intersectAABB(r, ray_t, node.aabbMin, node.aabbMax, closest_side) == false) return false;
+    if (intersectAABB(changed_ray, ray_t, node.aabbMin, node.aabbMax, closest_side) == false) return false;
 
-    intersectBVH(r, ray_t, rec, 0, hit, closest_hit_t);
+    intersectBVH(changed_ray, ray_t, rec, 0, hit, closest_hit_t);
 
     if (hit == true) {
         rec.type_of_normal = false;
@@ -184,25 +214,6 @@ void RTMesh::buildBVH() {
     }
 }
 
-//void RTMesh::drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32_t index, std::unique_ptr<Shader>& shader_prog, camera& cam) {
-//    shader_prog->bind();
-//    shader_prog->setMat4("view", cam.getViewMatrix().asPointer());
-//    shader_prog->setMat4("projection", cam.getProjectionMatrix().asPointer());
-//    bounding_boxes[index] = MeshUtils::GenerateLineCube(7);
-//    for (int i = 0; i < bvh_nodes.size(); i++) {
-//        vec3 center = (bvh_nodes[i].aabbMin + bvh_nodes[i].aabbMax) * 0.5f;
-//        vec3 scale = bvh_nodes[i].aabbMax - bvh_nodes[i].aabbMin;
-//
-//        matrix4x4 translation_matrix = transformation::create_translation_matrix(center);
-//        matrix4x4 scaling_matrix = transformation::create_scaling_matrix(scale.x(), scale.y(), scale.z());
-//        matrix4x4 model_matrix = translation_matrix * scaling_matrix;
-//
-//        shader_prog->setMat4("model_matrix", model_matrix.asPointer());
-//        bounding_boxes[index]->draw(GL_LINES);
-//    }
-//    shader_prog->unbind();
-//}
-
 void RTMesh::drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32_t index, std::unique_ptr<Shader>& shader_prog, camera& cam) {
     shader_prog->bind();
     shader_prog->setMat4("view", cam.getViewMatrix().asPointer());
@@ -227,10 +238,11 @@ void RTMesh::drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32
 
         matrix4x4 translation_matrix = transformation::create_translation_matrix(center);
         matrix4x4 scaling_matrix = transformation::create_scaling_matrix(scale.x(), scale.y(), scale.z());
-        matrix4x4 model_matrix = translation_matrix * scaling_matrix;
+        // Using transformation_mat so the boxes can move where the mesh is moved
+        matrix4x4 model_matrix = transformation_mat.invert() * translation_matrix * scaling_matrix;
 
-        // Optionally, use the level to adjust rendering properties (e.g., color)
-        vec3 color = vec3(1.0f - level * 0.1f, level * 0.1f, 0.5f); // Example: gradient based on level
+        // Color calculated based on BVH tree level
+        vec3 color = vec3(1.0f - level * 0.1f, level * 0.1f, 0.5f);
         shader_prog->setVec3("color", color.asPointer());
 
         shader_prog->setMat4("model_matrix", model_matrix.asPointer());
@@ -259,9 +271,10 @@ void RTMesh::drawBVHLeaves(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint
 
             matrix4x4 translation_matrix = transformation::create_translation_matrix(center);
             matrix4x4 scaling_matrix = transformation::create_scaling_matrix(scale.x(), scale.y(), scale.z());
-            matrix4x4 model_matrix = translation_matrix * scaling_matrix;
+            // Using transformation_mat so the boxes can move where the mesh is moved
+            matrix4x4 model_matrix = transformation_mat.invert() * translation_matrix * scaling_matrix;
 
-            shader_prog->setMat4("model_matrix", model_matrix.asPointer());
+            shader_prog->setMat4("model_matrix", model_matrix.asPointer()); // Used for transformations
             bounding_boxes[index]->draw(GL_LINES);
         }
     }
@@ -280,6 +293,10 @@ std::uint32_t RTMesh::sizeBVHLeaves() {
         }
     }
     return leaf_count;
+}
+
+std::size_t RTMesh::getMeshHandle() {
+    return mesh_handle;
 }
 
 

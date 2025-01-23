@@ -11,9 +11,11 @@ class SceneRtMeshes: public Scene {
 private:
     std::shared_ptr<RTMesh> cube_mesh;
     std::shared_ptr<RTMesh> cube_sphere;
-    std::shared_ptr<RTMesh> ico_sphere;
+    std::shared_ptr<RTMesh> ico_sphere1;
+    std::shared_ptr<RTMesh> ico_sphere2;
     std::shared_ptr<RTMesh> rectangle_mesh;
-    std::shared_ptr<RTMesh> rect_prism_mesh;
+    std::shared_ptr<RTMesh> rect_prism_mesh1;
+    std::shared_ptr<RTMesh> rect_prism_mesh2;
     std::shared_ptr<Mesh> line_cube;
     std::shared_ptr<RTMesh> test_mesh;
     std::unique_ptr<MeshBufferManager> mesh_buf_manager;

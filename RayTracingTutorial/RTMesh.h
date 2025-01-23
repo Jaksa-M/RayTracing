@@ -33,6 +33,8 @@ public:
     std::uint32_t sizeBVHNodes();
     std::uint32_t sizeBVHLeaves();
 
+    std::size_t getMeshHandle();
+
 private:
     GUISettings& settings;
 
@@ -50,5 +52,7 @@ private:
     void transformToTriangles();
     void intersectBVH(const ray& r, interval ray_t, hit_record& rec, const std::uint32_t nodeIdx, bool& hit, float& closest_hit_t) const;
     bool intersectAABB(const ray& r, interval ray_t, const vec3& bmin, const vec3& bmax, float& closest_side) const;
+
+
 };
 #endif
