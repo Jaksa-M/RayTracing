@@ -47,10 +47,12 @@ public:
     virtual bool hit(const ray& r, interval ray_t, hit_record& rec) const = 0;
 
     virtual void setTransformationMatrix(matrix4x4& mat) {
-        transformation_mat = mat.invert();
+        local_to_world_mat = mat;
+        world_to_local_mat = mat.invert();
     }
 protected:
-    matrix4x4 transformation_mat;
+    matrix4x4 local_to_world_mat; // transformation from local coord system to world coord system
+    matrix4x4 world_to_local_mat; // transformation from world coord system to local coord system (inverted previous one)
 };
 
 #endif

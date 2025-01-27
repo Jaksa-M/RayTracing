@@ -23,6 +23,8 @@ void SceneRtMeshes::initialize() {
     prev_BVH_technique = settings.BVH_technique;
 
     mesh_buf_manager = std::make_unique<MeshBufferManager>();
+    bvh_manager = std::make_unique<BVHManager>(settings);
+
     auto mat = std::make_shared<lambertian>(color(0.8f, 0.8f, 0.0f));
     //cube_mesh = MeshUtils::GenerateTriangleCube(mat, mesh_buf_manager.get(), 2);
     //cube_sphere = MeshUtils::GenerateTriangleSphere(mat, mesh_buf_manager.get(), 4);
@@ -30,19 +32,19 @@ void SceneRtMeshes::initialize() {
     //ico_sphere = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2);
     //rectangle_mesh = MeshUtils::GenerateTriangleRectangle(mat, mesh_buf_manager.get(), 6, 3);
 
-    rect_prism_mesh1 = MeshUtils::GenerateTriangleCube(mat, mesh_buf_manager.get(), 4, settings);
+    rect_prism_mesh1 = MeshUtils::GenerateTriangleCube(mat, mesh_buf_manager.get(), bvh_manager.get(), 4, settings);
     matrix4x4 m = transformation::create_rotation_matrix(0.0f, 30.0f * (3.14159f / 180.0f), 0.0f) *
                   transformation::create_translation_matrix(vec3(-2.0f, 0.0f, 0.0f)); // 30 degree rotation on y-axis + translation on x-axis
     rect_prism_mesh1->setTransformationMatrix(m);
     world.add(rect_prism_mesh1);
-    rect_prism_mesh1->buildBVH();
+    //rect_prism_mesh1->buildBVH();
 
-    rect_prism_mesh2 = std::make_shared<RTMesh>(mesh_buf_manager.get(), rect_prism_mesh1->getMeshHandle(), mat, settings);
+    rect_prism_mesh2 = std::make_shared<RTMesh>(mesh_buf_manager.get(), bvh_manager.get(), rect_prism_mesh1->getMeshHandle(), mat, settings);
     m = transformation::create_rotation_matrix(0.0f, 70.0f * (3.14159f / 180.0f), 0.0f) *
         transformation::create_translation_matrix(vec3(2.0f, 0.0f, 0.0f)); // 70 degree rotation on y-axis + translation on x-axis
     rect_prism_mesh2->setTransformationMatrix(m);
     world.add(rect_prism_mesh2);
-    rect_prism_mesh2->buildBVH();
+    //rect_prism_mesh2->buildBVH();
 
     /*ico_sphere1 = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2, settings);
     matrix4x4 m = transformation::create_translation_matrix(vec3(1.0f, 0.0f, 0.0f));
@@ -82,19 +84,6 @@ std::vector<unsigned char> SceneRtMeshes::update(int display_w, int display_h, c
 
 void SceneRtMeshes::initShader() {
     shader_prog = std::make_unique<Shader>("ShaderFiles/shader_bounding_box.vs.txt", "ShaderFiles/shader_bounding_box.fs.txt");
-
-    //std::vector<float> vertices = std::vector<float>{
-    //    0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,    // bottom right
-    //    -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,   // bottom left
-    //    0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f,    // top right
-    //    -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, 1.0f,   // top left
-    //    -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,   // bottom left
-    //    0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f     // top right
-    //};
-
-    //mesh = std::make_unique<Mesh>(vertices, 3, 6, 0, 3, true, std::span<unsigned int>{});
-
-    //line_cube = MeshUtils::GenerateLineCube(7);
 }
 
 void SceneRtMeshes::drawBVH(camera& cam) {

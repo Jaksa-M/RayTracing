@@ -10,6 +10,7 @@
 class SceneCornellBox: public Scene {
 private:
     std::unique_ptr<MeshBufferManager> mesh_buf_manager;
+    std::unique_ptr<BVHManager> bvh_manager;
 
     std::shared_ptr<RTMesh> rect_prism_mesh;
     std::shared_ptr<RTMesh> cube_mesh;

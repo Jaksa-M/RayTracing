@@ -27,7 +27,7 @@ struct IntersectResult {
 
 class BVHBuilder {
 public:
-    BVHBuilder(std::span<const float> vertices, std::span<const std::uint32_t> indices, std::span<const float> vertex_normals, std::vector<Triangle>& triangles,
+    BVHBuilder(std::span<const float> vertices, std::span<std::uint32_t> indices, std::span<const float> vertex_normals, std::vector<Triangle>& triangles,
         std::vector<std::uint32_t>& triangle_indices);
 
     std::vector<BVHNode> buildBVH();
@@ -38,7 +38,7 @@ public:
 
 private:
     std::span<const float> vertices;
-    std::span<const std::uint32_t> indices;
+    std::span<std::uint32_t> indices;
     std::span<const float> vertex_normals;
 
     std::vector<BVHNode> bvh_nodes;
@@ -48,6 +48,7 @@ private:
     std::uint32_t nodesUsed = 1;
 
     float evaluateSAH(BVHNode& node, int axis, float pos);
+    void reorderIndices(); // Because triangle_indices are getting swapped during BVH building, indices will have to swap also
 };
 
 #endif

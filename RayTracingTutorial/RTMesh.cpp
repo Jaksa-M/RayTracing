@@ -10,6 +10,7 @@
 #include <GLFW/glfw3.h>
 #include <queue>
 
+
 // Inline functions
 inline IntersectResult intersectTriangle(const ray& r, interval ray_t, const Triangle& triangle) {
     const point3& p1 = triangle.v0;
@@ -61,7 +62,6 @@ vec3 transformOrigin(const vec3& pos, const matrix4x4& m) {
     // Convert the position to a homogeneous coordinate (w = 1)
     vec4 homogenous_pos = vec4(pos.x(), pos.y(), pos.z(), 1.0f);
 
-    // Apply the matrix transformation
     vec4 transformed_pos = m * homogenous_pos;
 
     // Convert back to a 3D position by dividing by w (perspective division, if necessary)
@@ -72,16 +72,20 @@ vec3 transformDirection(const vec3& dir, const matrix4x4& m) {
     // Convert the direction to a homogeneous coordinate (w = 0)
     vec4 homogenous_dir = vec4(dir.x(), dir.y(), dir.z(), 0.0f);
 
-    // Apply the matrix transformation
     vec4 transformed_dir = m * homogenous_dir;
 
     // Convert back to a 3D direction
     return vec3(transformed_dir.x(), transformed_dir.y(), transformed_dir.z());
 }
 
-RTMesh::RTMesh(MeshBufferManager* mesh_buf_manager, std::size_t mesh_handle, std::shared_ptr<material> mat, GUISettings& settings) :
-    mesh_buf_manager(mesh_buf_manager), mesh_handle(mesh_handle), mat(mat), settings(settings)
+vec3 transformDirection(const vec3& dir, const matrix3x3& m) {
+    return m * dir;
+}
+
+RTMesh::RTMesh(MeshBufferManager* mesh_buf_manager, BVHManager* bvh_manager, std::size_t mesh_handle, std::shared_ptr<material> mat, GUISettings& settings) :
+    mesh_buf_manager(mesh_buf_manager), bvh_manager(bvh_manager), mesh_handle(mesh_handle), mat(mat), settings(settings)
 {
+    bvh_nodes = bvh_manager->getBVHNodes(mesh_handle);
     vertices = mesh_buf_manager->getVerts(mesh_handle, 0);
     indices = mesh_buf_manager->getIndices(mesh_handle);
     vertex_normals = mesh_buf_manager->getNormals(mesh_handle, 2);
@@ -98,9 +102,8 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, hit_record& rec) const {
     ray changed_ray = r;
 
     // Apply inversed transformation to the new ray.
-    changed_ray.setOrigin(transformOrigin(r.origin(), transformation_mat));
-    changed_ray.setDirection(transformDirection(r.direction(), transformation_mat));
-    //changed_ray.rD = vec3(1 / r.direction().x(), 1 / r.direction().y(), 1 / r.direction().z());
+    changed_ray.setOrigin(transformOrigin(r.origin(), world_to_local_mat));
+    changed_ray.setDirection(transformDirection(r.direction(), world_to_local_mat));
 
     // Check for the root node (previously inside a function) but this way it gets called only once, not every time inside a loop, to improve performance
     const BVHNode& node = bvh_nodes[0];
@@ -239,7 +242,7 @@ void RTMesh::drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32
         matrix4x4 translation_matrix = transformation::create_translation_matrix(center);
         matrix4x4 scaling_matrix = transformation::create_scaling_matrix(scale.x(), scale.y(), scale.z());
         // Using transformation_mat so the boxes can move where the mesh is moved
-        matrix4x4 model_matrix = transformation_mat.invert() * translation_matrix * scaling_matrix;
+        matrix4x4 model_matrix = local_to_world_mat * translation_matrix * scaling_matrix;
 
         // Color calculated based on BVH tree level
         vec3 color = vec3(1.0f - level * 0.1f, level * 0.1f, 0.5f);
@@ -272,7 +275,7 @@ void RTMesh::drawBVHLeaves(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint
             matrix4x4 translation_matrix = transformation::create_translation_matrix(center);
             matrix4x4 scaling_matrix = transformation::create_scaling_matrix(scale.x(), scale.y(), scale.z());
             // Using transformation_mat so the boxes can move where the mesh is moved
-            matrix4x4 model_matrix = transformation_mat.invert() * translation_matrix * scaling_matrix;
+            matrix4x4 model_matrix = local_to_world_mat * translation_matrix * scaling_matrix;
 
             shader_prog->setMat4("model_matrix", model_matrix.asPointer()); // Used for transformations
             bounding_boxes[index]->draw(GL_LINES);
@@ -295,7 +298,7 @@ std::uint32_t RTMesh::sizeBVHLeaves() {
     return leaf_count;
 }
 
-std::size_t RTMesh::getMeshHandle() {
+MeshHandle RTMesh::getMeshHandle() {
     return mesh_handle;
 }
 

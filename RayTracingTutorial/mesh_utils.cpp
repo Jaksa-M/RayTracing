@@ -4,8 +4,9 @@
 #include <iostream>
 #include <iomanip> // for std::setprecision
 #include <cmath>
+#include "bvh_manager.h"
 
-std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager,
+std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager, BVHManager* bvh_manager,
         unsigned int num_of_vert, GUISettings& settings, vec3 center , vec3 size)  // creating an unit cube
 {
     std::vector<float> vertices;
@@ -59,8 +60,9 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(const std::shared_ptr<ma
     }
 
     std::size_t mesh_handle = mesh_buf_manager->addToBuffer(vertices, 2, indices, vertex_normals);
+    bvh_manager->buildBVH(mesh_buf_manager, mesh_handle);
 
-    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat, settings);
+    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, bvh_manager, mesh_handle, mat, settings);
     return mesh;
 }
 
@@ -101,7 +103,7 @@ std::unique_ptr<Mesh> MeshUtils::GenerateLineCube(unsigned int num_of_vert, vec3
     return mesh;
 }
 
-std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager,
+std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager, BVHManager* bvh_manager,
     unsigned int num_of_vert, GUISettings& settings, vec3 center, vec3 size)
 {
     std::vector<float> vertices;
@@ -180,8 +182,9 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(const std::shared_ptr<
     return mesh;*/
 
     std::size_t mesh_handle = mesh_buf_manager->addToBuffer(vertices, 2, indices, vertex_normals);
+    bvh_manager->buildBVH(mesh_buf_manager, mesh_handle);
 
-    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat, settings);
+    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, bvh_manager, mesh_handle, mat, settings);
     return mesh;
 }
 
@@ -252,7 +255,7 @@ std::unique_ptr<Mesh> MeshUtils::GenerateSphereLines(unsigned int num_of_vert, v
     return mesh;
 }
 
-std::shared_ptr<RTMesh> MeshUtils::GenerateIcosphere(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager,
+std::shared_ptr<RTMesh> MeshUtils::GenerateIcosphere(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager, BVHManager* bvh_manager,
     std::uint32_t subdivisions, GUISettings& settings, vec3 center, vec3 size)
 {
     std::vector<float> vertices;
@@ -272,12 +275,14 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateIcosphere(const std::shared_ptr<mater
     generateTriangleVertexNormals(vertex_normals, vertices, indices, 3);
 
     std::size_t mesh_handle = mesh_buf_manager->addToBuffer(vertices, 1, indices, vertex_normals);
-    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat, settings);
+    bvh_manager->buildBVH(mesh_buf_manager, mesh_handle);
+
+    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, bvh_manager, mesh_handle, mat, settings);
     return mesh;
 }
 
-std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager, std::uint32_t num_of_vert_row,
-    std::uint32_t num_of_vert_col, GUISettings& settings, vec3 center, vec3 size)
+std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager, BVHManager* bvh_manager,
+    std::uint32_t num_of_vert_row, std::uint32_t num_of_vert_col, GUISettings& settings, vec3 center, vec3 size)
 {
     std::vector<float> vertices;
 
@@ -332,12 +337,13 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(const std::shared_p
     }
 
     std::size_t mesh_handle = mesh_buf_manager->addToBuffer(vertices, 2, indices, vertex_normals);
+    bvh_manager->buildBVH(mesh_buf_manager, mesh_handle);
 
-    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat, settings);
+    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, bvh_manager, mesh_handle, mat, settings);
     return mesh;
 }
 
-std::shared_ptr<RTMesh> MeshUtils::GenerateTestMesh(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager,
+std::shared_ptr<RTMesh> MeshUtils::GenerateTestMesh(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager, BVHManager* bvh_manager,
         GUISettings& settings, vec3 center, vec3 size)
 { // Mesh consisting of 3 triangles that are separated a bit, for testing if BVH tree drawing works
     std::vector<float> vertices;
@@ -389,9 +395,9 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTestMesh(const std::shared_ptr<materi
 
     // Add data to mesh buffer manager
     std::size_t mesh_handle = mesh_buf_manager->addToBuffer(vertices, 2, indices, normals);
+    bvh_manager->buildBVH(mesh_buf_manager, mesh_handle);
 
-    // Create and return the mesh
-    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat, settings);
+    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, bvh_manager, mesh_handle, mat, settings);
     return mesh;
 }
 

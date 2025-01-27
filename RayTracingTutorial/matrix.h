@@ -19,12 +19,35 @@ public:
 
     static matrix4x4 identity();
 
-    matrix4x4 invert();
+    const matrix4x4 invert();
 
     const float* asPointer() const;
 
     friend std::ostream& operator<<(std::ostream& os, const matrix4x4& matrix);
 };
+
+
+class matrix3x3 {
+public:
+    float data[3][3];
+
+    matrix3x3();
+
+    // Can't use [] for indexing because it only allows to take 1 argument.
+    float& operator()(int row, int col);
+    const float& operator()(int row, int col) const;
+    matrix3x3 operator*(const matrix3x3& other) const;
+    vec3 operator*(const vec3& v) const;
+
+    static matrix3x3 identity();
+
+    const matrix3x3 invert();
+
+    const float* asPointer() const;
+
+    friend std::ostream& operator<<(std::ostream& os, const matrix3x3& matrix);
+};
+
 
 
 

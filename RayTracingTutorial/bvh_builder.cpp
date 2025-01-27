@@ -5,7 +5,7 @@
 #include "interval.h"
 #include <algorithm>
 
-BVHBuilder::BVHBuilder(std::span<const float> vertices, std::span<const std::uint32_t> indices, std::span<const float> vertex_normals,
+BVHBuilder::BVHBuilder(std::span<const float> vertices, std::span<std::uint32_t> indices, std::span<const float> vertex_normals,
     std::vector<Triangle>& triangles, std::vector<std::uint32_t>& triangle_indices):
     vertices(vertices), indices(indices), vertex_normals(vertex_normals), triangles(triangles), triangle_indices(triangle_indices)
 {
@@ -29,6 +29,7 @@ std::vector<BVHNode> BVHBuilder::buildBVH() {
     // Start recursive subdivision
     subdivide(0);
 
+    reorderIndices();
     return bvh_nodes;
 }
 
@@ -246,3 +247,21 @@ float BVHBuilder::evaluateSAH(BVHNode& node, int axis, float pos) {
     float cost = leftCount * left_area + rightCount * right_area;
     return cost > 0 ? cost : float_max;
 }
+
+void BVHBuilder::reorderIndices() {
+    std::vector<uint32_t> new_indices(indices.size());
+
+    // Reorder the indices based on triangle_indices
+    for (std::size_t i = 0; i < triangle_indices.size(); i++) {
+        std::uint32_t tri_index = triangle_indices[i];
+
+        // Each triangle has 3 indices
+        new_indices[i * 3 + 0] = indices[tri_index * 3 + 0];
+        new_indices[i * 3 + 1] = indices[tri_index * 3 + 1];
+        new_indices[i * 3 + 2] = indices[tri_index * 3 + 2];
+    }
+
+    // Copy new_indices to original indices
+    std::memcpy(indices.data(), new_indices.data(), new_indices.size() * sizeof(uint32_t));
+}
+

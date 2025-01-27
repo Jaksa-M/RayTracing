@@ -21,19 +21,21 @@ void SceneCornellBox::initialize() {
     prev_BVH_technique = settings.BVH_technique;
 
     mesh_buf_manager = std::make_unique<MeshBufferManager>();
+    bvh_manager = std::make_unique<BVHManager>(settings);
+
     auto mat_yellow = std::make_shared<lambertian>(color(0.8f, 0.8f, 0.0f));
     auto mat_green = std::make_shared<lambertian>(color(0.0f, 1.0f, 0.0f));
     auto mat_red = std::make_shared<lambertian>(color(1.0f, 0.0f, 0.0f));
     auto mat_white = std::make_shared<lambertian>(color(0.8f, 0.8f, 0.8f));
 
     // Creating shapes/meshes
-    rect_prism_mesh = MeshUtils::GenerateTriangleCube(mat_yellow, mesh_buf_manager.get(), 2, settings, vec3(-0.15f, 0.1f, -0.2f), vec3(0.3f, 0.8f, 0.3f));
-    cube_mesh = MeshUtils::GenerateTriangleCube(mat_yellow, mesh_buf_manager.get(), 2, settings, vec3(0.05f, 0.35f, 0.2f), vec3(0.3f, 0.3f, 0.3f));
-    rect_mesh_top = MeshUtils::GenerateTriangleRectangle(mat_white, mesh_buf_manager.get(), 6, 3, settings);
-    rect_mesh_bottom = MeshUtils::GenerateTriangleRectangle(mat_white, mesh_buf_manager.get(), 6, 3, settings);
-    rect_mesh_left = MeshUtils::GenerateTriangleRectangle(mat_red, mesh_buf_manager.get(), 6, 3, settings);
-    rect_mesh_right = MeshUtils::GenerateTriangleRectangle(mat_green, mesh_buf_manager.get(), 6, 3, settings);
-    rect_mesh_back = MeshUtils::GenerateTriangleRectangle(mat_white, mesh_buf_manager.get(), 6, 3, settings);
+    rect_prism_mesh = MeshUtils::GenerateTriangleCube(mat_yellow, mesh_buf_manager.get(), bvh_manager.get(), 2, settings, vec3(-0.15f, 0.1f, -0.2f), vec3(0.3f, 0.8f, 0.3f));
+    cube_mesh = MeshUtils::GenerateTriangleCube(mat_yellow, mesh_buf_manager.get(), bvh_manager.get(), 2, settings, vec3(0.05f, 0.35f, 0.2f), vec3(0.3f, 0.3f, 0.3f));
+    rect_mesh_top = MeshUtils::GenerateTriangleRectangle(mat_white, mesh_buf_manager.get(), bvh_manager.get(), 6, 3, settings);
+    rect_mesh_bottom = MeshUtils::GenerateTriangleRectangle(mat_white, mesh_buf_manager.get(), bvh_manager.get(), 6, 3, settings);
+    rect_mesh_left = MeshUtils::GenerateTriangleRectangle(mat_red, mesh_buf_manager.get(), bvh_manager.get(), 6, 3, settings);
+    rect_mesh_right = MeshUtils::GenerateTriangleRectangle(mat_green, mesh_buf_manager.get(), bvh_manager.get(), 6, 3, settings);
+    rect_mesh_back = MeshUtils::GenerateTriangleRectangle(mat_white, mesh_buf_manager.get(), bvh_manager.get(), 6, 3, settings);
 
     world.add(rect_prism_mesh);
     world.add(cube_mesh);
@@ -43,7 +45,7 @@ void SceneCornellBox::initialize() {
     world.add(rect_mesh_right);
     world.add(rect_mesh_back);
 
-    createTransformations();
+    //createTransformations();
 }
 
 std::vector<unsigned char> SceneCornellBox::update(int display_w, int display_h, camera& cam) {

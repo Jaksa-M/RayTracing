@@ -7,12 +7,16 @@
 #include "shader.h"
 #include "camera.h"
 #include "gui_settings.h"
+#include <span>
+#include "bvh_manager.h"
+#include "types.h"
 
 class MeshBufferManager;
 
 class RTMesh: public hittable {
 public:
-    RTMesh(MeshBufferManager* mesh_buf_manager, std::size_t mesh_handle, std::shared_ptr<material> mat, GUISettings& settings);
+    RTMesh(MeshBufferManager* mesh_buf_manager, BVHManager* bvh_manager, std::size_t mesh_handle,
+        std::shared_ptr<material> mat, GUISettings& settings);
 
     std::string object_type() const override { return "cube triangle mesh"; }
 
@@ -33,26 +37,25 @@ public:
     std::uint32_t sizeBVHNodes();
     std::uint32_t sizeBVHLeaves();
 
-    std::size_t getMeshHandle();
+    MeshHandle getMeshHandle();
 
 private:
     GUISettings& settings;
 
     MeshBufferManager* mesh_buf_manager;
-    std::size_t mesh_handle;
+    BVHManager* bvh_manager;
+    MeshHandle mesh_handle;
     std::shared_ptr<material> mat;
     std::span<const float> vertices;
-    std::span<const std::uint32_t> indices;
+    std::span<std::uint32_t> indices;
     std::span<const float> vertex_normals;
 
-    std::vector<BVHNode> bvh_nodes;
+    std::span<const BVHNode> bvh_nodes;
     std::vector<Triangle> triangles; // contains triangles (their coordinates) formed from indices and vertices arrays
-    mutable std::vector<std::uint32_t> triangle_indices; // in order not to swap whole triangles, we will just swap these indices
+    std::vector<std::uint32_t> triangle_indices; // in order not to swap whole triangles, we will just swap these indices
     
     void transformToTriangles();
     void intersectBVH(const ray& r, interval ray_t, hit_record& rec, const std::uint32_t nodeIdx, bool& hit, float& closest_hit_t) const;
     bool intersectAABB(const ray& r, interval ray_t, const vec3& bmin, const vec3& bmax, float& closest_side) const;
-
-
 };
 #endif
