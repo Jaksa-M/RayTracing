@@ -19,7 +19,7 @@ public:
 
     static matrix4x4 identity();
 
-    const matrix4x4 invert();
+    const matrix4x4 invert() const;
 
     const float* asPointer() const;
 

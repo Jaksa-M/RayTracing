@@ -1,9 +1,9 @@
 #include "matrix.h"
 
-matrix4x4::matrix4x4() {
+matrix4x4::matrix4x4() { // Creating identity matrix by default
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            data[i][j] = 0.0f;
+            data[i][j] = (i == j) ? 1.0f : 0.0f; // Set diagonal to 1, others to 0
         }
     }
 }
@@ -60,7 +60,7 @@ matrix4x4 matrix4x4::identity() {
     return identity_mat;
 }
 
-const matrix4x4 matrix4x4::invert() {
+const matrix4x4 matrix4x4::invert() const {
     matrix4x4 result = matrix4x4::identity();
     matrix4x4 temp = *this; // Copy of the current matrix
 
@@ -111,10 +111,10 @@ std::ostream& operator<<(std::ostream& os, const matrix4x4& matrix) {
 
 //----------------- Matrix 3x3 ------------------
 
-matrix3x3::matrix3x3() {
+matrix3x3::matrix3x3() { // Creating identity matrix by default
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
-            data[i][j] = 0.0f;
+            data[i][j] = (i == j) ? 1.0f : 0.0f; // Set diagonal to 1, others to 0
         }
     }
 }

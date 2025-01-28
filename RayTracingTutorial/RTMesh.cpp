@@ -3,12 +3,12 @@
 #include "math_constants.h"
 #include "vec3.h"
 #include "interval.h"
-#include "mesh_buffer_manager.h"
 #include <algorithm>
 #include "transformations.h"
 #include "mesh_utils.h"
 #include <GLFW/glfw3.h>
 #include <queue>
+#include "context.h"
 
 
 // Inline functions
@@ -82,13 +82,9 @@ vec3 transformDirection(const vec3& dir, const matrix3x3& m) {
     return m * dir;
 }
 
-RTMesh::RTMesh(MeshBufferManager* mesh_buf_manager, BVHManager* bvh_manager, std::size_t mesh_handle, std::shared_ptr<material> mat, GUISettings& settings) :
-    mesh_buf_manager(mesh_buf_manager), bvh_manager(bvh_manager), mesh_handle(mesh_handle), mat(mat), settings(settings)
+RTMesh::RTMesh(Context& context, MeshHandle mesh_handle, std::shared_ptr<material> mat) : context(context), mesh_handle(mesh_handle), mat(mat)
 {
-    bvh_nodes = bvh_manager->getBVHNodes(mesh_handle);
-    vertices = mesh_buf_manager->getVerts(mesh_handle, 0);
-    indices = mesh_buf_manager->getIndices(mesh_handle);
-    vertex_normals = mesh_buf_manager->getNormals(mesh_handle, 2);
+    bvh_nodes = context.bvh_manager->getBVHNodes(mesh_handle);
     transformToTriangles(); // from indices and vertices, creates vector of triangles
 }
 
@@ -123,12 +119,12 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, hit_record& rec) const {
 
 // Hit function without using BVH
 bool RTMesh::hit(const ray& r, interval ray_t, hit_record& rec) const {
-    if (settings.enable_BVH == false) {
+    if (context.settings->enable_BVH == false) {
         bool hit = false;
         double min = ray_t.max;
-        std::span<const float> vertices = mesh_buf_manager->getVerts(mesh_handle, 0);
-        std::span<const std::uint32_t> indices = mesh_buf_manager->getIndices(mesh_handle);
-        std::span<const float> vertex_normals = mesh_buf_manager->getNormals(mesh_handle, 2);
+        std::span<const float> vertices = context.mesh_buf_manager->getVerts(mesh_handle, 0);
+        std::span<const std::uint32_t> indices = context.mesh_buf_manager->getIndices(mesh_handle);
+        std::span<const float> vertex_normals = context.mesh_buf_manager->getNormals(mesh_handle, 2);
         // Iterate over every triangle inside the mesh
         for (int i = 0; i < indices.size(); i += 3) {
             const point3 p1 = point3(vertices[indices[i] * 3], vertices[indices[i] * 3 + 1], vertices[indices[i] * 3 + 2]);
@@ -204,18 +200,18 @@ void RTMesh::applyTransformations(std::vector<matrix4x4>& transformations) {
     }
 }
 
-void RTMesh::buildBVH() {
-    BVHBuilder bvh_builder(vertices, indices, vertex_normals, triangles, triangle_indices);
-
-    switch (settings.BVH_technique) {
-        case 0: // midpoint split
-            bvh_nodes = bvh_builder.buildBVH();
-            break;
-        case 1: // SAH
-            bvh_nodes = bvh_builder.buildBVHSAH();
-            break;
-    }
-}
+//void RTMesh::buildBVH() {
+//    BVHBuilder bvh_builder(vertices, indices, vertex_normals, triangles, triangle_indices);
+//
+//    switch (context.settings->BVH_technique) {
+//        case 0: // midpoint split
+//            bvh_nodes = bvh_builder.buildBVH();
+//            break;
+//        case 1: // SAH
+//            bvh_nodes = bvh_builder.buildBVHSAH();
+//            break;
+//    }
+//}
 
 void RTMesh::drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32_t index, std::unique_ptr<Shader>& shader_prog, camera& cam) {
     shader_prog->bind();
@@ -298,12 +294,15 @@ std::uint32_t RTMesh::sizeBVHLeaves() {
     return leaf_count;
 }
 
-MeshHandle RTMesh::getMeshHandle() {
+MeshHandle RTMesh::getMeshHandle() const{
     return mesh_handle;
 }
 
 
 void RTMesh::transformToTriangles() {
+    std::span<const float> vertices = context.mesh_buf_manager->getVerts(mesh_handle, 0);
+    std::span<std::uint32_t> indices = context.mesh_buf_manager->getIndices(mesh_handle);
+    std::span<const float> vertex_normals = context.mesh_buf_manager->getNormals(mesh_handle, 2);
 
     // Calculate each triangle centroid and insert that, coordinates and vertex normals into triangles vector
     for (std::uint32_t i = 0; i < indices.size(); i += 3) {

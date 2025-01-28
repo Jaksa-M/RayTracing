@@ -5,7 +5,6 @@
 #include "shader.h"
 #include "mesh.h"
 #include "RTMesh.h"
-#include "mesh_buffer_manager.h"
 
 class SceneCornellBox: public Scene {
 private:

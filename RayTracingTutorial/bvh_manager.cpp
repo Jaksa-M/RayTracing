@@ -2,7 +2,7 @@
 #include "bvh_builder.h"
 #include "mesh_buffer_manager.h"
 
-BVHManager::BVHManager(GUISettings& settings): settings(settings) {
+BVHManager::BVHManager(GUISettings* settings): settings(settings) {
     
 }
 
@@ -19,7 +19,7 @@ void BVHManager::buildBVH(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_h
 
         BVHBuilder bvh_builder(vertices, indices, vertex_normals, triangles, triangle_indices);
 
-        switch (settings.BVH_technique) {
+        switch (settings->BVH_technique) {
         case 0: // midpoint split
             bvh_info_[mesh_handle].bvh_nodes = bvh_builder.buildBVH();
             break;

@@ -7,32 +7,29 @@
 #include <map>
 #include "vec3.h"
 #include "RTMesh.h"
-#include "gui_settings.h"
 
-class MeshBufferManager;
-class BVHManager;
-class Mesh;
+class Context;
 
 class MeshUtils {
 public:
-	static std::shared_ptr<RTMesh> GenerateTriangleCube(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager, BVHManager* bvh_manager,
-		unsigned int num_of_vert, GUISettings& settings, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
+	static std::shared_ptr<RTMesh> GenerateTriangleCube(Context& context, const std::shared_ptr<material>& mat,
+		unsigned int num_of_vert, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
 
 	static std::unique_ptr<Mesh> GenerateLineCube(unsigned int num_of_vert, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
 
-	static std::shared_ptr<RTMesh> GenerateTriangleSphere(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager, BVHManager* bvh_manager,
-		unsigned int num_of_vert, GUISettings& settings, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
+	static std::shared_ptr<RTMesh> GenerateTriangleSphere(Context& context, const std::shared_ptr<material>& mat,
+		unsigned int num_of_vert, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
 
 	static std::unique_ptr<Mesh> GenerateSphereLines(unsigned int num_of_vert, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
 
-	static std::shared_ptr<RTMesh> GenerateIcosphere(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager, BVHManager* bvh_manager,
-		std::uint32_t subdivisions, GUISettings& settings, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
+	static std::shared_ptr<RTMesh> GenerateIcosphere(Context& context, const std::shared_ptr<material>& mat,
+		std::uint32_t subdivisions, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
 
-	static std::shared_ptr<RTMesh> GenerateTriangleRectangle(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager, BVHManager* bvh_manager,
-		std::uint32_t num_of_vert_row, std::uint32_t num_of_vert_col, GUISettings& settings, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
+	static std::shared_ptr<RTMesh> GenerateTriangleRectangle(Context& context, const std::shared_ptr<material>& mat,
+		std::uint32_t num_of_vert_row, std::uint32_t num_of_vert_col, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
 
-	static std::shared_ptr<RTMesh> GenerateTestMesh(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager, BVHManager* bvh_manager,
-		GUISettings& settings, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
+	static std::shared_ptr<RTMesh> GenerateTestMesh(Context& context, const std::shared_ptr<material>& mat,
+		vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
 
 private: // helper functions
 	static void createFaceVertices(bool normalize, const vec3& center, std::vector<float>& vertices, int num_of_vert_col, int num_of_vert_row,

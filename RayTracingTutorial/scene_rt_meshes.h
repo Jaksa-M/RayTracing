@@ -5,8 +5,6 @@
 #include "shader.h"
 #include "mesh.h"
 #include "RTMesh.h"
-#include "mesh_buffer_manager.h"
-#include "bvh_manager.h"
 
 class SceneRtMeshes: public Scene {
 private:

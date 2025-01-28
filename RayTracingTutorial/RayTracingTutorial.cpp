@@ -15,6 +15,7 @@
 
 // Includes for my code
 #include <vector>
+#include "types.h"
 //#include "shader.h"
 #include "camera.h"
 #include "cameraController.h"
@@ -35,9 +36,7 @@
 #endif
 #include <GLFW/glfw3.h> // Will drag system OpenGL headers
 
-// [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
-// To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.
-// Your own project should not be affected, as you are likely to link with a newer binary of GLFW that is adequate for your version of Visual Studio.
+// Not sure if this part needs to be repeated???
 #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
 #pragma comment(lib, "legacy_stdio_definitions")
 #endif
@@ -173,17 +172,17 @@ int main(int, char**) {
 
             // Enable/Disable BVH for active scene + assign the BVH technique
             switch (selected_scene_index) {
-                case 0: // scene_rt_meshes
-                    ImGui::Checkbox("Enable BVH", &scene_rt_meshes.settings.enable_BVH);
-                    scene_rt_meshes.settings.BVH_technique = chosen_technique_index;
-                    scene_rt_meshes.settings.selected_option = selected_option;
-                   /* scene_rt_meshes.BVH_technique = chosen_technique_index;
+                case RT_MESHES: // scene_rt_meshes
+                    ImGui::Checkbox("Enable BVH", &scene_rt_meshes.context.settings->enable_BVH);
+                    scene_rt_meshes.context.settings->BVH_technique = chosen_technique_index;
+                    scene_rt_meshes.context.settings->selected_option = selected_option;
+                    /*scene_rt_meshes.BVH_technique = chosen_technique_index;
                     scene_rt_meshes.selected_option = selected_option;*/
                     break;
-                case 1: // scene_cornell_box
-                    ImGui::Checkbox("Enable BVH", &scene_cornell_box.settings.enable_BVH);
-                    scene_cornell_box.settings.BVH_technique = chosen_technique_index;
-                    scene_cornell_box.settings.selected_option = selected_option;
+                case CORNELL_BOX: // scene_cornell_box
+                    ImGui::Checkbox("Enable BVH", &scene_cornell_box.context.settings->enable_BVH);
+                    scene_cornell_box.context.settings->BVH_technique = chosen_technique_index;
+                    scene_cornell_box.context.settings->selected_option = selected_option;
                     /*scene_cornell_box.BVH_technique = chosen_technique_index;
                     scene_cornell_box.selected_option = selected_option;*/
                     break;
@@ -210,12 +209,12 @@ int main(int, char**) {
         cam.image_height = display_h;
         
         switch (selected_scene_index) {
-            case 0:
-                scene_rt_meshes.settings.trace_percentage = trace_percentage;
-                scene_rt_meshes.settings.reflection_depth = reflection_depth;
+            case RT_MESHES:
+                scene_rt_meshes.context.settings->trace_percentage = trace_percentage;
+                scene_rt_meshes.context.settings->reflection_depth = reflection_depth;
                 image_data = scene_rt_meshes.update(display_w, display_h, cam);
                 break;
-            case 1:
+            case CORNELL_BOX:
                 image_data = scene_cornell_box.update(display_w, display_h, cam);
                 break;
         }

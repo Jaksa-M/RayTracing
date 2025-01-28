@@ -16,14 +16,14 @@
 #include <GLFW/glfw3.h>
 
 SceneRtMeshes::SceneRtMeshes() {
-    
+    context.settings = std::make_unique<GUISettings>();
 }
 
 void SceneRtMeshes::initialize() {
-    prev_BVH_technique = settings.BVH_technique;
+    prev_BVH_technique = context.settings->BVH_technique;
 
-    mesh_buf_manager = std::make_unique<MeshBufferManager>();
-    bvh_manager = std::make_unique<BVHManager>(settings);
+    context.mesh_buf_manager = std::make_unique<MeshBufferManager>();
+    context.bvh_manager = std::make_unique<BVHManager>(context.settings.get());
 
     auto mat = std::make_shared<lambertian>(color(0.8f, 0.8f, 0.0f));
     //cube_mesh = MeshUtils::GenerateTriangleCube(mat, mesh_buf_manager.get(), 2);
@@ -32,14 +32,14 @@ void SceneRtMeshes::initialize() {
     //ico_sphere = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2);
     //rectangle_mesh = MeshUtils::GenerateTriangleRectangle(mat, mesh_buf_manager.get(), 6, 3);
 
-    rect_prism_mesh1 = MeshUtils::GenerateTriangleCube(mat, mesh_buf_manager.get(), bvh_manager.get(), 4, settings);
+    rect_prism_mesh1 = MeshUtils::GenerateTriangleCube(context, mat, 4);
     matrix4x4 m = transformation::create_rotation_matrix(0.0f, 30.0f * (3.14159f / 180.0f), 0.0f) *
                   transformation::create_translation_matrix(vec3(-2.0f, 0.0f, 0.0f)); // 30 degree rotation on y-axis + translation on x-axis
     rect_prism_mesh1->setTransformationMatrix(m);
     world.add(rect_prism_mesh1);
     //rect_prism_mesh1->buildBVH();
 
-    rect_prism_mesh2 = std::make_shared<RTMesh>(mesh_buf_manager.get(), bvh_manager.get(), rect_prism_mesh1->getMeshHandle(), mat, settings);
+    rect_prism_mesh2 = std::make_shared<RTMesh>(context, rect_prism_mesh1->getMeshHandle(), mat);
     m = transformation::create_rotation_matrix(0.0f, 70.0f * (3.14159f / 180.0f), 0.0f) *
         transformation::create_translation_matrix(vec3(2.0f, 0.0f, 0.0f)); // 70 degree rotation on y-axis + translation on x-axis
     rect_prism_mesh2->setTransformationMatrix(m);
@@ -71,13 +71,13 @@ void SceneRtMeshes::initialize() {
 }
 
 std::vector<unsigned char> SceneRtMeshes::update(int display_w, int display_h, camera& cam) {
-    if (prev_BVH_technique != settings.BVH_technique) {
+    if (prev_BVH_technique != context.settings->BVH_technique) {
         world.clear();
         initialize();
     }
 
     std::vector<unsigned char> image_data;
-    image_data = cam.render(world, image_data_acc, settings);
+    image_data = cam.render(world, image_data_acc, *(context.settings));
 
     return image_data;
 }
@@ -87,7 +87,7 @@ void SceneRtMeshes::initShader() {
 }
 
 void SceneRtMeshes::drawBVH(camera& cam) {
-    if (settings.selected_option != -1) {
+    if (context.settings->selected_option != -1) {
         bounding_boxes.resize(world.objects.size());
         
         for (int i = 0; i < world.objects.size(); i++) { // Drawing BVH tree or leaves
@@ -95,10 +95,10 @@ void SceneRtMeshes::drawBVH(camera& cam) {
             RTMesh* rtMesh = dynamic_cast<RTMesh*>(object.get());
 
             if (rtMesh) { // If the cast succeeds, the object is of type RTMesh
-                if (settings.selected_option == 0) { // Drawing whole tree
+                if (context.settings->selected_option == 0) { // Drawing whole tree
                     rtMesh->drawBVHTree(bounding_boxes, i, shader_prog, cam);
                 }
-                else if (settings.selected_option == 1) { // Drawing only leaves
+                else if (context.settings->selected_option == 1) { // Drawing only leaves
                     rtMesh->drawBVHLeaves(bounding_boxes, i, shader_prog, cam);
                 }
             }

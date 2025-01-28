@@ -3,14 +3,15 @@
 
 #include "hittable_list.h"
 #include "camera.h"
-#include "gui_settings.h"
+#include "gui_settings.h" // remove this
+#include "context.h"
 
 class Scene {
 protected:
 	hittable_list world;
 	std::vector<float> image_data_acc;
 public:
-	GUISettings settings;
+	Context context;
 	virtual void initialize() = 0;
 	virtual std::vector<unsigned char> update(int display_w, int display_h, camera& cam) = 0;
 

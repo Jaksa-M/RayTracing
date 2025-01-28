@@ -14,14 +14,14 @@ class MeshBufferManager;
 
 class BVHManager {
 public:
-	BVHManager(GUISettings& settings);
+	BVHManager(GUISettings* settings);
 
 	void buildBVH(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_handle);
 
 	std::span<const BVHNode> getBVHNodes(MeshHandle mesh_handle) const;
 
 private:
-	GUISettings& settings;
+	GUISettings* settings;
 	struct BVHInfo {
 		std::vector<BVHNode> bvh_nodes;
 	};
