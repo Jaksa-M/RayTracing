@@ -38,7 +38,7 @@ inline void printVertices(const std::vector<float>& vertices, int num_of_vert) {
 
 
 void SceneMeshes::initShader() {
-    shader_prog = std::make_unique<Shader>("ShaderFiles/shader_mesh.vs.txt", "ShaderFiles/shader_mesh.fs.txt");
+    shader_prog_ = std::make_unique<Shader>("ShaderFiles/shader_mesh.vs.txt", "ShaderFiles/shader_mesh.fs.txt");
 
     /*std::vector<float> vertices = createVerticesArr(7);
 
@@ -46,17 +46,17 @@ void SceneMeshes::initShader() {
 
     printVertices(vertices, 7);
 
-    mesh = std::make_unique<Mesh>(vertices, 3, 6, 0, 3, true, indices);*/
-    //mesh = MeshUtils::GenerateTriangleCube(7);
-    //mesh = MeshUtils::GenerateLineCube(7);
-    //mesh = MeshUtils::GenerateSphere(7,vec3(1,1,-2));
-    //mesh = MeshUtils::GenerateSphereLines(60);
+    mesh_ = std::make_unique<Mesh>(vertices, 3, 6, 0, 3, true, indices);*/
+    //mesh_ = MeshUtils::GenerateTriangleCube(7);
+    //mesh_ = MeshUtils::GenerateLineCube(7);
+    //mesh_ = MeshUtils::GenerateSphere(7,vec3(1,1,-2));
+    //mesh_ = MeshUtils::GenerateSphereLines(60);
 }
 
 std::vector<unsigned char> SceneMeshes::update(int display_w, int display_h, camera& cam) {
     std::vector<unsigned char> image_data(display_w * display_h * 3);
 
-    image_data = cam.render(world, image_data_acc, *(context.settings));
+    image_data = cam.render(world_, image_data_acc_, *(context_.settings));
 
     return image_data;
 }
@@ -102,10 +102,10 @@ std::vector<unsigned int> SceneMeshes::createIndicesArr(int num_of_vert) {
 }
 
 void SceneMeshes::draw_mesh_gizmos(camera& cam) {
-    shader_prog->bind();
-    shader_prog->setMat4("view", cam.getViewMatrix().asPointer());
-    shader_prog->setMat4("projection", cam.getProjectionMatrix().asPointer());
-    mesh->draw(GL_LINES);
-    //mesh->draw(GL_TRIANGLES);
-    shader_prog->unbind();
+    shader_prog_->bind();
+    shader_prog_->setMat4("view", cam.getViewMatrix().asPointer());
+    shader_prog_->setMat4("projection", cam.getProjectionMatrix().asPointer());
+    mesh_->draw(GL_LINES);
+    //mesh_->draw(GL_TRIANGLES);
+    shader_prog_->unbind();
 }

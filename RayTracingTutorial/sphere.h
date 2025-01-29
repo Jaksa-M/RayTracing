@@ -18,10 +18,10 @@ public:
     void boxAround(std::span<vec3> edges) override;
 
 private:
-    point3 center;
-    float radius;
-    std::shared_ptr<material> mat;
-    std::vector<vec3> edges;
+    point3 center_;
+    float radius_;
+    std::shared_ptr<material> mat_;
+    std::vector<vec3> edges_;
 };
 
 #endif

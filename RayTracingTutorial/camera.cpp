@@ -3,45 +3,45 @@
 
 void camera::setInitalValues() {
     vec3 cameraTarget = vec3(0.0f, 0.0f, -3.0f);
-    camera_direction = unit_vector(center - cameraTarget);
-    camera_up = vec3(0.0f, 1.0f, 0.0f);
-    camera_right = unit_vector(cross(camera_up, camera_direction)); // the result is vec3 (1,0,0)
+    camera_direction_ = unit_vector(center_ - cameraTarget);
+    camera_up_ = vec3(0.0f, 1.0f, 0.0f);
+    camera_right_ = unit_vector(cross(camera_up_, camera_direction_)); // the result is vec3 (1,0,0)
 }
 
 std::vector<unsigned char> camera::render(const hittable_list& world, std::vector<float>& image_data_acc, GUISettings& settings) {
-    this->settings = settings;
+    this->settings_ = settings_;
     initialize();
 
     // Create a vector to hold the pixel data (3 channels for RGB)
-    std::vector<unsigned char> image_data(image_width * image_height * 3);
+    std::vector<unsigned char> image_data(image_width_ * image_height_ * 3);
     if (image_data_acc.empty()) {
-        image_data_acc.assign(image_width * image_height * 4, 0.0f);
+        image_data_acc.assign(image_width_ * image_height_ * 4, 0.0f);
     }
 
-    if (camera_moved == true) {
+    if (camera_moved_ == true) {
         std::fill(image_data_acc.begin(), image_data_acc.end(), 0.0f);
         
-        camera_moved = false;
+        camera_moved_ = false;
     }
 
     // This will all be called for every frame (like a while loop that executes every frame)
     auto offset = sample_square();
-    for (int j = 0; j < image_height; j++) {
-        int flipped_j = image_height - j - 1;  // Flip the row index
-        for (int i = 0; i < image_width; i++) {
-            int index = (flipped_j * image_width + i) * 3;
-            int index_acc = (flipped_j * image_width + i) * 4;
+    for (int j = 0; j < image_height_; j++) {
+        int flipped_j = image_height_ - j - 1;  // Flip the row index
+        for (int i = 0; i < image_width_; i++) {
+            int index = (flipped_j * image_width_ + i) * 3;
+            int index_acc = (flipped_j * image_width_ + i) * 4;
             color pixel_color(0.0f, 0.0f, 0.0f);
 
             // decides whether to trace current pixel or skip it and go on next
             double trace_pixel = random_double(0.0f, 1.0f);
-            if (trace_pixel > settings.trace_percentage) {
+            if (trace_pixel > settings_.trace_percentage) {
                 write_color(image_data, image_data_acc, pixel_color, index, index_acc, true);
                 continue;
             }
 
             ray ra = get_ray(i, j, offset);
-            pixel_color = ray_color(ra, settings.reflection_depth, world);
+            pixel_color = ray_color(ra, settings_.reflection_depth, world);
 
             write_color(image_data, image_data_acc, pixel_color, index, index_acc, false);
         }
@@ -51,35 +51,35 @@ std::vector<unsigned char> camera::render(const hittable_list& world, std::vecto
 
 void camera::initialize() {
     // Determine viewport dimensions.
-    focal_length = 1.0f;
+    focal_length_ = 1.0f;
 
     float viewport_height = 2.0f;
-    float viewport_width = viewport_height * (float(image_width) / image_height);
+    float viewport_width = viewport_height * (float(image_width_) / image_height_);
 
     // Calculate the vectors across the horizontal and down the vertical viewport edges.
-    auto viewport_u = camera_right * viewport_width;
-    auto viewport_v = camera_up * viewport_height;
+    auto viewport_u = camera_right_ * viewport_width;
+    auto viewport_v = camera_up_ * viewport_height;
 
     // Calculate the horizontal and vertical delta vectors from pixel to pixel.
-    pixel_delta_u = viewport_u / static_cast<float>(image_width);
-    pixel_delta_v = viewport_v / static_cast<float>(image_height);
+    pixel_delta_u_ = viewport_u / static_cast<float>(image_width_);
+    pixel_delta_v_ = viewport_v / static_cast<float>(image_height_);
 
     // Calculate the location of the upper left pixel.
-    auto viewport_upper_left = center - camera_direction * focal_length - viewport_u / 2.0f - viewport_v / 2.0f;
-    pixel00_loc = viewport_upper_left + 0.5f * (pixel_delta_u + pixel_delta_v);
+    auto viewport_upper_left = center_ - camera_direction_ * focal_length_ - viewport_u / 2.0f - viewport_v / 2.0f;
+    pixel00_loc_ = viewport_upper_left + 0.5f * (pixel_delta_u_ + pixel_delta_v_);
 
-    view_matrix = transformation::makeViewMatrix(camera_direction, camera_right, camera_up, center);
-    projection_matrix = transformation::makeInfinitePerspectiveMatrix(0.1f, vec3(viewport_width, viewport_height, 0.0f), vec3(0.0f, 0.0f, 0.0f), focal_length);
+    view_matrix_ = transformation::makeViewMatrix(camera_direction_, camera_right_, camera_up_, center_);
+    projection_matrix_ = transformation::makeInfinitePerspectiveMatrix(0.1f, vec3(viewport_width, viewport_height, 0.0f), vec3(0.0f, 0.0f, 0.0f), focal_length_);
 }
 
 ray camera::get_ray(int i, int j, vec3 offset) const {
     // Construct a camera ray originating from the origin and directed at randomly sampled point around the pixel location i, j.
 
-    auto pixel_sample = pixel00_loc
-        + ((i + offset.x()) * pixel_delta_u)
-        + ((j + offset.y()) * pixel_delta_v);
+    auto pixel_sample = pixel00_loc_
+        + ((i + offset.x()) * pixel_delta_u_)
+        + ((j + offset.y()) * pixel_delta_v_);
 
-    auto ray_origin = center;
+    auto ray_origin = center_;
     auto ray_direction = pixel_sample - ray_origin;
 
     return ray(ray_origin, ray_direction);
@@ -117,7 +117,7 @@ color camera::ray_color(const ray& r, int depth, const hittable_list& world) con
     if (world.hit(r, interval(0.001f, infinity), rec)) {
         ray scattered;
         color attenuation;
-        if (rec.mat->scatter(r, rec, attenuation, scattered))
+        if (rec.mat_->scatter(r, rec, attenuation, scattered))
             return attenuation * ray_color(scattered, depth - 1, world);
         return color(0.0f, 0.0f, 0.0f);
     }
@@ -128,40 +128,40 @@ color camera::ray_color(const ray& r, int depth, const hittable_list& world) con
     return (1.0f - a) * color(1.0f, 1.0f, 1.0f) + a * color(0.5f, 0.7f, 1.0f);
 }
 
-void camera::setCenterX(float val) { center.setX(val); }
+void camera::setCenterX(float val) { center_.setX(val); }
 
-void camera::setCenterY(float val) { center.setY(val); }
+void camera::setCenterY(float val) { center_.setY(val); }
 
-void camera::setCenterZ(float val) { center.setZ(val); }
+void camera::setCenterZ(float val) { center_.setZ(val); }
 
-float camera::getCenterX() { return center.x(); }
+float camera::getCenterX() { return center_.x(); }
 
-float camera::getCenterY() { return center.y(); }
+float camera::getCenterY() { return center_.y(); }
 
-float camera::getCenterZ() { return center.z(); }
+float camera::getCenterZ() { return center_.z(); }
 
-float camera::getFocalLength() { return focal_length; }
+float camera::getFocalLength() { return focal_length_; }
 
-void camera::setFocalLength(float val) { focal_length = val; }
+void camera::setFocalLength(float val) { focal_length_ = val; }
 
-point3 camera::getPosition() { return center; }
+point3 camera::getPosition() { return center_; }
 
-void camera::setPosition(point3 pos) { center = pos; }
+void camera::setPosition(point3 pos) { center_ = pos; }
 
-void camera::setCameraMoved(bool val) { camera_moved = val; }
+void camera::setCameraMoved(bool val) { camera_moved_ = val; }
 
-vec3 camera::getDirection() { return camera_direction; }
+vec3 camera::getDirection() { return camera_direction_; }
 
-void camera::setDirection(vec3 direction) { camera_direction = direction; }
+void camera::setDirection(vec3 direction) { camera_direction_ = direction; }
 
-vec3 camera::getUpVector() { return camera_up; }
+vec3 camera::getUpVector() { return camera_up_; }
 
-void camera::setUpVector(vec3 direction) { camera_up = direction; }
+void camera::setUpVector(vec3 direction) { camera_up_ = direction; }
 
-vec3 camera::getRightVector() { return camera_right; }
+vec3 camera::getRightVector() { return camera_right_; }
 
-void camera::setRightVector(vec3 direction) { camera_right = direction; }
+void camera::setRightVector(vec3 direction) { camera_right_ = direction; }
 
-matrix4x4 camera::getViewMatrix() { return view_matrix; }
+matrix4x4 camera::getViewMatrix() { return view_matrix_; }
 
-matrix4x4 camera::getProjectionMatrix() { return projection_matrix; }
+matrix4x4 camera::getProjectionMatrix() { return projection_matrix_; }

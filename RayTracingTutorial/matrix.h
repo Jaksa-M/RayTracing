@@ -6,7 +6,7 @@
 
 class matrix4x4 {
 public:
-    float data[4][4];
+    float data_[4][4];
 
     matrix4x4();
 
@@ -29,7 +29,7 @@ public:
 
 class matrix3x3 {
 public:
-    float data[3][3];
+    float data_[3][3];
 
     matrix3x3();
 

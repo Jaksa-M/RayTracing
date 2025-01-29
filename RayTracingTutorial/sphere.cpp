@@ -3,15 +3,15 @@
 #include <memory>
 #include <vector>
 
-sphere::sphere(const point3& center, float radius, std::shared_ptr<material> mat) : center(center), radius(std::fmax(0.0f, radius)), mat(mat) {
+sphere::sphere(const point3& center, float radius, std::shared_ptr<material> mat) : center_(center), radius_(std::fmax(0.0f, radius)), mat_(mat) {
 
 }
 
 bool sphere::hit(const ray& r, interval ray_t, hit_record& rec) const {
-    vec3 oc = center - r.origin();
+    vec3 oc = center_ - r.origin();
     auto a = r.direction().length_squared();
     auto h = dot(r.direction(), oc);
-    auto c = oc.length_squared() - radius * radius;
+    auto c = oc.length_squared() - radius_ * radius_;
 
     auto discriminant = h * h - a * c;
     if (discriminant < 0)
@@ -27,23 +27,23 @@ bool sphere::hit(const ray& r, interval ray_t, hit_record& rec) const {
             return false;
     }
 
-    rec.t = root;
-    rec.p = r.at(rec.t);
-    vec3 outward_normal = (rec.p - center) / radius;
+    rec.t_ = root;
+    rec.p_ = r.at(rec.t_);
+    vec3 outward_normal = (rec.p_ - center_) / radius_;
     rec.set_face_normal(r, outward_normal);
-    rec.object_type = "sphere";
-    rec.mat = mat;
+    rec.object_type_ = "sphere";
+    rec.mat_ = mat_;
 
     return true;
 }
 
 void sphere::boxAround(std::span<vec3> edges) {
-    float x_min = center.x() - radius;
-    float x_max = center.x() + radius;
-    float y_min = center.y() - radius;
-    float y_max = center.y() + radius;
-    float z_min = center.z() - radius;
-    float z_max = center.z() + radius;
+    float x_min = center_.x() - radius_;
+    float x_max = center_.x() + radius_;
+    float y_min = center_.y() - radius_;
+    float y_max = center_.y() + radius_;
+    float z_min = center_.z() - radius_;
+    float z_max = center_.z() + radius_;
 
     // Define the 8 corners of the box
     vec3 top_front_left(x_min, y_max, z_min);
@@ -86,6 +86,6 @@ void sphere::boxAround(std::span<vec3> edges) {
 
     //matrix m;
     // scale = radius
-    // t = center
+    // t = center_
 
 }

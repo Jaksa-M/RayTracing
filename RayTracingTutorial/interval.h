@@ -5,27 +5,27 @@
 
 class interval {
 public:
-    float min, max;
+    float min_, max_;
 
-    interval() : min(+infinity), max(-infinity) {} // Default interval is empty
+    interval() : min_(+infinity), max_(-infinity) {} // Default interval is empty
 
-    interval(float min, float max) : min(min), max(max) {}
+    interval(float min, float max) : min_(min), max_(max) {}
 
     float size() const {
-        return max - min;
+        return max_ - min_;
     }
 
     bool contains(float x) const {
-        return min <= x && x <= max;
+        return min_ <= x && x <= max_;
     }
 
     bool surrounds(float x) const {
-        return min < x && x < max;
+        return min_ < x && x < max_;
     }
 
     float clamp(float x) const {
-        if (x < min) return min;
-        if (x > max) return max;
+        if (x < min_) return min_;
+        if (x > max_) return max_;
         return x;
     }
 

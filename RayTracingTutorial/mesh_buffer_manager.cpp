@@ -1,11 +1,11 @@
 #include "mesh_buffer_manager.h"
 
 MeshBufferManager::MeshBufferManager() {
-    buffer = std::vector<float>();
+    buffer_ = std::vector<float>();
 }
 
 std::vector<float>& MeshBufferManager::getBuffer() {
-    return this->buffer;
+    return this->buffer_;
 }
 
 MeshHandle MeshBufferManager::addToBuffer(std::span<float> vertices, std::uint32_t attribute_count,
@@ -26,40 +26,40 @@ MeshHandle MeshBufferManager::addToBuffer(std::span<float> vertices, std::uint32
     // Loop through each attribute and group its values
     for (std::uint32_t attr = 0; attr < attribute_count; attr++) {
         // Record the starting offset for this attribute in the buffer
-        std::size_t attribute_start = buffer.size();
+        std::size_t attribute_start = buffer_.size();
         mesh_info.offsets_v[attr] = static_cast<std::uint32_t>(attribute_start);
 
-        buffer.resize(attribute_start + vertex_count * 3);
+        buffer_.resize(attribute_start + vertex_count * 3);
 
-        // Copy the attribute values into the buffer
+        // Copy the attribute values into the buffer_
         for (std::size_t v = 0; v < vertex_count; v++) {
             std::size_t src_index = v * attribute_count * 3 + attr * 3;
             std::size_t dest_index = attribute_start + v * 3;
 
-            std::memcpy(buffer.data() + dest_index, vertices.data() + src_index, 3 * sizeof(float));
+            std::memcpy(buffer_.data() + dest_index, vertices.data() + src_index, 3 * sizeof(float));
         }
     }
-    mesh_info.count_v = vertices.size() / attribute_count; // count for each attribute (counts will be the same)
+    mesh_info.count_v = vertices.size() / attribute_count; // Count for each attribute (counts will be the same)
 
-    // Insert vertex normals into the buffer
-    std::size_t normal_start = buffer.size();
+    // Insert vertex normals into the buffer_
+    std::size_t normal_start = buffer_.size();
     mesh_info.offset_n = normal_start;
     mesh_info.count_n = static_cast<std::uint32_t>(vertex_count * 3);
 
-    buffer.resize(normal_start + vertex_count * 3);  // Normals have 3 components (x, y, z)
+    buffer_.resize(normal_start + vertex_count * 3);  // Normals have 3 components (x, y, z)
     for (std::size_t v = 0; v < vertex_count; v++) {
         const vec3& normal = normals[v];
 
         // Insert each component of the normal into the buffer as floats
-        buffer[normal_start + v * 3] = normal.x();
-        buffer[normal_start + v * 3 + 1] = normal.y();
-        buffer[normal_start + v * 3 + 2] = normal.z();
+        buffer_[normal_start + v * 3] = normal.x();
+        buffer_[normal_start + v * 3 + 1] = normal.y();
+        buffer_[normal_start + v * 3 + 2] = normal.z();
     }
 
     // Insert indices array
-    std::size_t offs = buffer.size();
-    buffer.resize(offs + indices.size());
-    std::memcpy(buffer.data() + offs, indices.data(), indices.size() * sizeof(std::uint32_t));
+    std::size_t offs = buffer_.size();
+    buffer_.resize(offs + indices.size());
+    std::memcpy(buffer_.data() + offs, indices.data(), indices.size() * sizeof(std::uint32_t));
     mesh_info.offset_i = offs;
     mesh_info.count_i = static_cast<std::uint32_t>(indices.size());
 
@@ -68,21 +68,21 @@ MeshHandle MeshBufferManager::addToBuffer(std::span<float> vertices, std::uint32
 
 std::span<const float> MeshBufferManager::getVerts(MeshHandle mesh, std::uint32_t attribute) const {
     if (auto it = mesh_info_.find(mesh); it != mesh_info_.end()) {
-        return std::span(&buffer[it->second.offsets_v[attribute]], it->second.count_v);
+        return std::span(&buffer_[it->second.offsets_v[attribute]], it->second.count_v);
     }
     return {};
 }
 
 std::span<const std::uint32_t> MeshBufferManager::getIndices(MeshHandle mesh) const{
     if (auto it = mesh_info_.find(mesh); it != mesh_info_.end()) {
-        return std::span<const std::uint32_t>(reinterpret_cast<const std::uint32_t*>(buffer.data() + it->second.offset_i), it->second.count_i);
+        return std::span<const std::uint32_t>(reinterpret_cast<const std::uint32_t*>(buffer_.data() + it->second.offset_i), it->second.count_i);
     }
     return {};
 }
 
 std::span<std::uint32_t> MeshBufferManager::getIndices(MeshHandle mesh) {
     if (auto it = mesh_info_.find(mesh); it != mesh_info_.end()) {
-        return std::span<std::uint32_t>(reinterpret_cast<std::uint32_t*>(buffer.data() + it->second.offset_i), it->second.count_i);
+        return std::span<std::uint32_t>(reinterpret_cast<std::uint32_t*>(buffer_.data() + it->second.offset_i), it->second.count_i);
     }
     return {};
 }
@@ -93,7 +93,7 @@ std::span<const float> MeshBufferManager::getNormals(MeshHandle mesh, std::uint3
         std::size_t normal_offset = it->second.offset_n; // offset for normals
         std::size_t normal_count = it->second.count_n; // mozda je * 3????
 
-        return std::span<const float>(buffer.data() + normal_offset, normal_count);
+        return std::span<const float>(buffer_.data() + normal_offset, normal_count);
     }
     return {}; // Return empty span if mesh is not found
 }

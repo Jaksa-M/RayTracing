@@ -6,14 +6,14 @@ class camera;
 
 class cameraController {
 private:
-    camera& cam;
-    float speed;
-    float deltaTimeSeconds; // time that passed from last frame. formula = 1.0 / fps
-    bool isDragging = false; // Track if the mouse is dragging
-    float lastMouseX, lastMouseY; // Store the last mouse position
-    float rotationSpeed = 0.1f; // Adjust rotation sensitivity
-    float yaw = 90.0f;
-    float pitch = 0.0f;
+    camera& cam_;
+    float speed_;
+    float delta_time_seconds_; // time that passed from last frame. formula = 1.0 / fps
+    bool is_dragging_ = false; // Track if the mouse is dragging
+    float last_mouse_x_, last_mouse_y_; // Store the last mouse position
+    float rotation_speed_ = 0.1f; // Adjust rotation sensitivity
+    float yaw_ = 90.0f;
+    float pitch_ = 0.0f;
 public:
     cameraController(camera& cam, float speed);
 
@@ -22,7 +22,7 @@ public:
     void HandleMouseInput(ImGuiIO& io);
 
     void setSpeed(float sp) {
-        this->speed = sp;
+        this->speed_ = sp;
     }
 
 private:

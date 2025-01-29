@@ -5,7 +5,7 @@
 
 class hittable_list : public hittable {
 public:
-    std::vector<std::shared_ptr<hittable>> objects;
+    std::vector<std::shared_ptr<hittable>> objects_;
 
     hittable_list();
     hittable_list(std::shared_ptr<hittable> object);

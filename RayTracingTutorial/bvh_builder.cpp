@@ -7,18 +7,18 @@
 
 BVHBuilder::BVHBuilder(std::span<const float> vertices, std::span<std::uint32_t> indices,
     std::vector<Triangle>& triangles, std::vector<std::uint32_t>& triangle_indices):
-    vertices(vertices), indices(indices), triangles(triangles), triangle_indices(triangle_indices)
+    vertices_(vertices), indices_(indices), triangles_(triangles), triangle_indices_(triangle_indices)
 {
 
 }
 
 std::vector<BVHNode> BVHBuilder::buildBVH() {
-    std::uint32_t N = static_cast<std::uint32_t>(indices.size() / 3);
+    std::uint32_t N = static_cast<std::uint32_t>(indices_.size() / 3);
 
     for (std::uint32_t i = 0; i < 2 * N - 1; i++) {
-        bvh_nodes.push_back(BVHNode());
+        bvh_nodes_.push_back(BVHNode());
     }
-    BVHNode& root = bvh_nodes[0];
+    BVHNode& root = bvh_nodes_[0];
     root.left_child = 0;
     root.right_child = 0;
     root.first_triangle_index = 0;
@@ -30,16 +30,16 @@ std::vector<BVHNode> BVHBuilder::buildBVH() {
     subdivide(0);
 
     reorderIndices();
-    return bvh_nodes;
+    return bvh_nodes_;
 }
 
 std::vector<BVHNode> BVHBuilder::buildBVHSAH() {
-    std::uint32_t N = static_cast<std::uint32_t>(indices.size() / 3);
+    std::uint32_t N = static_cast<std::uint32_t>(indices_.size() / 3);
 
     for (std::uint32_t i = 0; i < 2 * N - 1; i++) {
-        bvh_nodes.push_back(BVHNode());
+        bvh_nodes_.push_back(BVHNode());
     }
-    BVHNode& root = bvh_nodes[0];
+    BVHNode& root = bvh_nodes_[0];
     root.left_child = 0;
     root.right_child = 0;
     root.first_triangle_index = 0;
@@ -51,19 +51,19 @@ std::vector<BVHNode> BVHBuilder::buildBVHSAH() {
     subdivideSAH(0);
 
     reorderIndices();
-    return bvh_nodes;
+    return bvh_nodes_;
 }
 
 void BVHBuilder::createBoundBox(std::uint32_t node_index) {
-    BVHNode& node = bvh_nodes[node_index];
+    BVHNode& node = bvh_nodes_[node_index];
     point3 min_point = point3(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max()); // bottom left corner
     point3 max_point = point3(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest()); // top right corner
 
     std::uint32_t first = node.first_triangle_index;
     // Iterating over every triangle that is inside this bounding box and finding the boundaries of the box
     for (std::uint32_t i = 0; i < node.triangle_cnt; i++) {
-        std::uint32_t triangle_index = triangle_indices[first + i];
-        const Triangle& triangle = triangles[triangle_index]; // this is currently leaf triangle
+        std::uint32_t triangle_index = triangle_indices_[first + i];
+        const Triangle& triangle = triangles_[triangle_index]; // this is currently leaf triangle
 
         min_point.setX(std::min({ min_point.x(), triangle.v0.x(), triangle.v1.x(), triangle.v2.x() }));
         min_point.setY(std::min({ min_point.y(), triangle.v0.y(), triangle.v1.y(), triangle.v2.y() }));
@@ -80,7 +80,7 @@ void BVHBuilder::createBoundBox(std::uint32_t node_index) {
 
 void BVHBuilder::subdivide(std::uint32_t node_index) {
     // Current split method: split along longest axis
-    BVHNode& node = bvh_nodes[node_index];
+    BVHNode& node = bvh_nodes_[node_index];
 
     // Decided to return if node contains 2 or less triangles. The reason for that is because 2 triangles can be aligned with splitting axis
     // and we can't split it into 2 non empty halves. This is still not 100% safe.
@@ -97,12 +97,12 @@ void BVHBuilder::subdivide(std::uint32_t node_index) {
     int i = node.first_triangle_index;
     int j = i + node.triangle_cnt - 1;
     while (i <= j) {
-        if (triangles[triangle_indices[i]].centroid[axis] < split_pos) {
+        if (triangles_[triangle_indices_[i]].centroid[axis] < split_pos) {
             i++;
         }
         else {
             // We swap indices only. It is because swapping whole Triangles wouldn't be efficient
-            std::swap(triangle_indices[i], triangle_indices[j--]);
+            std::swap(triangle_indices_[i], triangle_indices_[j--]);
         }
     }
 
@@ -113,14 +113,14 @@ void BVHBuilder::subdivide(std::uint32_t node_index) {
     if (left_count == 0 || left_count == node.triangle_cnt) return;
 
     // Create child nodes
-    int left_child_index = nodesUsed++;
-    int right_child_index = nodesUsed++;
+    int left_child_index = nodes_used_++;
+    int right_child_index = nodes_used_++;
     node.left_child = left_child_index;
     node.right_child = right_child_index;
-    bvh_nodes[left_child_index].first_triangle_index = node.first_triangle_index;
-    bvh_nodes[left_child_index].triangle_cnt = left_count;
-    bvh_nodes[right_child_index].first_triangle_index = i;
-    bvh_nodes[right_child_index].triangle_cnt = node.triangle_cnt - left_count;
+    bvh_nodes_[left_child_index].first_triangle_index = node.first_triangle_index;
+    bvh_nodes_[left_child_index].triangle_cnt = left_count;
+    bvh_nodes_[right_child_index].first_triangle_index = i;
+    bvh_nodes_[right_child_index].triangle_cnt = node.triangle_cnt - left_count;
 
     // We also use this variable to know if it is leaf node or not. Leaf nodes have primCount > 0.
     // So every time node gets split into children, primCount for that node becomes 0.
@@ -136,7 +136,7 @@ void BVHBuilder::subdivide(std::uint32_t node_index) {
 
 void BVHBuilder::subdivideSAH(std::uint32_t node_index) {
     // Current split method: split along longest axis
-    BVHNode& node = bvh_nodes[node_index];
+    BVHNode& node = bvh_nodes_[node_index];
 
     // Decided to return if node contains 2 or less triangles. The reason for that is because 2 triangles can be aligned with splitting axis
     // and we can't split it into 2 non empty halves. This is still not 100% safe.
@@ -148,7 +148,7 @@ void BVHBuilder::subdivideSAH(std::uint32_t node_index) {
     float best_cost = float_max; // Maximum value for float, it is taken from math_constants.h file
     for (int axis = 0; axis < 3; axis++) { // Iterate over every axis
         for (std::uint32_t i = 0; i < node.triangle_cnt; i++) { // Iterate over every triangle inside current node
-            Triangle& triangle = triangles[triangle_indices[node.left_child + i]];
+            Triangle& triangle = triangles_[triangle_indices_[node.left_child + i]];
             float val = triangle.centroid[axis];
             float cost = evaluateSAH(node, axis, val);
             if (cost < best_cost) {
@@ -169,30 +169,30 @@ void BVHBuilder::subdivideSAH(std::uint32_t node_index) {
     int i = node.first_triangle_index;
     int j = i + node.triangle_cnt - 1;
     while (i <= j) {
-        if (triangles[triangle_indices[i]].centroid[axis] < splitPos) {
+        if (triangles_[triangle_indices_[i]].centroid[axis] < splitPos) {
             i++;
         }
         else {
             // We swap indices only. It is because swapping whole Triangles wouldn't be efficient
-            std::swap(triangle_indices[i], triangle_indices[j--]);
+            std::swap(triangle_indices_[i], triangle_indices_[j--]);
         }
     }
 
     int leftCount = i - node.first_triangle_index; // How many nodes will be in left child
 
     // This check ensures to avoid empty child nodes and infinite recursion
-    // (the function could keep attempting to split nodes indefinitely, especially when triangles align along the splitting axis)
+    // (the function could keep attempting to split nodes indefinitely, especially when triangles_ align along the splitting axis)
     if (leftCount == 0 || leftCount == node.triangle_cnt) return;
 
     // Create child nodes
-    int left_child_index = nodesUsed++;
-    int right_child_index = nodesUsed++;
+    int left_child_index = nodes_used_++;
+    int right_child_index = nodes_used_++;
     node.left_child = left_child_index;
     node.right_child = right_child_index;
-    bvh_nodes[left_child_index].first_triangle_index = node.first_triangle_index;
-    bvh_nodes[left_child_index].triangle_cnt = leftCount;
-    bvh_nodes[right_child_index].first_triangle_index = i;
-    bvh_nodes[right_child_index].triangle_cnt = node.triangle_cnt - leftCount;
+    bvh_nodes_[left_child_index].first_triangle_index = node.first_triangle_index;
+    bvh_nodes_[left_child_index].triangle_cnt = leftCount;
+    bvh_nodes_[right_child_index].first_triangle_index = i;
+    bvh_nodes_[right_child_index].triangle_cnt = node.triangle_cnt - leftCount;
 
     // We also use this variable to know if it is leaf node or not. Leaf nodes have primCount > 0.
     // So every time node gets split into children, primCount for that node becomes 0.
@@ -214,7 +214,7 @@ float BVHBuilder::evaluateSAH(BVHNode& node, int axis, float pos) {
 
     // Determine triangle counts and bounds for this split candidate
     for (std::uint32_t i = 0; i < node.triangle_cnt; i++) {
-        Triangle& triangle = triangles[triangle_indices[node.left_child + i]];
+        Triangle& triangle = triangles_[triangle_indices_[node.left_child + i]];
         if (triangle.centroid[axis] < pos) {
             leftCount++;
             left_box_min.setX(std::min({ left_box_min.x(), triangle.v0.x(), triangle.v1.x(), triangle.v2.x() }));
@@ -250,19 +250,19 @@ float BVHBuilder::evaluateSAH(BVHNode& node, int axis, float pos) {
 }
 
 void BVHBuilder::reorderIndices() {
-    std::vector<uint32_t> new_indices(indices.size());
+    std::vector<uint32_t> new_indices(indices_.size());
 
     // Reorder the indices based on triangle_indices
-    for (std::size_t i = 0; i < triangle_indices.size(); i++) {
-        std::uint32_t tri_index = triangle_indices[i];
+    for (std::size_t i = 0; i < triangle_indices_.size(); i++) {
+        std::uint32_t tri_index = triangle_indices_[i];
 
         // Each triangle has 3 indices
-        new_indices[i * 3 + 0] = indices[tri_index * 3 + 0];
-        new_indices[i * 3 + 1] = indices[tri_index * 3 + 1];
-        new_indices[i * 3 + 2] = indices[tri_index * 3 + 2];
+        new_indices[i * 3 + 0] = indices_[tri_index * 3 + 0];
+        new_indices[i * 3 + 1] = indices_[tri_index * 3 + 1];
+        new_indices[i * 3 + 2] = indices_[tri_index * 3 + 2];
     }
 
     // Copy new_indices to original indices
-    std::memcpy(indices.data(), new_indices.data(), new_indices.size() * sizeof(uint32_t));
+    std::memcpy(indices_.data(), new_indices.data(), new_indices.size() * sizeof(uint32_t));
 }
 

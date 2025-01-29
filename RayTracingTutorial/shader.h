@@ -4,7 +4,7 @@
 
 class Shader {
 public:
-    unsigned int ID;
+    unsigned int ID_;
 
     Shader(const char* vertexPath, const char* fragmentPath);
 

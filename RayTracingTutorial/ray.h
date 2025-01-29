@@ -7,26 +7,26 @@ class ray {
 public:
     ray() {}
 
-    ray(const point3& origin, const vec3& direction) : orig(origin), dir(direction) {}
+    ray(const point3& origin, const vec3& direction) : orig_(origin), dir_(direction) {}
 
-    inline const point3& origin() const { return orig; }
-    inline const vec3& direction() const { return dir; }
+    inline const point3& origin() const { return orig_; }
+    inline const vec3& direction() const { return dir_; }
 
     inline point3 at(float t) const {
-        return orig + t * dir;
+        return orig_ + t * dir_;
     }
 
     void setOrigin(point3 val) {
-        orig = val;
+        orig_ = val;
     }
 
     void setDirection(vec3 val) {
-        dir = val;
+        dir_ = val;
     }
 
 private:
-    point3 orig;
-    vec3 dir;
+    point3 orig_;
+    vec3 dir_;
 };
 
 #endif

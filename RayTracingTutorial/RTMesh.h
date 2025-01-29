@@ -35,14 +35,14 @@ public:
     MeshHandle getMeshHandle() const;
 
 private:
-    Context& context;
+    Context& context_;
 
-    MeshHandle mesh_handle;
-    std::shared_ptr<material> mat;
+    MeshHandle mesh_handle_;
+    std::shared_ptr<material> mat_;
 
-    std::span<const BVHNode> bvh_nodes;
-    std::vector<Triangle> triangles; // contains triangles (their coordinates) formed from indices and vertices arrays
-    std::vector<std::uint32_t> triangle_indices; // in order not to swap whole triangles, we will just swap these indices
+    std::span<const BVHNode> bvh_nodes_;
+    std::vector<Triangle> triangles_; // contains triangles (their coordinates) formed from indices and vertices arrays
+    std::vector<std::uint32_t> triangle_indices_; // in order not to swap whole triangles, we will just swap these indices
     
     void transformToTriangles();
     void intersectBVH(const ray& r, interval ray_t, hit_record& rec, const std::uint32_t nodeIdx, bool& hit, float& closest_hit_t) const;

@@ -9,26 +9,26 @@
 
 class camera {
 public:
-    int    image_width = 100;  // Rendered image width in pixel count
-    int    image_height;   // Rendered image height
+    int    image_width_ = 100;  // Rendered image width in pixel count
+    int    image_height_;   // Rendered image height
     
     void setInitalValues();
 
     std::vector<unsigned char> render(const hittable_list& world, std::vector<float>& image_data_acc, GUISettings& settings);
 
 private:
-    GUISettings settings;
-    point3 center = point3(0.0f, 0.0f, 1.0f);  // Camera center
-    float focal_length;
-    point3 pixel00_loc;    // Location of pixel 0, 0
-    vec3   pixel_delta_u;  // Offset to pixel to the right
-    vec3   pixel_delta_v;  // Offset to pixel below
-    bool camera_moved = false;
-    vec3 camera_direction;
-    vec3 camera_up;
-    vec3 camera_right;
-    matrix4x4 view_matrix;
-    matrix4x4 projection_matrix;
+    GUISettings settings_;
+    point3 center_ = point3(0.0f, 0.0f, 1.0f);  // Camera center
+    float focal_length_;
+    point3 pixel00_loc_;    // Location of pixel 0, 0
+    vec3   pixel_delta_u_;  // Offset to pixel to the right
+    vec3   pixel_delta_v_;  // Offset to pixel below
+    bool camera_moved_ = false;
+    vec3 camera_direction_;
+    vec3 camera_up_;
+    vec3 camera_right_;
+    matrix4x4 view_matrix_;
+    matrix4x4 projection_matrix_;
 
     void initialize();
 

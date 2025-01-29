@@ -37,14 +37,14 @@ public:
     void subdivideSAH(std::uint32_t node_index);
 
 private:
-    std::span<const float> vertices;
-    std::span<std::uint32_t> indices;
+    std::span<const float> vertices_;
+    std::span<std::uint32_t> indices_;
 
-    std::vector<BVHNode> bvh_nodes;
-    std::vector<Triangle>& triangles; // contains triangles (their coordinates) formed from indices and vertices arrays
-    std::vector<std::uint32_t>& triangle_indices; // in order not to swap whole triangles, we will just swap these indices
+    std::vector<BVHNode> bvh_nodes_;
+    std::vector<Triangle>& triangles_; // contains triangles (their coordinates) formed from indices and vertices arrays
+    std::vector<std::uint32_t>& triangle_indices_; // in order not to swap whole triangles, we will just swap these indices
 
-    std::uint32_t nodesUsed = 1;
+    std::uint32_t nodes_used_ = 1;
 
     float evaluateSAH(BVHNode& node, int axis, float pos);
     void reorderIndices(); // Because triangle_indices are getting swapped during BVH building, indices will have to swap also

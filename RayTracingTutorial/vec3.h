@@ -7,42 +7,42 @@
 
 class vec3 {
 public:
-    float e[3];
+    float e_[3];
 
-    vec3() : e{ 0,0,0 } {}
-    vec3(float e0) : e{ e0, e0, e0 } {}
-    vec3(float e0, float e1, float e2) : e{ e0, e1, e2 } {}
+    vec3() : e_{ 0,0,0 } {}
+    vec3(float e0) : e_{ e0, e0, e0 } {}
+    vec3(float e0, float e1, float e2) : e_{ e0, e1, e2 } {}
 
-    float x() const { return e[0]; }
-    float y() const { return e[1]; }
-    float z() const { return e[2]; }
+    float x() const { return e_[0]; }
+    float y() const { return e_[1]; }
+    float z() const { return e_[2]; }
 
-    void setX(float val) { e[0] = val; }
-    void setY(float val) { e[1] = val; }
-    void setZ(float val) { e[2] = val; }
+    void setX(float val) { e_[0] = val; }
+    void setY(float val) { e_[1] = val; }
+    void setZ(float val) { e_[2] = val; }
 
-    vec3 operator-() const { return vec3(-e[0], -e[1], -e[2]); }
-    float operator[](int i) const { return e[i]; }
-    float& operator[](int i) { return e[i]; }
+    vec3 operator-() const { return vec3(-e_[0], -e_[1], -e_[2]); }
+    float operator[](int i) const { return e_[i]; }
+    float& operator[](int i) { return e_[i]; }
 
     vec3& operator+=(const vec3& v) {
-        e[0] += v.e[0];
-        e[1] += v.e[1];
-        e[2] += v.e[2];
+        e_[0] += v.e_[0];
+        e_[1] += v.e_[1];
+        e_[2] += v.e_[2];
         return *this;
     }
 
     vec3& operator-=(const vec3& v) {
-        e[0] -= v.e[0];
-        e[1] -= v.e[1];
-        e[2] -= v.e[2];
+        e_[0] -= v.e_[0];
+        e_[1] -= v.e_[1];
+        e_[2] -= v.e_[2];
         return *this;
     }
 
     vec3& operator*=(float t) {
-        e[0] *= t;
-        e[1] *= t;
-        e[2] *= t;
+        e_[0] *= t;
+        e_[1] *= t;
+        e_[2] *= t;
         return *this;
     }
 
@@ -55,13 +55,13 @@ public:
     }
 
     float length_squared() const {
-        return e[0] * e[0] + e[1] * e[1] + e[2] * e[2];
+        return e_[0] * e_[0] + e_[1] * e_[1] + e_[2] * e_[2];
     }
 
     bool near_zero() const {
         // Return true if the vector is close to zero in all dimensions.
         auto s = 1e-8;
-        return (std::fabs(e[0]) < s) && (std::fabs(e[1]) < s) && (std::fabs(e[2]) < s);
+        return (std::fabs(e_[0]) < s) && (std::fabs(e_[1]) < s) && (std::fabs(e_[2]) < s);
     }
 
     static vec3 random() {
@@ -73,7 +73,7 @@ public:
     }
 
     const float* asPointer() const { // Method to return a pointer to the underlying array
-        return e;
+        return e_;
     }
 };
 
@@ -84,23 +84,23 @@ using point3 = vec3;
 // Vector Utility Functions
 
 inline std::ostream& operator<<(std::ostream& out, const vec3& v) {
-    return out << v.e[0] << ' ' << v.e[1] << ' ' << v.e[2];
+    return out << v.e_[0] << ' ' << v.e_[1] << ' ' << v.e_[2];
 }
 
 inline vec3 operator+(const vec3& u, const vec3& v) {
-    return vec3(u.e[0] + v.e[0], u.e[1] + v.e[1], u.e[2] + v.e[2]);
+    return vec3(u.e_[0] + v.e_[0], u.e_[1] + v.e_[1], u.e_[2] + v.e_[2]);
 }
 
 inline vec3 operator-(const vec3& u, const vec3& v) {
-    return vec3(u.e[0] - v.e[0], u.e[1] - v.e[1], u.e[2] - v.e[2]);
+    return vec3(u.e_[0] - v.e_[0], u.e_[1] - v.e_[1], u.e_[2] - v.e_[2]);
 }
 
 inline vec3 operator*(const vec3& u, const vec3& v) {
-    return vec3(u.e[0] * v.e[0], u.e[1] * v.e[1], u.e[2] * v.e[2]);
+    return vec3(u.e_[0] * v.e_[0], u.e_[1] * v.e_[1], u.e_[2] * v.e_[2]);
 }
 
 inline vec3 operator*(float t, const vec3& v) {
-    return vec3(t * v.e[0], t * v.e[1], t * v.e[2]);
+    return vec3(t * v.e_[0], t * v.e_[1], t * v.e_[2]);
 }
 
 inline vec3 operator*(const vec3& v, float t) {
@@ -112,15 +112,15 @@ inline vec3 operator/(const vec3& v, float t) {
 }
 
 inline float dot(const vec3& u, const vec3& v) {
-    return u.e[0] * v.e[0]
-        + u.e[1] * v.e[1]
-        + u.e[2] * v.e[2];
+    return u.e_[0] * v.e_[0]
+        + u.e_[1] * v.e_[1]
+        + u.e_[2] * v.e_[2];
 }
 
 inline vec3 cross(const vec3& u, const vec3& v) {
-    return vec3(u.e[1] * v.e[2] - u.e[2] * v.e[1],
-        u.e[2] * v.e[0] - u.e[0] * v.e[2],
-        u.e[0] * v.e[1] - u.e[1] * v.e[0]);
+    return vec3(u.e_[1] * v.e_[2] - u.e_[2] * v.e_[1],
+        u.e_[2] * v.e_[0] - u.e_[0] * v.e_[2],
+        u.e_[0] * v.e_[1] - u.e_[1] * v.e_[0]);
 }
 
 inline vec3 unit_vector(const vec3& v) {
@@ -150,15 +150,15 @@ inline vec3 reflect(const vec3& v, const vec3& n) {
 
 class vec4 : public vec3 {
 public:
-    float e3;  // Only adding the fourth component here (that is w - number of samples)
+    float e3_;  // Only adding the fourth component here (that is w - number of samples)
 
-    vec4() : vec3(), e3(0) {}
-    vec4(float e0, float e1, float e2, float e3) : vec3(e0, e1, e2), e3(e3) {}
+    vec4() : vec3(), e3_(0) {}
+    vec4(float e0, float e1, float e2, float e3) : vec3(e0, e1, e2), e3_(e3) {}
 
-    float x() const { return e[0]; }
-    float y() const { return e[1]; }
-    float z() const { return e[2]; }
-    float w() const { return e3; }
+    float x() const { return e_[0]; }
+    float y() const { return e_[1]; }
+    float z() const { return e_[2]; }
+    float w() const { return e3_; }
 };
 
 #endif

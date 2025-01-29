@@ -121,10 +121,10 @@ int main(int, char**) {
     /*SceneMeshes scene_meshes;
     scene_meshes.initialize();*/
     SceneRtMeshes scene_rt_meshes;
-    scene_rt_meshes.context = context;
+    scene_rt_meshes.context_ = context;
     scene_rt_meshes.initialize();
     SceneCornellBox scene_cornell_box;
-    scene_cornell_box.context = context;
+    scene_cornell_box.context_ = context;
     scene_cornell_box.initialize();
 
     camera cam;
@@ -197,14 +197,14 @@ int main(int, char**) {
             // Enable/Disable BVH for active scene + assign the BVH technique
             switch (selected_scene_index) {
                 case SceneType::RT_MESHES: // scene_rt_meshes
-                    ImGui::Checkbox("Enable BVH", &scene_rt_meshes.context.settings->enable_BVH);
-                    scene_rt_meshes.context.settings->BVH_technique = chosen_technique_index;
-                    scene_rt_meshes.context.settings->selected_option = selected_option;
+                    ImGui::Checkbox("Enable BVH", &scene_rt_meshes.context_.settings->enable_BVH);
+                    scene_rt_meshes.context_.settings->BVH_technique = chosen_technique_index;
+                    scene_rt_meshes.context_.settings->selected_option = selected_option;
                     break;
                 case SceneType::CORNELL_BOX: // scene_cornell_box
-                    ImGui::Checkbox("Enable BVH", &scene_cornell_box.context.settings->enable_BVH);
-                    scene_cornell_box.context.settings->BVH_technique = chosen_technique_index;
-                    scene_cornell_box.context.settings->selected_option = selected_option;
+                    ImGui::Checkbox("Enable BVH", &scene_cornell_box.context_.settings->enable_BVH);
+                    scene_cornell_box.context_.settings->BVH_technique = chosen_technique_index;
+                    scene_cornell_box.context_.settings->selected_option = selected_option;
                     break;
             }
 
@@ -225,13 +225,13 @@ int main(int, char**) {
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
-        cam.image_width = display_w;
-        cam.image_height = display_h;
+        cam.image_width_ = display_w;
+        cam.image_height_ = display_h;
         
         switch (selected_scene_index) {
             case SceneType::RT_MESHES:
-                scene_rt_meshes.context.settings->trace_percentage = trace_percentage;
-                scene_rt_meshes.context.settings->reflection_depth = reflection_depth;
+                scene_rt_meshes.context_.settings->trace_percentage = trace_percentage;
+                scene_rt_meshes.context_.settings->reflection_depth = reflection_depth;
                 image_data = scene_rt_meshes.update(display_w, display_h, cam);
                 break;
             case SceneType::CORNELL_BOX:

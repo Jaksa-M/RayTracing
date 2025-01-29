@@ -7,8 +7,8 @@
 
 class SceneBoxes : public Scene {
 private:
-    std::unique_ptr<Mesh> mesh;
-    std::unique_ptr<Shader> shader_prog;
+    std::unique_ptr<Mesh> mesh_;
+    std::unique_ptr<Shader> shader_prog_;
 
 public:
     SceneBoxes();

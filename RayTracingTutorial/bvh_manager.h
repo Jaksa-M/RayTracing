@@ -21,9 +21,9 @@ public:
 	std::span<const BVHNode> getBVHNodes(MeshHandle mesh_handle) const;
 
 private:
-	GUISettings* settings;
+	GUISettings* settings_;
 	struct BVHInfo {
-		std::vector<BVHNode> bvh_nodes;
+		std::vector<BVHNode> bvh_nodes_;
 	};
 	std::unordered_map<MeshHandle, BVHInfo> bvh_info_;
 

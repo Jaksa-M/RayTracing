@@ -9,20 +9,20 @@
 
 class SceneCornellBox: public Scene {
 private:
-    std::unique_ptr<MeshBufferManager> mesh_buf_manager;
-    std::unique_ptr<BVHManager> bvh_manager;
+    std::unique_ptr<MeshBufferManager> mesh_buf_manager_;
+    std::unique_ptr<BVHManager> bvh_manager_;
 
-    std::shared_ptr<RTMesh> rect_prism_mesh;
-    std::shared_ptr<RTMesh> cube_mesh;
-    std::shared_ptr<RTMesh> rect_mesh_top;
-    std::shared_ptr<RTMesh> rect_mesh_bottom;
-    std::shared_ptr<RTMesh> rect_mesh_left;
-    std::shared_ptr<RTMesh> rect_mesh_right;
-    std::shared_ptr<RTMesh> rect_mesh_back;
+    std::shared_ptr<RTMesh> rect_prism_mesh_;
+    std::shared_ptr<RTMesh> cube_mesh_;
+    std::shared_ptr<RTMesh> rect_mesh_top_;
+    std::shared_ptr<RTMesh> rect_mesh_bottom_;
+    std::shared_ptr<RTMesh> rect_mesh_left_;
+    std::shared_ptr<RTMesh> rect_mesh_right_;
+    std::shared_ptr<RTMesh> rect_mesh_back_;
     
     
 public:
-    BVHTechnique prev_BVH_technique; // Used for checking whether BVH techique has changed
+    BVHTechnique prev_BVH_technique_; // Used for checking whether BVH techique has changed
 
     SceneCornellBox();
 
