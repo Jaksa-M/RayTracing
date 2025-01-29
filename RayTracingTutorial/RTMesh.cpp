@@ -9,6 +9,9 @@
 #include <GLFW/glfw3.h>
 #include <queue>
 #include "context.h"
+#include "mesh_buffer_manager.h"
+#include "gui_settings.h"
+#include "bvh_manager.h"
 
 
 // Inline functions
@@ -199,19 +202,6 @@ void RTMesh::applyTransformations(std::vector<matrix4x4>& transformations) {
         transform(transformations[i]);
     }
 }
-
-//void RTMesh::buildBVH() {
-//    BVHBuilder bvh_builder(vertices, indices, vertex_normals, triangles, triangle_indices);
-//
-//    switch (context.settings->BVH_technique) {
-//        case 0: // midpoint split
-//            bvh_nodes = bvh_builder.buildBVH();
-//            break;
-//        case 1: // SAH
-//            bvh_nodes = bvh_builder.buildBVHSAH();
-//            break;
-//    }
-//}
 
 void RTMesh::drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32_t index, std::unique_ptr<Shader>& shader_prog, camera& cam) {
     shader_prog->bind();

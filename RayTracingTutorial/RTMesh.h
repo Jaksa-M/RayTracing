@@ -26,8 +26,6 @@ public:
 
     void applyTransformations(std::vector<matrix4x4>& transformations);
 
-    //void buildBVH();
-
     // Functions to draw box for every node inside BVH tree
     void drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, std::uint32_t index, std::unique_ptr<Shader>& shader_prog, camera& cam);
     void drawBVHLeaves(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32_t index, std::unique_ptr<Shader>& shader_prog, camera& cam);

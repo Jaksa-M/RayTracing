@@ -5,9 +5,9 @@
 #include "interval.h"
 #include <algorithm>
 
-BVHBuilder::BVHBuilder(std::span<const float> vertices, std::span<std::uint32_t> indices, std::span<const float> vertex_normals,
+BVHBuilder::BVHBuilder(std::span<const float> vertices, std::span<std::uint32_t> indices,
     std::vector<Triangle>& triangles, std::vector<std::uint32_t>& triangle_indices):
-    vertices(vertices), indices(indices), vertex_normals(vertex_normals), triangles(triangles), triangle_indices(triangle_indices)
+    vertices(vertices), indices(indices), triangles(triangles), triangle_indices(triangle_indices)
 {
 
 }
@@ -50,6 +50,7 @@ std::vector<BVHNode> BVHBuilder::buildBVHSAH() {
     // Start recursive subdivision
     subdivideSAH(0);
 
+    reorderIndices();
     return bvh_nodes;
 }
 

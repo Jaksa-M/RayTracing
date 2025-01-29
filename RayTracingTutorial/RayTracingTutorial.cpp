@@ -16,6 +16,10 @@
 // Includes for my code
 #include <vector>
 #include "types.h"
+#include "gui_settings.h"
+#include "mesh_buffer_manager.h"
+#include "bvh_manager.h"
+#include "context.h"
 //#include "shader.h"
 #include "camera.h"
 #include "cameraController.h"
@@ -99,6 +103,17 @@ int main(int, char**) {
     bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
+    // Setting up settings for each Scene (they are all using same settings)
+    std::unique_ptr<GUISettings> gui_settings = std::make_unique<GUISettings>();
+    std::unique_ptr<MeshBufferManager> mesh_buf_manager = std::make_unique<MeshBufferManager>();
+    std::unique_ptr<BVHManager> bvh_manager = std::make_unique<BVHManager>(gui_settings.get());
+
+    Context context;
+    context.settings = gui_settings.get();
+    context.mesh_buf_manager = mesh_buf_manager.get();
+    context.bvh_manager = bvh_manager.get();
+
+    // Scene Initialization
     //SceneTransformations scene_transf;
     //scene_transf.initialize();
     /*SceneBoxes scene_boxes;
@@ -106,8 +121,10 @@ int main(int, char**) {
     /*SceneMeshes scene_meshes;
     scene_meshes.initialize();*/
     SceneRtMeshes scene_rt_meshes;
+    scene_rt_meshes.context = context;
     scene_rt_meshes.initialize();
     SceneCornellBox scene_cornell_box;
+    scene_cornell_box.context = context;
     scene_cornell_box.initialize();
 
     camera cam;
@@ -117,8 +134,8 @@ int main(int, char**) {
     float trace_percentage = 0.1f;
     int reflection_depth = 2;
     bool reset_accumulated = false;
-    int selected_scene_index = 0;
-    int chosen_technique_index = 0;
+    SceneType selected_scene_index = SceneType::RT_MESHES;
+    BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
     int selected_option = -1;
     std::vector<unsigned char> image_data;
 
@@ -159,8 +176,15 @@ int main(int, char**) {
             ImGui::SliderFloat("pixel traced", &trace_percentage, 0.0f, 1.0f);
             ImGui::SliderInt("reflection bounces", &reflection_depth, 0, 15);
             ImGui::Checkbox("Reset accumulated", &reset_accumulated);
-            ImGui::Combo("Scene", &selected_scene_index, scenes, IM_ARRAYSIZE(scenes));
-            ImGui::Combo("BVH technique", &chosen_technique_index, techniques, IM_ARRAYSIZE(techniques));
+
+            int scene_index = static_cast<int>(selected_scene_index); // Convert enum class to int
+            ImGui::Combo("Scene", &scene_index, scenes, IM_ARRAYSIZE(scenes));
+            selected_scene_index = static_cast<SceneType>(scene_index); // Convert int back to enum class
+
+            int technique_index = static_cast<int>(chosen_technique_index); // Convert enum class to int
+            ImGui::Combo("BVH technique", &technique_index, techniques, IM_ARRAYSIZE(techniques));
+            chosen_technique_index = static_cast<BVHTechnique>(technique_index); // Convert int back to enum class
+
 
 
             if (ImGui::RadioButton("Draw tree", selected_option == 0)) {
@@ -172,19 +196,15 @@ int main(int, char**) {
 
             // Enable/Disable BVH for active scene + assign the BVH technique
             switch (selected_scene_index) {
-                case RT_MESHES: // scene_rt_meshes
+                case SceneType::RT_MESHES: // scene_rt_meshes
                     ImGui::Checkbox("Enable BVH", &scene_rt_meshes.context.settings->enable_BVH);
                     scene_rt_meshes.context.settings->BVH_technique = chosen_technique_index;
                     scene_rt_meshes.context.settings->selected_option = selected_option;
-                    /*scene_rt_meshes.BVH_technique = chosen_technique_index;
-                    scene_rt_meshes.selected_option = selected_option;*/
                     break;
-                case CORNELL_BOX: // scene_cornell_box
+                case SceneType::CORNELL_BOX: // scene_cornell_box
                     ImGui::Checkbox("Enable BVH", &scene_cornell_box.context.settings->enable_BVH);
                     scene_cornell_box.context.settings->BVH_technique = chosen_technique_index;
                     scene_cornell_box.context.settings->selected_option = selected_option;
-                    /*scene_cornell_box.BVH_technique = chosen_technique_index;
-                    scene_cornell_box.selected_option = selected_option;*/
                     break;
             }
 
@@ -209,12 +229,12 @@ int main(int, char**) {
         cam.image_height = display_h;
         
         switch (selected_scene_index) {
-            case RT_MESHES:
+            case SceneType::RT_MESHES:
                 scene_rt_meshes.context.settings->trace_percentage = trace_percentage;
                 scene_rt_meshes.context.settings->reflection_depth = reflection_depth;
                 image_data = scene_rt_meshes.update(display_w, display_h, cam);
                 break;
-            case CORNELL_BOX:
+            case SceneType::CORNELL_BOX:
                 image_data = scene_cornell_box.update(display_w, display_h, cam);
                 break;
         }

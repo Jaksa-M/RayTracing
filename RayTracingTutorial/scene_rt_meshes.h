@@ -5,6 +5,7 @@
 #include "shader.h"
 #include "mesh.h"
 #include "RTMesh.h"
+#include "types.h"
 
 class SceneRtMeshes: public Scene {
 private:
@@ -28,7 +29,7 @@ private:
  
 public:
     
-    int prev_BVH_technique; // Used for checking whether BVH techique has changed
+    BVHTechnique prev_BVH_technique; // Used for checking whether BVH techique has changed
 
     SceneRtMeshes();
 

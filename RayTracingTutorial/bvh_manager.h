@@ -7,10 +7,10 @@
 #include <span>
 #include "vec3.h"
 #include "bvh_builder.h"
-#include "gui_settings.h"
 #include "types.h"
 
 class MeshBufferManager;
+class GUISettings;
 
 class BVHManager {
 public:

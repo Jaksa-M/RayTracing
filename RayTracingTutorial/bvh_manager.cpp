@@ -1,6 +1,7 @@
 #include "bvh_manager.h"
 #include "bvh_builder.h"
 #include "mesh_buffer_manager.h"
+#include "gui_settings.h"
 
 BVHManager::BVHManager(GUISettings* settings): settings(settings) {
     
@@ -17,13 +18,13 @@ void BVHManager::buildBVH(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_h
 
         transformToTriangles(vertices, indices, vertex_normals, triangles, triangle_indices);
 
-        BVHBuilder bvh_builder(vertices, indices, vertex_normals, triangles, triangle_indices);
+        BVHBuilder bvh_builder(vertices, indices, triangles, triangle_indices);
 
         switch (settings->BVH_technique) {
-        case 0: // midpoint split
+        case BVHTechnique::MIDPOINT_SPLIT: // midpoint split
             bvh_info_[mesh_handle].bvh_nodes = bvh_builder.buildBVH();
             break;
-        case 1: // SAH
+        case BVHTechnique::SAH: // SAH
             bvh_info_[mesh_handle].bvh_nodes = bvh_builder.buildBVHSAH();
             break;
         }

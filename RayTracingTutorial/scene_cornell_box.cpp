@@ -17,14 +17,11 @@
 #include "context.h"
 
 SceneCornellBox::SceneCornellBox() {
-    context.settings = std::make_unique<GUISettings>();
+
 }
 
 void SceneCornellBox::initialize() {
     prev_BVH_technique = context.settings->BVH_technique;
-
-    context.mesh_buf_manager = std::make_unique<MeshBufferManager>();
-    context.bvh_manager = std::make_unique<BVHManager>(context.settings.get());
 
     auto mat_yellow = std::make_shared<lambertian>(color(0.8f, 0.8f, 0.0f));
     auto mat_green = std::make_shared<lambertian>(color(0.0f, 1.0f, 0.0f));
@@ -67,42 +64,35 @@ void SceneCornellBox::createTransformations() {
     std::vector<matrix4x4> transformations_rect_prism;
     transformations_rect_prism.push_back(m);
     rect_prism_mesh->applyTransformations(transformations_rect_prism);
-    //rect_prism_mesh->buildBVH();
 
     m = transformation::create_rotation_matrix(0.0f, 40.0f * (3.14159f / 180.0f), 0.0f); // 50 degrees rotation on y-axis
     std::vector<matrix4x4> transformations_rect_cube;
     transformations_rect_cube.push_back(m);
     cube_mesh->applyTransformations(transformations_rect_cube);
-    //cube_mesh->buildBVH();
 
     m = transformation::create_rotation_matrix(0.0f, 270.0f * (3.14159f / 180.0f), 0.0f); // 270 degrees rotation on y-axis only
     std::vector<matrix4x4> transformations_rect_left;
     transformations_rect_left.push_back(m);
     rect_mesh_left->applyTransformations(transformations_rect_left);
-    //rect_mesh_left->buildBVH();
 
     m = transformation::create_rotation_matrix(0.0f, 90.0f * (3.14159f / 180.0f), 0.0f); // 90 degrees rotation on y-axis only
     std::vector<matrix4x4> transformations_rect_right;
     transformations_rect_right.push_back(m);
     rect_mesh_right->applyTransformations(transformations_rect_right);
-    //rect_mesh_right->buildBVH();
 
     m = transformation::create_translation_matrix(vec3(0.0f, 0.0f, -1.0f));
     std::vector<matrix4x4> transformations_rect_back;
     transformations_rect_back.push_back(m);
     rect_mesh_back->applyTransformations(transformations_rect_back);
-    //rect_mesh_back->buildBVH();
 
     //m = transformation::create_rotation_matrix(0.0f * (3.14159f / 180.0f), 0.0f, 0.0f); // 90 degrees rotation on y-axis only
     m = transformation::rotation_x(90.0f * (3.14159f / 180.0f)); // 90 degrees rotation on y-axis only
     std::vector<matrix4x4> transformations_rect_top;
     transformations_rect_top.push_back(m);
     rect_mesh_top->applyTransformations(transformations_rect_top);
-    //rect_mesh_top->buildBVH();
 
     m = transformation::rotation_x(270.0f * (3.14159f / 180.0f)); // 90 degrees rotation on y-axis only
     std::vector<matrix4x4> transformations_rect_bottom;
     transformations_rect_bottom.push_back(m);
     rect_mesh_bottom->applyTransformations(transformations_rect_bottom);
-    //rect_mesh_bottom->buildBVH();
 }

@@ -1,15 +1,18 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-#include <cstdint>
+#include <cstdint> // std::size_t
 
 using MeshHandle = std::size_t;
 
-using BVHHandle = std::size_t;
+enum class SceneType {
+    RT_MESHES,    // scene_rt_meshes
+    CORNELL_BOX   // scene_cornell_box
+};
 
-enum SceneType {
-    RT_MESHES = 0,  // scene_rt_meshes
-    CORNELL_BOX = 1 // scene_cornell_box
+enum class BVHTechnique {
+    MIDPOINT_SPLIT,
+    SAH
 };
 
 #endif

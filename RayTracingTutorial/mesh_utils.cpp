@@ -5,6 +5,9 @@
 #include <iomanip> // for std::setprecision
 #include <cmath>
 #include "context.h"
+#include "mesh_buffer_manager.h"
+#include "gui_settings.h"
+#include "bvh_manager.h"
 
 std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(Context& context, const std::shared_ptr<material>& mat,
         unsigned int num_of_vert, vec3 center , vec3 size)  // creating an unit cube
@@ -60,7 +63,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(Context& context, const 
     }
 
     std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(vertices, 2, indices, vertex_normals);
-    context.bvh_manager->buildBVH(context.mesh_buf_manager.get(), mesh_handle);
+    context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
 
     std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(context, mesh_handle, mat);
     return mesh;
@@ -182,7 +185,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(Context& context, cons
     return mesh;*/
 
     std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(vertices, 2, indices, vertex_normals);
-    context.bvh_manager->buildBVH(context.mesh_buf_manager.get(), mesh_handle);
+    context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
 
     std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(context, mesh_handle, mat);
     return mesh;
@@ -275,7 +278,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateIcosphere(Context& context, const std
     generateTriangleVertexNormals(vertex_normals, vertices, indices, 3);
 
     std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(vertices, 1, indices, vertex_normals);
-    context.bvh_manager->buildBVH(context.mesh_buf_manager.get(), mesh_handle);
+    context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
 
     std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(context, mesh_handle, mat);
     return mesh;
@@ -337,7 +340,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(Context& context, c
     }
 
     std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(vertices, 2, indices, vertex_normals);
-    context.bvh_manager->buildBVH(context.mesh_buf_manager.get(), mesh_handle);
+    context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
 
     std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(context, mesh_handle, mat);
     return mesh;
@@ -395,7 +398,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTestMesh(Context& context, const std:
 
     // Add data to mesh buffer manager
     std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(vertices, 2, indices, normals);
-    context.bvh_manager->buildBVH(context.mesh_buf_manager.get(), mesh_handle);
+    context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
 
     std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(context, mesh_handle, mat);
     return mesh;

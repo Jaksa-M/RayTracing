@@ -16,14 +16,11 @@
 #include <GLFW/glfw3.h>
 
 SceneRtMeshes::SceneRtMeshes() {
-    context.settings = std::make_unique<GUISettings>();
+
 }
 
 void SceneRtMeshes::initialize() {
     prev_BVH_technique = context.settings->BVH_technique;
-
-    context.mesh_buf_manager = std::make_unique<MeshBufferManager>();
-    context.bvh_manager = std::make_unique<BVHManager>(context.settings.get());
 
     auto mat = std::make_shared<lambertian>(color(0.8f, 0.8f, 0.0f));
     //cube_mesh = MeshUtils::GenerateTriangleCube(mat, mesh_buf_manager.get(), 2);
@@ -37,14 +34,12 @@ void SceneRtMeshes::initialize() {
                   transformation::create_translation_matrix(vec3(-2.0f, 0.0f, 0.0f)); // 30 degree rotation on y-axis + translation on x-axis
     rect_prism_mesh1->setTransformationMatrix(m);
     world.add(rect_prism_mesh1);
-    //rect_prism_mesh1->buildBVH();
 
     rect_prism_mesh2 = std::make_shared<RTMesh>(context, rect_prism_mesh1->getMeshHandle(), mat);
     m = transformation::create_rotation_matrix(0.0f, 70.0f * (3.14159f / 180.0f), 0.0f) *
         transformation::create_translation_matrix(vec3(2.0f, 0.0f, 0.0f)); // 70 degree rotation on y-axis + translation on x-axis
     rect_prism_mesh2->setTransformationMatrix(m);
     world.add(rect_prism_mesh2);
-    //rect_prism_mesh2->buildBVH();
 
     /*ico_sphere1 = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2, settings);
     matrix4x4 m = transformation::create_translation_matrix(vec3(1.0f, 0.0f, 0.0f));

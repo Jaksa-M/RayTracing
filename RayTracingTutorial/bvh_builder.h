@@ -27,7 +27,7 @@ struct IntersectResult {
 
 class BVHBuilder {
 public:
-    BVHBuilder(std::span<const float> vertices, std::span<std::uint32_t> indices, std::span<const float> vertex_normals, std::vector<Triangle>& triangles,
+    BVHBuilder(std::span<const float> vertices, std::span<std::uint32_t> indices, std::vector<Triangle>& triangles,
         std::vector<std::uint32_t>& triangle_indices);
 
     std::vector<BVHNode> buildBVH();
@@ -39,7 +39,6 @@ public:
 private:
     std::span<const float> vertices;
     std::span<std::uint32_t> indices;
-    std::span<const float> vertex_normals;
 
     std::vector<BVHNode> bvh_nodes;
     std::vector<Triangle>& triangles; // contains triangles (their coordinates) formed from indices and vertices arrays

@@ -53,14 +53,10 @@ vec4 matrix4x4::operator*(const vec4& v) const {
 }
 
 matrix4x4 matrix4x4::identity() {
-    matrix4x4 identity_mat;
-    for (int i = 0; i < 4; i++) {
-        identity_mat(i, i) = 1.0f; // Set diagonal elements to 1
-    }
-    return identity_mat;
+    return matrix4x4();
 }
 
-const matrix4x4 matrix4x4::invert() const {
+matrix4x4 matrix4x4::invert() const {
     matrix4x4 result = matrix4x4::identity();
     matrix4x4 temp = *this; // Copy of the current matrix
 
@@ -144,14 +140,10 @@ vec3 matrix3x3::operator*(const vec3& v) const {
 }
 
 matrix3x3 matrix3x3::identity() {
-    matrix3x3 identity_mat;
-    for (int i = 0; i < 3; i++) {
-        identity_mat(i, i) = 1.0f; // Set diagonal elements to 1
-    }
-    return identity_mat;
+    return matrix3x3();
 }
 
-const matrix3x3 matrix3x3::invert() {
+matrix3x3 matrix3x3::invert() const {
     matrix3x3 result = matrix3x3::identity();
     matrix3x3 temp = *this; // Copy of the current matrix
 
