@@ -84,7 +84,7 @@
     <ClCompile Include="transformations.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CameraController.cpp">
+    <ClCompile Include="camera_controller.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="scene_boxes.cpp">
@@ -188,7 +188,7 @@
     <ClInclude Include="ExternalLibraries\imgui\imstb_truetype.h">
       <Filter>External Libraries\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="CameraController.h">
+    <ClInclude Include="camera_controller.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="matrix.h">

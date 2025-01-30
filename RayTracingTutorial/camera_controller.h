@@ -4,7 +4,7 @@
 #include "imgui/imgui.h"
 class camera;
 
-class cameraController {
+class CameraController {
 private:
     camera& cam_;
     float speed_;
@@ -15,11 +15,11 @@ private:
     float yaw_ = 90.0f;
     float pitch_ = 0.0f;
 public:
-    cameraController(camera& cam, float speed);
+    CameraController(camera& cam, float speed);
 
-    void HandleKeyboardInput(float dt);
+    void handleKeyboardInput(float dt);
 
-    void HandleMouseInput(ImGuiIO& io);
+    void handleMouseInput(ImGuiIO& io);
 
     void setSpeed(float sp) {
         this->speed_ = sp;

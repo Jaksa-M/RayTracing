@@ -150,7 +150,7 @@
     <ClCompile Include="bvh_builder.cpp" />
     <ClCompile Include="bvh_manager.cpp" />
     <ClCompile Include="camera.cpp" />
-    <ClCompile Include="CameraController.cpp" />
+    <ClCompile Include="camera_controller.cpp" />
     <ClCompile Include="ExternalLibraries\imgui\imgui.cpp" />
     <ClCompile Include="ExternalLibraries\imgui\imgui_demo.cpp" />
     <ClCompile Include="ExternalLibraries\imgui\imgui_draw.cpp" />
@@ -182,7 +182,7 @@
     <ClInclude Include="bvh_builder.h" />
     <ClInclude Include="bvh_manager.h" />
     <ClInclude Include="camera.h" />
-    <ClInclude Include="CameraController.h" />
+    <ClInclude Include="camera_controller.h" />
     <ClInclude Include="color.h" />
     <ClInclude Include="context.h" />
     <ClInclude Include="ExternalLibraries\glad\gl.h" />

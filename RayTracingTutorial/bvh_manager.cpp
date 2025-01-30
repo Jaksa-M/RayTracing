@@ -22,10 +22,10 @@ void BVHManager::buildBVH(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_h
 
         switch (settings_->BVH_technique) {
         case BVHTechnique::MIDPOINT_SPLIT: // midpoint split
-            bvh_info_[mesh_handle].bvh_nodes_ = bvh_builder.buildBVH();
+            bvh_info_[mesh_handle].bvh_nodes = bvh_builder.buildBVH();
             break;
         case BVHTechnique::SAH: // SAH
-            bvh_info_[mesh_handle].bvh_nodes_ = bvh_builder.buildBVHSAH();
+            bvh_info_[mesh_handle].bvh_nodes = bvh_builder.buildBVHSAH();
             break;
         }
     }
@@ -33,7 +33,7 @@ void BVHManager::buildBVH(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_h
 
 std::span<const BVHNode> BVHManager::getBVHNodes(MeshHandle mesh_handle) const {
     if (auto it = bvh_info_.find(mesh_handle); it != bvh_info_.end()) {
-        return std::span(it->second.bvh_nodes_);
+        return std::span(it->second.bvh_nodes);
     }
     return {};
 }

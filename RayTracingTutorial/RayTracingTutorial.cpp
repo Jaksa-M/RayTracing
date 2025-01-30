@@ -22,7 +22,7 @@
 #include "context.h"
 //#include "shader.h"
 #include "camera.h"
-#include "cameraController.h"
+#include "camera_controller.h"
 //#include "scene_transformations.h"
 //#include "scene_boxes.h"
 //#include "scene_meshes.h"
@@ -139,7 +139,7 @@ int main(int, char**) {
     int selected_option = -1;
     std::vector<unsigned char> image_data;
 
-    cameraController cam_controller(cam, 2.0f);
+    CameraController cam_controller(cam, 2.0f);
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -213,10 +213,10 @@ int main(int, char**) {
         }
         
         if (!io.WantCaptureKeyboard) {
-            cam_controller.HandleKeyboardInput(io.DeltaTime);
+            cam_controller.handleKeyboardInput(io.DeltaTime);
         }
         if (!io.WantCaptureMouse) {
-            cam_controller.HandleMouseInput(io);
+            cam_controller.handleMouseInput(io);
         }
 
 

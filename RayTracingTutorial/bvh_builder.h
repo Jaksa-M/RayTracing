@@ -21,8 +21,8 @@ struct Triangle {
 struct IntersectResult {
     float t;   // Intersection distance
     vec3 Q; // hit_point
-    vec3 triangle_normal;
-    vec3 shading_normal;
+    vec3 barycentrics; // vec3(alpha, beta, gamma)
+    std::uint32_t closest_tri_index; 
 };
 
 class BVHBuilder {

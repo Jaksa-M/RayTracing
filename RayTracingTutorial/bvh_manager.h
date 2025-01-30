@@ -23,7 +23,7 @@ public:
 private:
 	GUISettings* settings_;
 	struct BVHInfo {
-		std::vector<BVHNode> bvh_nodes_;
+		std::vector<BVHNode> bvh_nodes;
 	};
 	std::unordered_map<MeshHandle, BVHInfo> bvh_info_;
 

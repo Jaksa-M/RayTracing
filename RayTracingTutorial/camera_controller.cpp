@@ -1,9 +1,9 @@
-#include "CameraController.h"
+#include "camera_controller.h"
 #include "camera.h"
 
-cameraController::cameraController(camera& cam, float speed) : cam_(cam), speed_(speed), delta_time_seconds_(1.0) {}
+CameraController::CameraController(camera& cam, float speed) : cam_(cam), speed_(speed), delta_time_seconds_(1.0) {}
 
-void cameraController::HandleKeyboardInput(float dt) {
+void CameraController::handleKeyboardInput(float dt) {
     delta_time_seconds_ = dt;
     if (ImGui::IsKeyDown(ImGuiKey_Q)) {
         moveDown();
@@ -50,7 +50,7 @@ void cameraController::HandleKeyboardInput(float dt) {
     //}
 }
 
-void cameraController::HandleMouseInput(ImGuiIO& io) {
+void CameraController::handleMouseInput(ImGuiIO& io) {
     // Check if the left mouse button is held
     if (ImGui::IsMouseDown(0)) {
         if (!is_dragging_) {
@@ -95,42 +95,42 @@ void cameraController::HandleMouseInput(ImGuiIO& io) {
     }
 }
 
-void cameraController::moveUp() {
+void CameraController::moveUp() {
     point3 pos = cam_.getPosition();
     pos -= cam_.getUpVector() * (speed_ * delta_time_seconds_);
     cam_.setPosition(pos);
     cam_.setCameraMoved(true);
 }
 
-void cameraController::moveDown() {
+void CameraController::moveDown() {
     point3 pos = cam_.getPosition();
     pos += cam_.getUpVector() * (speed_ * delta_time_seconds_);
     cam_.setPosition(pos);
     cam_.setCameraMoved(true);
 }
 
-void cameraController::moveLeft() {
+void CameraController::moveLeft() {
     point3 pos = cam_.getPosition();
     pos += unit_vector(cross(cam_.getDirection(), cam_.getUpVector())) * (speed_ * delta_time_seconds_);
     cam_.setPosition(pos);
     cam_.setCameraMoved(true);
 }
 
-void cameraController::moveRight() {
+void CameraController::moveRight() {
     point3 pos = cam_.getPosition();
     pos -= unit_vector(cross(cam_.getDirection(), cam_.getUpVector())) * (speed_ * delta_time_seconds_);
     cam_.setPosition(pos);
     cam_.setCameraMoved(true);
 }
 
-void cameraController::moveForward() {
+void CameraController::moveForward() {
     point3 pos = cam_.getPosition();
     pos -= cam_.getDirection() * (speed_ * delta_time_seconds_);
     cam_.setPosition(pos);
     cam_.setCameraMoved(true);
 }
 
-void cameraController::moveBackward() {
+void CameraController::moveBackward() {
     point3 pos = cam_.getPosition();
     pos += cam_.getDirection() * (speed_ * delta_time_seconds_);
     cam_.setPosition(pos);
