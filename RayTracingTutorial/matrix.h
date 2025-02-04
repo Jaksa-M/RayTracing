@@ -3,11 +3,10 @@
 
 #include "vec3.h"
 #include <iostream>
+class matrix3x3;
 
 class matrix4x4 {
 public:
-    float data_[4][4];
-
     matrix4x4();
 
     // Can't use [] for indexing because it only allows to take 1 argument.
@@ -17,20 +16,25 @@ public:
     vec3 operator*(const vec3& v) const;
     vec4 operator*(const vec4& v) const;
 
+    matrix3x3 convertTo3x3() const;
+
     static matrix4x4 identity();
 
     matrix4x4 invert() const;
 
+    matrix4x4 transpose() const;
+
     const float* asPointer() const;
 
     friend std::ostream& operator<<(std::ostream& os, const matrix4x4& matrix);
+
+private:
+    float data[4][4];
 };
 
 
 class matrix3x3 {
 public:
-    float data_[3][3];
-
     matrix3x3();
 
     // Can't use [] for indexing because it only allows to take 1 argument.
@@ -43,9 +47,14 @@ public:
 
     matrix3x3 invert() const;
 
+    matrix3x3 transpose() const;
+
     const float* asPointer() const;
 
     friend std::ostream& operator<<(std::ostream& os, const matrix3x3& matrix);
+
+private:
+    float data[3][3];
 };
 
 

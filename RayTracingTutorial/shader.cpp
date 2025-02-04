@@ -47,11 +47,11 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath) {
     glCompileShader(fragment);
     checkCompileErrors(fragment, "FRAGMENT");
     // shader Program
-    ID_ = glCreateProgram();
-    glAttachShader(ID_, vertex);
-    glAttachShader(ID_, fragment);
-    glLinkProgram(ID_);
-    checkCompileErrors(ID_, "PROGRAM");
+    ID = glCreateProgram();
+    glAttachShader(ID, vertex);
+    glAttachShader(ID, fragment);
+    glLinkProgram(ID);
+    checkCompileErrors(ID, "PROGRAM");
 
     // delete the shaders as they're linked into our program now and no longer necessary
     glDeleteShader(vertex);
@@ -59,7 +59,7 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath) {
 }
 
 void Shader::bind() {
-    glUseProgram(ID_);
+    glUseProgram(ID);
 }
 
 void Shader::unbind() {
@@ -67,24 +67,24 @@ void Shader::unbind() {
 }
 
 void Shader::setBool(const std::string& name, bool value) const {
-    glUniform1i(glGetUniformLocation(ID_, name.data()), (int)value);
+    glUniform1i(glGetUniformLocation(ID, name.data()), (int)value);
 }
 
 void Shader::setInt(const std::string& name, int value) const {
-    glUniform1i(glGetUniformLocation(ID_, name.c_str()), value);
+    glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
 }
 
 void Shader::setFloat(const std::string& name, float value) const {
-    glUniform1f(glGetUniformLocation(ID_, name.c_str()), value);
+    glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
 }
 
 void Shader::setVec3(const std::string& name, const float* value) const {
-    glUniform3fv(glGetUniformLocation(ID_, name.c_str()), 1, value);
+    glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, value);
 }
 
 void Shader::setMat4(const std::string& name, const float* value) const {
     // GL_TRUE specifies that matrix should be transposed when passed
-    glUniformMatrix4fv(glGetUniformLocation(ID_, name.c_str()), 1, GL_TRUE, value);
+    glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_TRUE, value);
 }
 
 void Shader::checkCompileErrors(unsigned int shader, std::string type) {

@@ -15,4 +15,10 @@ enum class BVHTechnique {
     SAH
 };
 
+enum class MeshColor {
+    MATERIAL,
+    NORMAL,
+    DEPTH
+};
+
 #endif

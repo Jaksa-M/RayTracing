@@ -9,13 +9,13 @@ void camera::setInitalValues() {
 }
 
 std::vector<unsigned char> camera::render(const hittable_list& world, std::vector<float>& image_data_acc, GUISettings& settings) {
-    this->settings_ = settings_;
+    this->settings_ = settings;
     initialize();
 
     // Create a vector to hold the pixel data (3 channels for RGB)
-    std::vector<unsigned char> image_data(image_width_ * image_height_ * 3);
+    std::vector<unsigned char> image_data(image_width * image_height * 3);
     if (image_data_acc.empty()) {
-        image_data_acc.assign(image_width_ * image_height_ * 4, 0.0f);
+        image_data_acc.assign(image_width * image_height * 4, 0.0f);
     }
 
     if (camera_moved_ == true) {
@@ -26,11 +26,12 @@ std::vector<unsigned char> camera::render(const hittable_list& world, std::vecto
 
     // This will all be called for every frame (like a while loop that executes every frame)
     auto offset = sample_square();
-    for (int j = 0; j < image_height_; j++) {
-        int flipped_j = image_height_ - j - 1;  // Flip the row index
-        for (int i = 0; i < image_width_; i++) {
-            int index = (flipped_j * image_width_ + i) * 3;
-            int index_acc = (flipped_j * image_width_ + i) * 4;
+    for (int j = 0; j < image_height; j++) {
+        //int flipped_j = image_height_ - j - 1;  // Flip the row index
+        int flipped_j = j;  // Flip the row index
+        for (int i = 0; i < image_width; i++) {
+            int index = (flipped_j * image_width + i) * 3;
+            int index_acc = (flipped_j * image_width + i) * 4;
             color pixel_color(0.0f, 0.0f, 0.0f);
 
             // decides whether to trace current pixel or skip it and go on next
@@ -54,21 +55,21 @@ void camera::initialize() {
     focal_length_ = 1.0f;
 
     float viewport_height = 2.0f;
-    float viewport_width = viewport_height * (float(image_width_) / image_height_);
+    float viewport_width = viewport_height * (float(image_width) / image_height);
 
     // Calculate the vectors across the horizontal and down the vertical viewport edges.
     auto viewport_u = camera_right_ * viewport_width;
     auto viewport_v = camera_up_ * viewport_height;
 
     // Calculate the horizontal and vertical delta vectors from pixel to pixel.
-    pixel_delta_u_ = viewport_u / static_cast<float>(image_width_);
-    pixel_delta_v_ = viewport_v / static_cast<float>(image_height_);
+    pixel_delta_u_ = viewport_u / static_cast<float>(image_width);
+    pixel_delta_v_ = viewport_v / static_cast<float>(image_height);
 
     // Calculate the location of the upper left pixel.
     auto viewport_upper_left = center_ - camera_direction_ * focal_length_ - viewport_u / 2.0f - viewport_v / 2.0f;
     pixel00_loc_ = viewport_upper_left + 0.5f * (pixel_delta_u_ + pixel_delta_v_);
 
-    view_matrix_ = transformation::makeViewMatrix(camera_direction_, camera_right_, camera_up_, center_);
+    view_matrix_ = transformation::makeViewMatrix(camera_direction_, camera_right_, -camera_up_, center_);
     projection_matrix_ = transformation::makeInfinitePerspectiveMatrix(0.1f, vec3(viewport_width, viewport_height, 0.0f), vec3(0.0f, 0.0f, 0.0f), focal_length_);
 }
 
@@ -82,7 +83,8 @@ ray camera::get_ray(int i, int j, vec3 offset) const {
     auto ray_origin = center_;
     auto ray_direction = pixel_sample - ray_origin;
 
-    return ray(ray_origin, ray_direction);
+    //return ray(ray_origin, ray_direction);
+    return ray(ray_origin, unit_vector(ray_direction));
 }
 
 vec3 camera::sample_square() const {
@@ -92,40 +94,59 @@ vec3 camera::sample_square() const {
 
 color camera::ray_color(const ray& r, int depth, const hittable_list& world) const {
     // If we've exceeded the ray bounce limit, no more light is gathered.
-    //if (depth <= 0) return color(0.0f, 0.0f, 0.0f);
-
-    // Showing colors based on normals
-    /*hit_record rec;
-    if (world.hit(r, interval(0.001f, infinity), rec)) {
-        return rec.face_normal * 0.5 + vec3(0.5f, 0.5f, 0.5f);
-    }
-    return vec3(0.0f, 0.0f, 0.0f);*/
-
-    //// Showing colors based on the depth
-    //hit_record rec;
-    //if (world.hit(r, interval(0.001f, infinity), rec)) {
-    //    float tt = rec.t / 100.0f;
-    //    return vec3(tt, tt, tt);
-    //}
-    //return vec3(0.0f, 0.0f, 0.0f);
-
-    // If we've exceeded the ray bounce limit, no more light is gathered.
     if (depth <= 0) return color(0.0f, 0.0f, 0.0f);
 
     hit_record rec;
+    //rec.t_ = std::numeric_limits<float>::max();
 
-    if (world.hit(r, interval(0.001f, infinity), rec)) {
-        ray scattered;
-        color attenuation;
-        if (rec.mat_->scatter(r, rec, attenuation, scattered))
-            return attenuation * ray_color(scattered, depth - 1, world);
-        return color(0.0f, 0.0f, 0.0f);
+    // Variables can't be declared inside switch case
+    vec3 unit_direction;
+    float a;
+
+    switch (settings_.mesh_color) {
+        case MeshColor::MATERIAL:
+            // If we've exceeded the ray bounce limit, no more light is gathered.
+            if (depth <= 0) return color(0.0f, 0.0f, 0.0f);
+
+            if (world.hit(r, interval(0.001f, infinity), rec)) {
+                ray scattered;
+                color attenuation;
+                if (rec.mat->scatter(r, rec, attenuation, scattered))
+                    return attenuation * ray_color(scattered, depth - 1, world);
+                return color(0.0f, 0.0f, 0.0f);
+            }
+
+            // Background gradient if no object is hit
+            unit_direction = unit_vector(r.direction());
+            a = 0.5f * (unit_direction.y() + 1.0f);
+            return (1.0f - a) * color(1.0f, 1.0f, 1.0f) + a * color(0.5f, 0.7f, 1.0f);
+            
+        case MeshColor::NORMAL: // Showing colors based on normals
+            /*if (world.hit(r, interval(0.001f, infinity), rec)) {
+                return rec.face_normal_ * 0.5 + vec3(0.5f, 0.5f, 0.5f);
+            }
+            return vec3(0.0f, 0.0f, 0.0f);*/
+            if (world.hit(r, interval(0.001f, infinity), rec)) {
+                return vec3(
+                    std::abs(rec.shading_normal.x()),
+                    std::abs(rec.shading_normal.y()),
+                    std::abs(rec.shading_normal.z())
+                );
+                //return vec3(
+                //    std::max(0.0f, rec.shading_normal_.x()),
+                //    std::max(0.0f, rec.shading_normal_.y()),
+                //    std::max(0.0f, rec.shading_normal_.z())
+                //);
+            }
+            return vec3(0.0f, 0.0f, 0.0f);
+
+        case MeshColor::DEPTH: // Showing colors based on the depth
+            if (world.hit(r, interval(0.001f, infinity), rec)) {
+                float tt = rec.t / 100.0f;
+                return vec3(tt, tt, tt);
+            }
+            return vec3(0.0f, 0.0f, 0.0f);
     }
-
-    // Background gradient if no object is hit
-    vec3 unit_direction = unit_vector(r.direction());
-    float a = 0.5f * (unit_direction.y() + 1.0f);
-    return (1.0f - a) * color(1.0f, 1.0f, 1.0f) + a * color(0.5f, 0.7f, 1.0f);
 }
 
 void camera::setCenterX(float val) { center_.setX(val); }

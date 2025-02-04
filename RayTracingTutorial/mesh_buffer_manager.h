@@ -22,7 +22,7 @@ public:
 	std::span<std::uint32_t> getIndices(MeshHandle mesh);
 	std::span<const float> getNormals(MeshHandle mesh, std::uint32_t attribute) const;
 
-	std::vector<float> buffer_;
+	std::vector<float> buffer;
 
 private:
 	struct MeshInfo {

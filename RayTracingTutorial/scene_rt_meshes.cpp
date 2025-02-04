@@ -20,7 +20,7 @@ SceneRtMeshes::SceneRtMeshes() {
 }
 
 void SceneRtMeshes::initialize() {
-    prev_BVH_technique_ = context_.settings->BVH_technique;
+    prev_BVH_technique_ = context.settings->BVH_technique;
 
     auto mat = std::make_shared<lambertian>(color(0.8f, 0.8f, 0.0f));
     //cube_mesh_ = MeshUtils::GenerateTriangleCube(mat, mesh_buf_manager.get(), 2);
@@ -29,13 +29,13 @@ void SceneRtMeshes::initialize() {
     //ico_sphere_ = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2);
     //rectangle_mesh_ = MeshUtils::GenerateTriangleRectangle(mat, mesh_buf_manager.get(), 6, 3);
 
-    rect_prism_mesh1_ = MeshUtils::GenerateTriangleCube(context_, mat, 4);
+    rect_prism_mesh1_ = MeshUtils::GenerateTriangleCube(context, mat, 4);
     matrix4x4 m = transformation::create_rotation_matrix(0.0f, 30.0f * (3.14159f / 180.0f), 0.0f) *
                   transformation::create_translation_matrix(vec3(-2.0f, 0.0f, 0.0f)); // 30 degree rotation on y-axis + translation on x-axis
     rect_prism_mesh1_->setTransformationMatrix(m);
     world_.add(rect_prism_mesh1_);
 
-    rect_prism_mesh2_ = std::make_shared<RTMesh>(context_, rect_prism_mesh1_->getMeshHandle(), mat);
+    rect_prism_mesh2_ = std::make_shared<RTMesh>(context, rect_prism_mesh1_->getMeshHandle(), mat);
     m = transformation::create_rotation_matrix(0.0f, 70.0f * (3.14159f / 180.0f), 0.0f) *
         transformation::create_translation_matrix(vec3(2.0f, 0.0f, 0.0f)); // 70 degree rotation on y-axis + translation on x-axis
     rect_prism_mesh2_->setTransformationMatrix(m);
@@ -66,13 +66,13 @@ void SceneRtMeshes::initialize() {
 }
 
 std::vector<unsigned char> SceneRtMeshes::update(int display_w, int display_h, camera& cam) {
-    if (prev_BVH_technique_ != context_.settings->BVH_technique) {
+    if (prev_BVH_technique_ != context.settings->BVH_technique) {
         world_.clear();
         initialize();
     }
 
     std::vector<unsigned char> image_data;
-    image_data = cam.render(world_, image_data_acc_, *(context_.settings));
+    image_data = cam.render(world_, image_data_acc_, *(context.settings));
 
     return image_data;
 }
@@ -82,7 +82,7 @@ void SceneRtMeshes::initShader() {
 }
 
 void SceneRtMeshes::drawBVH(camera& cam) {
-    if (context_.settings->selected_option != -1) {
+    if (context.settings->selected_option != -1) {
         bounding_boxes_.resize(world_.objects_.size());
         
         for (int i = 0; i < world_.objects_.size(); i++) { // Drawing BVH tree or leaves
@@ -90,10 +90,10 @@ void SceneRtMeshes::drawBVH(camera& cam) {
             RTMesh* rtMesh = dynamic_cast<RTMesh*>(object.get());
 
             if (rtMesh) { // If the cast succeeds, the object is of type RTMesh
-                if (context_.settings->selected_option == 0) { // Drawing whole tree
+                if (context.settings->selected_option == 0) { // Drawing whole tree
                     rtMesh->drawBVHTree(bounding_boxes_, i, shader_prog_, cam);
                 }
-                else if (context_.settings->selected_option == 1) { // Drawing only leaves
+                else if (context.settings->selected_option == 1) { // Drawing only leaves
                     rtMesh->drawBVHLeaves(bounding_boxes_, i, shader_prog_, cam);
                 }
             }
@@ -102,13 +102,13 @@ void SceneRtMeshes::drawBVH(camera& cam) {
 }
 
 //void SceneRtMeshes::draw_mesh_gizmos(camera& cam) {
-//    //std::vector<vec3> lines(vertex_normals.size() * 2);
-//    //for (std::uint32_t i = 0; i < vertex_normals.size(); i++)
-//    //{
-//    //    const point3 v = point3(vertices[i * 3], vertices[i * 3 + 1], vertices[i * 3 + 2]);
-//    //    lines[i * 2 + 0] = v;
-//    //    lines[i * 2 + 1] = v + vertex_normals[i] * 0.1f;
-//    //}
+//    std::vector<vec3> lines(vertex_normals.size() * 2);
+//    for (std::uint32_t i = 0; i < vertex_normals.size(); i++)
+//    {
+//        const point3 v = point3(vertices[i * 3], vertices[i * 3 + 1], vertices[i * 3 + 2]);
+//        lines[i * 2 + 0] = v;
+//        lines[i * 2 + 1] = v + vertex_normals[i] * 0.1f;
+//    }
 //}
 
 void SceneRtMeshes::draw_mesh_gizmos(camera& cam) {

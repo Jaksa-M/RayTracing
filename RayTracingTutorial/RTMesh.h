@@ -22,10 +22,6 @@ public:
     bool hit(const ray& r, interval ray_t, hit_record& rec) const override; // Without BVH
     bool hit_BVH(const ray& r, interval ray_t, hit_record& rec) const; // With BVH
 
-    void transform(const matrix4x4& m) override;
-
-    void applyTransformations(std::vector<matrix4x4>& transformations);
-
     // Functions to draw box for every node inside BVH tree
     void drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, std::uint32_t index, std::unique_ptr<Shader>& shader_prog, camera& cam);
     void drawBVHLeaves(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32_t index, std::unique_ptr<Shader>& shader_prog, camera& cam);

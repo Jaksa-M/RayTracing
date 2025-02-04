@@ -55,11 +55,11 @@ bool triangle::hit(const ray& r, interval ray_t, hit_record& rec) const {
     float beta = dot(cross((A_ - C_), (Q - C_)), triangle_normal_) / dot(cross((B_ - A_), (C_ - A_)), triangle_normal_);
     float gama = dot(cross((B_ - A_), (Q - A_)), triangle_normal_) / dot(cross((B_ - A_), (C_ - A_)), triangle_normal_);
 
-    rec.t_ = t;
-    rec.p_ = Q;
+    rec.t = t;
+    rec.p = Q;
     rec.set_face_normal(r, triangle_normal_);
-    rec.object_type_ = "triangle";
-    rec.mat_ = mat_;
+    rec.object_type = "triangle";
+    rec.mat = mat_;
 
     return true;
 }

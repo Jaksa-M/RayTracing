@@ -6,12 +6,7 @@
 #include "mesh.h"
 
 class SceneMeshes: public Scene {
-private:
-    std::unique_ptr<Mesh> mesh_;
-    std::unique_ptr<Shader> shader_prog_;
-
 public:
-
     SceneMeshes();
 
     void initialize() override;
@@ -25,5 +20,9 @@ public:
     std::vector<unsigned int> createIndicesArr(int num_of_vert);
 
     void draw_mesh_gizmos(camera& cam) override;
+
+private:
+    std::unique_ptr<Mesh> mesh_;
+    std::unique_ptr<Shader> shader_prog_;
 };
 #endif

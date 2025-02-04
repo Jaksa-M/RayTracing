@@ -130,8 +130,8 @@ matrix4x4 transformation::rotation_x(float angle) {
 
 matrix4x4 transformation::create_rotation_matrix(float alpha, float beta, float gama) {
     matrix4x4 m;
-    m(0, 0) = cos(alpha) * cos(beta);
-    m(0, 1) = cos(alpha) * sin(beta) * sin(gama) - sin(alpha) * cos(gama);
+    m(0, 0) = cos(beta) * cos(gama);
+    m(0, 1) = sin(alpha) * sin(beta) * cos(gama) - cos(alpha) * sin(gama);
     m(0, 2) = cos(alpha) * sin(beta) * cos(gama) + sin(alpha) * sin(gama);
     m(0, 3) = 0.0f;
     m(1, 0) = cos(beta) * sin(gama);

@@ -5,7 +5,8 @@
 
 struct GUISettings {
     bool enable_BVH = true;
-    BVHTechnique BVH_technique = BVHTechnique::MIDPOINT_SPLIT;
+    BVHTechnique BVH_technique = BVHTechnique::SAH;
+    MeshColor mesh_color = MeshColor::MATERIAL;
     int selected_option = -1;
     float trace_percentage = 0.1f;
     int reflection_depth = 2;

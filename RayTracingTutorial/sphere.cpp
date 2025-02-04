@@ -27,12 +27,12 @@ bool sphere::hit(const ray& r, interval ray_t, hit_record& rec) const {
             return false;
     }
 
-    rec.t_ = root;
-    rec.p_ = r.at(rec.t_);
-    vec3 outward_normal = (rec.p_ - center_) / radius_;
+    rec.t = root;
+    rec.p = r.at(rec.t);
+    vec3 outward_normal = (rec.p - center_) / radius_;
     rec.set_face_normal(r, outward_normal);
-    rec.object_type_ = "sphere";
-    rec.mat_ = mat_;
+    rec.object_type = "sphere";
+    rec.mat = mat_;
 
     return true;
 }

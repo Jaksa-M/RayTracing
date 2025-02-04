@@ -4,8 +4,6 @@
 #include "scene.h"
 
 class SceneTransformations: public Scene{
-private:
-    
 
 public:
     void initialize() override;

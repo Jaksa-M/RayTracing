@@ -8,6 +8,16 @@
 #include "types.h"
 
 class SceneCornellBox: public Scene {
+public:
+    SceneCornellBox();
+
+    void initialize() override;
+
+    std::vector<unsigned char> update(int display_w, int display_h, camera& cam) override;
+
+    void initShader();
+    void drawBVH(camera& cam);
+
 private:
     std::unique_ptr<MeshBufferManager> mesh_buf_manager_;
     std::unique_ptr<BVHManager> bvh_manager_;
@@ -19,18 +29,12 @@ private:
     std::shared_ptr<RTMesh> rect_mesh_left_;
     std::shared_ptr<RTMesh> rect_mesh_right_;
     std::shared_ptr<RTMesh> rect_mesh_back_;
-    
-    
-public:
+
+    std::unique_ptr<Mesh> mesh_;
+    std::unique_ptr<Shader> shader_prog_;
+    std::vector<std::unique_ptr<Mesh>> bounding_boxes_; // 1 bounding box for each object that will get translated while drawing
+
     BVHTechnique prev_BVH_technique_; // Used for checking whether BVH techique has changed
-
-    SceneCornellBox();
-
-    void initialize() override;
-
-    std::vector<unsigned char> update(int display_w, int display_h, camera& cam) override;
-
-    void createTransformations();
 };
 
 #endif

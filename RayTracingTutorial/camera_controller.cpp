@@ -64,6 +64,10 @@ void CameraController::handleMouseInput(ImGuiIO& io) {
             float deltaX = io.MousePos.x - last_mouse_x_;
             float deltaY = last_mouse_y_ - io.MousePos.y; // reversed since y-coordinates range from bottom to top
 
+            // TODO: remove this when camera movement is fixed
+            deltaX = -deltaX;
+            deltaY = -deltaY;
+
             // Update last mouse position
             last_mouse_x_ = io.MousePos.x;
             last_mouse_y_ = io.MousePos.y;
@@ -97,14 +101,16 @@ void CameraController::handleMouseInput(ImGuiIO& io) {
 
 void CameraController::moveUp() {
     point3 pos = cam_.getPosition();
-    pos -= cam_.getUpVector() * (speed_ * delta_time_seconds_);
+    //pos -= cam_.getUpVector() * (speed_ * delta_time_seconds_);
+    pos += cam_.getUpVector() * (speed_ * delta_time_seconds_);
     cam_.setPosition(pos);
     cam_.setCameraMoved(true);
 }
 
 void CameraController::moveDown() {
     point3 pos = cam_.getPosition();
-    pos += cam_.getUpVector() * (speed_ * delta_time_seconds_);
+    //pos += cam_.getUpVector() * (speed_ * delta_time_seconds_);
+    pos -= cam_.getUpVector() * (speed_ * delta_time_seconds_);
     cam_.setPosition(pos);
     cam_.setCameraMoved(true);
 }

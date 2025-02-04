@@ -56,7 +56,7 @@ void SceneMeshes::initShader() {
 std::vector<unsigned char> SceneMeshes::update(int display_w, int display_h, camera& cam) {
     std::vector<unsigned char> image_data(display_w * display_h * 3);
 
-    image_data = cam.render(world_, image_data_acc_, *(context_.settings));
+    image_data = cam.render(world_, image_data_acc_, *(context.settings));
 
     return image_data;
 }

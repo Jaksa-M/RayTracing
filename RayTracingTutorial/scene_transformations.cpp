@@ -42,7 +42,7 @@ std::vector<unsigned char> SceneTransformations::update(int display_w, int displ
             object->transform(m);
         }
     }
-    image_data = cam.render(world_, image_data_acc_, *(context_.settings));
+    image_data = cam.render(world_, image_data_acc_, *(context.settings));
 
     return image_data;
 }

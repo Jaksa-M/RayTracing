@@ -9,12 +9,32 @@
 
 class camera {
 public:
-    int    image_width_ = 100;  // Rendered image width in pixel count
-    int    image_height_;   // Rendered image height
+    int    image_width = 100;  // Rendered image width in pixel count
+    int    image_height;   // Rendered image height
     
     void setInitalValues();
 
     std::vector<unsigned char> render(const hittable_list& world, std::vector<float>& image_data_acc, GUISettings& settings);
+
+    void setCenterX(float val);
+    void setCenterY(float val);
+    void setCenterZ(float val);
+    float getCenterX();
+    float getCenterY();
+    float getCenterZ();
+    float getFocalLength();
+    void setFocalLength(float val);
+    point3 getPosition();
+    void setPosition(point3 pos);
+    void setCameraMoved(bool val);
+    vec3 getDirection();
+    void setDirection(vec3 direction);
+    vec3 getUpVector();
+    void setUpVector(vec3 direction);
+    vec3 getRightVector();
+    void setRightVector(vec3 direction);
+    matrix4x4 getViewMatrix();
+    matrix4x4 getProjectionMatrix();
 
 private:
     GUISettings settings_;
@@ -37,27 +57,6 @@ private:
     vec3 sample_square() const;
 
     color ray_color(const ray& r, int depth, const hittable_list& world) const;
-
-public:
-    void setCenterX(float val);
-    void setCenterY(float val);
-    void setCenterZ(float val);
-    float getCenterX();
-    float getCenterY();
-    float getCenterZ();
-    float getFocalLength();
-    void setFocalLength(float val);
-    point3 getPosition();
-    void setPosition(point3 pos);
-    void setCameraMoved(bool val);
-    vec3 getDirection();
-    void setDirection(vec3 direction);
-    vec3 getUpVector();
-    void setUpVector(vec3 direction);
-    vec3 getRightVector();
-    void setRightVector(vec3 direction);
-    matrix4x4 getViewMatrix();
-    matrix4x4 getProjectionMatrix();
 };
 
 #endif

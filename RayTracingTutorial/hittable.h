@@ -12,25 +12,25 @@ class interval;
 
 class hit_record {
 public:
-    point3 p_;
-    vec3 face_normal_;
-    vec3 shading_normal_;
-    bool type_of_normal_ = false;
-    std::shared_ptr<material> mat_;
-    float t_;
-    bool front_face_;
-    std::string object_type_;
+    point3 p;
+    vec3 face_normal;
+    vec3 shading_normal;
+    bool type_of_normal = false;
+    std::shared_ptr<material> mat;
+    float t;
+    bool front_face;
+    std::string object_type;
 
     void set_face_normal(const ray& r, const vec3& outward_normal) {
         // NOTE: the parameter `outward_normal` is assumed to have unit length.
-        front_face_ = dot(r.direction(), outward_normal) < 0;
-        face_normal_ = front_face_ ? outward_normal : -outward_normal;
+        front_face = dot(r.direction(), outward_normal) < 0;
+        face_normal = front_face ? outward_normal : -outward_normal;
     }
 
     void set_shading_normal(const ray& r, const vec3& outward_normal) {
         // NOTE: the parameter `outward_normal` is assumed to have unit length.
-        front_face_ = dot(r.direction(), outward_normal) < 0;
-        shading_normal_ = front_face_ ? outward_normal : -outward_normal;
+        front_face = dot(r.direction(), outward_normal) < 0;
+        shading_normal = front_face ? outward_normal : -outward_normal;
     }
 };
 
@@ -46,7 +46,7 @@ public:
 
     virtual bool hit(const ray& r, interval ray_t, hit_record& rec) const = 0;
 
-    virtual void setTransformationMatrix(matrix4x4& mat) {
+    virtual void setTransformationMatrix(const matrix4x4& mat) {
         local_to_world_mat_ = mat;
         world_to_local_mat_ = mat.invert();
     }

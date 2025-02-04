@@ -5,15 +5,6 @@
 class camera;
 
 class CameraController {
-private:
-    camera& cam_;
-    float speed_;
-    float delta_time_seconds_; // time that passed from last frame. formula = 1.0 / fps
-    bool is_dragging_ = false; // Track if the mouse is dragging
-    float last_mouse_x_, last_mouse_y_; // Store the last mouse position
-    float rotation_speed_ = 0.1f; // Adjust rotation sensitivity
-    float yaw_ = 90.0f;
-    float pitch_ = 0.0f;
 public:
     CameraController(camera& cam, float speed);
 
@@ -26,6 +17,15 @@ public:
     }
 
 private:
+    camera& cam_;
+    float speed_;
+    float delta_time_seconds_; // time that passed from last frame. formula = 1.0 / fps
+    bool is_dragging_ = false; // Track if the mouse is dragging
+    float last_mouse_x_, last_mouse_y_; // Store the last mouse position
+    float rotation_speed_ = 0.1f; // Adjust rotation sensitivity
+    float yaw_ = 90.0f;
+    float pitch_ = 0.0f;
+
     void moveUp();
     void moveDown();
     void moveLeft();

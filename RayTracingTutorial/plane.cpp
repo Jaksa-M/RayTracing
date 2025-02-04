@@ -35,10 +35,10 @@ bool plane::hit(const ray& r, interval ray_t, hit_record& rec) const {
         return false;
     }
 
-    rec.t_ = t;
-    rec.p_ = r.at(rec.t_);
+    rec.t = t;
+    rec.p = r.at(rec.t);
     rec.set_face_normal(r, plane_normal_);
-    rec.object_type_ = "plane";
+    rec.object_type = "plane";
 
     return true;  // Intersection occurred in the ray's direction
 }

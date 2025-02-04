@@ -41,10 +41,10 @@ bool rectangle::hit(const ray& r, interval ray_t, hit_record& rec) const {
         return false;
     }
 
-    rec.t_ = t;
-    rec.p_ = Q;
+    rec.t = t;
+    rec.p = Q;
     rec.set_face_normal(r, rectangle_normal_);
-    rec.object_type_ = "rectangle";
+    rec.object_type = "rectangle";
 
     return true;
 }
