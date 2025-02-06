@@ -7,7 +7,7 @@ sphere::sphere(const point3& center, float radius, std::shared_ptr<material> mat
 
 }
 
-bool sphere::hit(const ray& r, interval ray_t, hit_record& rec) const {
+bool sphere::hit(const ray& r, interval ray_t, HitRecord& rec) const {
     vec3 oc = center_ - r.origin();
     auto a = r.direction().length_squared();
     auto h = dot(r.direction(), oc);

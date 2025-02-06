@@ -37,6 +37,8 @@ class matrix3x3 {
 public:
     matrix3x3();
 
+    matrix3x3(const matrix4x4& mat4); // Constructor that takes top-left 3x3 portion of a 4x4 matrix
+
     // Can't use [] for indexing because it only allows to take 1 argument.
     float& operator()(int row, int col);
     const float& operator()(int row, int col) const;

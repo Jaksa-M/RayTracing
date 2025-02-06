@@ -10,7 +10,7 @@ void rectangle::boxAround(std::span<vec3> edges) // YET TO BE DEFINED
 
 }
 
-bool rectangle::hit(const ray& r, interval ray_t, hit_record& rec) const {
+bool rectangle::hit(const ray& r, interval ray_t, HitRecord& rec) const {
     // Formula for intersecting with the plane is t = (c - p*n) / d*n
         // denominator d is ray direction, p is ray origin, n is normal, c is constant
     float c = dot(rectangle_normal_, A_);

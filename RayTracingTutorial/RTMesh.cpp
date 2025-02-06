@@ -60,7 +60,7 @@ inline IntersectResult intersectTriangle(const ray& r, interval ray_t, const vec
     return { t, vec3(alpha, beta, gamma), 0}; // same as return true
 }
 
-vec3 transformOrigin(const vec3& pos, const matrix4x4& m) {
+inline vec3 transformOrigin(const vec3& pos, const matrix4x4& m) {
     // Convert the position to a homogeneous coordinate (w = 1)
     vec4 homogenous_pos = vec4(pos.x(), pos.y(), pos.z(), 1.0f);
 
@@ -70,19 +70,10 @@ vec3 transformOrigin(const vec3& pos, const matrix4x4& m) {
     return vec3(transformed_pos.x(), transformed_pos.y(), transformed_pos.z());
 }
 
-vec3 transformDirection(const vec3& dir, const matrix4x4& m) {
-    // Convert the direction to a homogeneous coordinate (w = 0)
-    vec4 homogenous_dir = vec4(dir.x(), dir.y(), dir.z(), 0.0f);
-
-    vec4 transformed_dir = m * homogenous_dir;
-
-    // Convert back to a 3D direction
-    return vec3(transformed_dir.x(), transformed_dir.y(), transformed_dir.z());
-}
-
-vec3 transformDirection(const vec3& dir, const matrix3x3& m) {
+inline vec3 transformDirection(const vec3& dir, const matrix3x3& m) {
     return m * dir;
 }
+
 
 RTMesh::RTMesh(Context& context, MeshHandle mesh_handle, std::shared_ptr<material> mat) : context_(context), mesh_handle_(mesh_handle), mat_(mat) {
     bvh_nodes_ = context_.bvh_manager->getBVHNodes(mesh_handle_);
@@ -90,8 +81,7 @@ RTMesh::RTMesh(Context& context, MeshHandle mesh_handle, std::shared_ptr<materia
 
 void RTMesh::boxAround(std::span<vec3> edges) {}
 
-void CalculateWorldAABB(vec3& pmin, vec3& pmax, const matrix4x4& transform)
-{
+void CalculateWorldAABB(vec3& pmin, vec3& pmax, const matrix4x4& transform) {
     auto p0 = transform * pmin;
     auto p1 = transform * pmax;
     auto p2 = transform * vec3(p0.x(), p0.y(), p1.z());
@@ -101,14 +91,12 @@ void CalculateWorldAABB(vec3& pmin, vec3& pmax, const matrix4x4& transform)
     auto p6 = transform * vec3(p1.x(), p1.y(), p0.z());
     auto p7 = transform * vec3(p1.x(), p0.y(), p1.z());
 
-    auto mmin = [](vec3 a, vec3 b)
-        {
-            return vec3(std::min(a.x(), b.x()), std::min(a.y(), b.y()), std::min(a.z(), b.z()));
-        };
-    auto mmax = [](vec3 a, vec3 b)
-        {
-            return vec3(std::max(a.x(), b.x()), std::max(a.y(), b.y()), std::max(a.z(), b.z()));
-        };
+    auto mmin = [](vec3 a, vec3 b) {
+        return vec3(std::min(a.x(), b.x()), std::min(a.y(), b.y()), std::min(a.z(), b.z()));
+    };
+    auto mmax = [](vec3 a, vec3 b) {
+        return vec3(std::max(a.x(), b.x()), std::max(a.y(), b.y()), std::max(a.z(), b.z()));
+    };
 
     pmin = vec3(std::numeric_limits<float>::max());
     pmax = vec3(std::numeric_limits<float>::lowest());
@@ -132,7 +120,7 @@ void CalculateWorldAABB(vec3& pmin, vec3& pmax, const matrix4x4& transform)
     pmax = mmax(p7, pmax);
 }
 
-bool RTMesh::hit_BVH(const ray& r, interval ray_t, hit_record& rec) const {
+bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
     bool hit = false;
     float closest_hit_t = ray_t.max;
 
@@ -145,18 +133,19 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, hit_record& rec) const {
     vec3 minws = node.aabbMin;
     vec3 maxws = node.aabbMax;
     CalculateWorldAABB(minws, maxws, local_to_world_mat_);
-
+    IntersectResult intersect_result;
+    intersect_result.t = ray_t.max;
     // skip bounds that can`t produce closer t (looking in world space, where multiple BVH's are)
     float closest_side; // not even used for root node, but have to leave it for correct function call
-    if (!intersectAABB(r, ray_t, minws, maxws, closest_side) || closest_side > closest_hit_t)
+    if (!intersectAABB(r, ray_t, intersect_result, minws, maxws, closest_side) || closest_side > closest_hit_t)
         return false;
 
     // Apply inversed transformation to the new ray.
     changed_ray.setOrigin(transformOrigin(r.origin(), world_to_local_mat_));
     //changed_ray.setOrigin(transformOrigin(r.at(closest_side), world_to_local_mat_));
-    changed_ray.setDirection(transformDirection(r.direction(), world_to_local_mat_));
+    changed_ray.setDirection(transformDirection(r.direction(), matrix3x3(world_to_local_mat_)));
 
-    IntersectResult intersect_result;
+   
     //intersectBVH(changed_ray, ray_t, intersect_result, 0, hit, closest_hit_t);
     intersectBVH(changed_ray, {0, std::numeric_limits<float>::max()}, intersect_result, 0, hit, closest_hit_t);
 
@@ -176,8 +165,8 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, hit_record& rec) const {
         vec3 triangle_normal = unit_vector(cross(v1 - v0, v2 - v0));
         rec.set_face_normal(r, triangle_normal);
 
-        rec.p = v0 * intersect_result.barycentrics.x() + v1 * intersect_result.barycentrics.y()
-            + v2 * intersect_result.barycentrics.z(); // barycentric interpolation
+        rec.p = v0 * intersect_result.buv.x() + v1 * intersect_result.buv.y()
+            + v2 * intersect_result.buv.z(); // barycentric interpolation
 
         // has to be in world space.
         rec.t = (r.origin() - rec.p).length();
@@ -187,8 +176,8 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, hit_record& rec) const {
         vec3 n2;
         getTriangleNormals(intersect_result.closest_tri_index, n0, n1, n2);
         
-        vec3 shading_normal = unit_vector(n0 * intersect_result.barycentrics.x() + n1 * intersect_result.barycentrics.y()
-            + n2 * intersect_result.barycentrics.z()); // barycentric interpolation
+        vec3 shading_normal = unit_vector(n0 * intersect_result.buv.x() + n1 * intersect_result.buv.y()
+            + n2 * intersect_result.buv.z()); // barycentric interpolation
         
         matrix3x3 normal_matrix = local_to_world_mat_.convertTo3x3().invert().transpose();
         shading_normal = unit_vector(normal_matrix * shading_normal);
@@ -199,18 +188,25 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, hit_record& rec) const {
 }
 
 // Hit function without using BVH
-bool RTMesh::hit(const ray& r, interval ray_t, hit_record& rec) const {
+bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
     if (context_.settings->enable_BVH == false) {
         bool hit = false;
         double min = ray_t.max;
         std::span<const float> vertices = context_.mesh_buf_manager->getVerts(mesh_handle_, 0);
         std::span<const std::uint32_t> indices = context_.mesh_buf_manager->getIndices(mesh_handle_);
         std::span<const float> vertex_normals = context_.mesh_buf_manager->getNormals(mesh_handle_, 2);
+
         // Iterate over every triangle inside the mesh
         for (int i = 0; i < indices.size(); i += 3) {
-            const point3 p1 = point3(vertices[indices[i] * 3], vertices[indices[i] * 3 + 1], vertices[indices[i] * 3 + 2]);
-            const point3 p2 = point3(vertices[indices[i + 1] * 3], vertices[indices[i + 1] * 3 + 1], vertices[indices[i + 1] * 3 + 2]);
-            const point3 p3 = point3(vertices[indices[i + 2] * 3], vertices[indices[i + 2] * 3 + 1], vertices[indices[i + 2] * 3 + 2]);
+            point3 p1 = point3(vertices[indices[i] * 3], vertices[indices[i] * 3 + 1], vertices[indices[i] * 3 + 2]);
+            point3 p2 = point3(vertices[indices[i + 1] * 3], vertices[indices[i + 1] * 3 + 1], vertices[indices[i + 1] * 3 + 2]);
+            point3 p3 = point3(vertices[indices[i + 2] * 3], vertices[indices[i + 2] * 3 + 1], vertices[indices[i + 2] * 3 + 2]);
+
+            // Transform vertices to world space (triangle by triangle)
+            p1 = local_to_world_mat_ *  p1;
+            p2 = local_to_world_mat_ *  p2;
+            p3 = local_to_world_mat_ *  p3;
+
             // Formula for intersecting with the plane is t = (c - p*n) / d*n
             // denominator d is ray direction, p is ray origin, n is normal, c is constant
             point3 triangle_normal = unit_vector(cross(p2 - p1, p3 - p1));
@@ -382,8 +378,8 @@ void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& interse
     float closest_side_right;
     const BVHNode* node_left = &bvh_nodes_[node.left_child];
     const BVHNode* node_right = &bvh_nodes_[node.right_child];
-    bool left_check = intersectAABB(r, ray_t, node_left->aabbMin, node_left->aabbMax, closest_side_left);
-    bool right_check = intersectAABB(r, ray_t, node_right->aabbMin, node_right->aabbMax, closest_side_right);
+    bool left_check = intersectAABB(r, ray_t, intersect_result, node_left->aabbMin, node_left->aabbMax, closest_side_left);
+    bool right_check = intersectAABB(r, ray_t, intersect_result, node_right->aabbMin, node_right->aabbMax, closest_side_right);
 
     std::uint32_t left_child = node.left_child;
     std::uint32_t right_child = node.right_child;
@@ -404,7 +400,7 @@ void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& interse
     hit = leftHit || rightHit; // Combine results from child nodes
 }
 
-bool RTMesh::intersectAABB(const ray& r, interval ray_t, const vec3& bmin, const vec3& bmax, float& closest_side) const {
+bool RTMesh::intersectAABB(const ray& r, interval ray_t, IntersectResult& intersect_result, const vec3& bmin, const vec3& bmax, float& closest_side) const {
     vec3 dir = vec3(
         std::abs(r.direction().x()) < 0.00001f ? r.direction().x() + 0.0001f : r.direction().x(),
         std::abs(r.direction().y()) < 0.00001f ? r.direction().y() + 0.0001f : r.direction().y(),
@@ -439,7 +435,41 @@ bool RTMesh::intersectAABB(const ray& r, interval ray_t, const vec3& bmin, const
     closest_side = tmin;
     //return tmax >= tmin && tmin >= ray_t.min_ && tmax <= ray_t.max_;
     //return tmax >= tmin && tmax <= ray_t.max_;
-    return tmax >= tmin && closest_side >= ray_t.min && closest_side <= ray_t.max;
+    //return tmax >= tmin && closest_side >= ray_t.min && closest_side <= ray_t.max;
+    return tmax >= tmin && tmin < intersect_result.t && tmax > 0;
+
+
+    //vec3 dir = vec3(
+    //    std::abs(r.direction().x()) < 0.00001f ? r.direction().x() + 0.0001f : r.direction().x(),
+    //    std::abs(r.direction().y()) < 0.00001f ? r.direction().y() + 0.0001f : r.direction().y(),
+    //    std::abs(r.direction().z()) < 0.00001f ? r.direction().z() + 0.0001f : r.direction().z());
+    //float tmin = (bmin.x() - r.origin().x()) / dir.x();
+    //float tmax = (bmax.x() - r.origin().x()) / dir.x();
+
+    //if (tmin > tmax) std::swap(tmin, tmax);
+
+    //float tymin = (bmin.y() - r.origin().y()) / dir.y();
+    //float tymax = (bmax.y() - r.origin().y()) / dir.y();
+
+    //if (tymin > tymax) std::swap(tymin, tymax);
+
+    //if ((tmin > tymax) || (tymin > tmax)) return false; // if (t0x > t1y || t0y > t1x) return false;
+
+    //if (tymin > tmin) tmin = tymin;
+    //if (tymax < tmax) tmax = tymax;
+
+    //float tzmin = (bmin.z() - r.origin().z()) / dir.z();
+    //float tzmax = (bmax.z() - r.origin().z()) / dir.z();
+
+    //if (tzmin > tzmax) std::swap(tzmin, tzmax);
+
+    //if ((tmin > tzmax) || (tzmin > tmax)) return false;
+
+    //if (tzmin > tmin) tmin = tzmin;
+    //if (tzmax < tmax) tmax = tzmax;
+
+    //closest_side = tmin;
+    //return true;
 }
 
 void RTMesh::getTriangleVertices(std::uint32_t triangle_index, vec3& v0, vec3& v1, vec3& v2) const{

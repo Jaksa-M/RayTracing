@@ -65,8 +65,8 @@ void CameraController::handleMouseInput(ImGuiIO& io) {
             float deltaY = last_mouse_y_ - io.MousePos.y; // reversed since y-coordinates range from bottom to top
 
             // TODO: remove this when camera movement is fixed
-            deltaX = -deltaX;
-            deltaY = -deltaY;
+            /*deltaX = -deltaX;
+            deltaY = -deltaY;*/
 
             // Update last mouse position
             last_mouse_x_ = io.MousePos.x;

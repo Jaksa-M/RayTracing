@@ -135,6 +135,14 @@ matrix3x3::matrix3x3() { // Creating identity matrix by default
     }
 }
 
+matrix3x3::matrix3x3(const matrix4x4& mat4) {
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            data[i][j] = mat4(i, j);
+        }
+    }
+}
+
 float& matrix3x3::operator()(int row, int col) { return data[row][col]; }
 
 const float& matrix3x3::operator()(int row, int col) const { return data[row][col]; }

@@ -20,14 +20,14 @@ struct Triangle {
 
 struct IntersectResult {
     float t;   // Intersection distance
-    vec3 barycentrics; // vec3(alpha, beta, gamma)
+    vec3 buv; // short for barycentrics uv, vec3(alpha, beta, gamma)
     std::uint32_t closest_tri_index; 
 };
 
 class BVHBuilder {
 public:
-    BVHBuilder(std::span<const float> vertices, std::span<std::uint32_t> indices, std::vector<Triangle>& triangles,
-        std::vector<std::uint32_t>& triangle_indices);
+    BVHBuilder(std::span<const float> vertices, std::span<std::uint32_t> indices, std::span<const Triangle> triangles,
+        std::span<std::uint32_t> triangle_indices);
 
     std::vector<BVHNode> buildBVH();
     std::vector<BVHNode> buildBVHSAH();
@@ -40,8 +40,8 @@ private:
     std::span<std::uint32_t> indices_;
 
     std::vector<BVHNode> bvh_nodes_;
-    std::vector<Triangle>& triangles_; // contains triangles (their coordinates) formed from indices and vertices arrays
-    std::vector<std::uint32_t>& triangle_indices_; // in order not to swap whole triangles, we will just swap these indices
+    std::span<const Triangle> triangles_; // contains triangles (their coordinates) formed from indices and vertices arrays
+    std::span<std::uint32_t> triangle_indices_; // in order not to swap whole triangles, we will just swap these indices
 
     std::uint32_t nodes_used_ = 1;
 

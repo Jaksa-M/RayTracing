@@ -15,8 +15,8 @@ void hittable_list::boxAround(std::span<vec3> edges) { // YET TO BE DEFINED
     
 }
 
-bool hittable_list::hit(const ray& r, interval ray_t, hit_record& rec) const {
-    hit_record temp_rec;
+bool hittable_list::hit(const ray& r, interval ray_t, HitRecord& rec) const {
+    HitRecord temp_rec;
     bool hit_anything = false;
     auto closest_so_far = ray_t.max;
     temp_rec.t = std::numeric_limits<float>::max();

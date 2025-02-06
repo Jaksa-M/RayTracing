@@ -134,6 +134,7 @@ int main(int, char**) {
     float trace_percentage = 0.1f;
     int reflection_depth = 2;
     bool reset_accumulated = false;
+    bool freeze_camera = false;
     SceneType selected_scene_index = SceneType::CORNELL_BOX;
     BVHTechnique chosen_technique_index = BVHTechnique::SAH;
     MeshColor chosen_mesh_color = MeshColor::MATERIAL;
@@ -178,6 +179,7 @@ int main(int, char**) {
             ImGui::SliderFloat("pixel traced", &trace_percentage, 0.0f, 1.0f);
             ImGui::SliderInt("reflection bounces", &reflection_depth, 0, 15);
             ImGui::Checkbox("Reset accumulated", &reset_accumulated);
+            ImGui::Checkbox("Freeze camera", &freeze_camera);
 
             int scene_index = static_cast<int>(selected_scene_index); // Convert enum class to int
             ImGui::Combo("Scene", &scene_index, scenes, IM_ARRAYSIZE(scenes));
@@ -239,11 +241,13 @@ int main(int, char**) {
             case SceneType::RT_MESHES:
                 scene_rt_meshes.context.settings->trace_percentage = trace_percentage;
                 scene_rt_meshes.context.settings->reflection_depth = reflection_depth;
+                scene_rt_meshes.context.settings->freeze_camera = freeze_camera;
                 image_data = scene_rt_meshes.update(display_w, display_h, cam);
                 break;
             case SceneType::CORNELL_BOX:
                 scene_cornell_box.context.settings->trace_percentage = trace_percentage;
                 scene_cornell_box.context.settings->reflection_depth = reflection_depth;
+                scene_cornell_box.context.settings->freeze_camera = freeze_camera;
                 image_data = scene_cornell_box.update(display_w, display_h, cam);
                 break;
         }
@@ -259,6 +263,8 @@ int main(int, char**) {
                 scene_cornell_box.drawBVH(cam);
                 break;
         }
+
+        cam.drawRays();
         
         //scene_rt_meshes.draw_mesh_gizmos(cam);
 

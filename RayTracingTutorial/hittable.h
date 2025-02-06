@@ -10,7 +10,7 @@ class material;
 class matrix4x4;
 class interval;
 
-class hit_record {
+class HitRecord {
 public:
     point3 p;
     vec3 face_normal;
@@ -44,7 +44,7 @@ public:
 
     virtual void boxAround(std::span<vec3> edges) = 0;
 
-    virtual bool hit(const ray& r, interval ray_t, hit_record& rec) const = 0;
+    virtual bool hit(const ray& r, interval ray_t, HitRecord& rec) const = 0;
 
     virtual void setTransformationMatrix(const matrix4x4& mat) {
         local_to_world_mat_ = mat;

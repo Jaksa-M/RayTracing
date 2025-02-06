@@ -7,7 +7,9 @@ class ray {
 public:
     ray() {}
 
-    ray(const point3& origin, const vec3& direction) : orig_(origin), dir_(direction) {}
+    ray(const point3& origin, const vec3& direction) : orig_(origin) {
+        dir_ = unit_vector(direction);
+    }
 
     inline const point3& origin() const { return orig_; }
     inline const vec3& direction() const { return dir_; }

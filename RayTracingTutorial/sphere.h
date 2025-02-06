@@ -13,7 +13,7 @@ public:
 
     void transform(const matrix4x4& m) override {}
 
-    bool hit(const ray& r, interval ray_t, hit_record& rec) const override;
+    bool hit(const ray& r, interval ray_t, HitRecord& rec) const override;
 
     void boxAround(std::span<vec3> edges) override;
 

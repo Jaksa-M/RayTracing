@@ -27,7 +27,7 @@ private:
 	};
 	std::unordered_map<MeshHandle, BVHInfo> bvh_info_;
 
-	void transformToTriangles(std::span<const float> vertices, std::span<const std::uint32_t> indices, std::span<const float> vertex_normals,
+	void transformToTriangles(std::span<const float> vertices, std::span<const std::uint32_t> indices,
 		std::vector<Triangle>& triangles, std::vector<std::uint32_t>& triangle_indices);
 };
 

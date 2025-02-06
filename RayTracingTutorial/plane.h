@@ -16,7 +16,7 @@ public:
 
     void boxAround(std::span<vec3> edges) override;
 
-    bool hit(const ray& r, interval ray_t, hit_record& rec) const override;
+    bool hit(const ray& r, interval ray_t, HitRecord& rec) const override;
 
 private:
     point3 plane_point1_;

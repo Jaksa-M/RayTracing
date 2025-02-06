@@ -19,7 +19,7 @@ void plane::boxAround(std::span<vec3> edges) // YET TO BE DEFINED
     
 }
 
-bool plane::hit(const ray& r, interval ray_t, hit_record& rec) const {
+bool plane::hit(const ray& r, interval ray_t, HitRecord& rec) const {
     float denominator = dot(plane_normal_, r.direction()); // Imenilac (ispod razlomka)
 
     if (fabs(denominator) < 1e-8) {  // Close to zero, that means parallel and there is no hit

@@ -6,6 +6,9 @@
 #include "hittable_list.h"
 #include "matrix.h"
 #include "gui_settings.h"
+#include "shader.h"
+#include <memory> // for unique_ptr
+#include <utility> // for std::pair
 
 class camera {
 public:
@@ -15,6 +18,8 @@ public:
     void setInitalValues();
 
     std::vector<unsigned char> render(const hittable_list& world, std::vector<float>& image_data_acc, GUISettings& settings);
+
+    void drawRays();
 
     void setCenterX(float val);
     void setCenterY(float val);
@@ -50,13 +55,16 @@ private:
     matrix4x4 view_matrix_;
     matrix4x4 projection_matrix_;
 
+    std::vector<std::pair<ray, bool>> rays_to_trace_intersection_; // second pair tells us if it's hit or miss
+    std::unique_ptr<Shader> shader_prog_;
+
     void initialize();
 
     ray get_ray(int i, int j, vec3 offset) const;
 
     vec3 sample_square() const;
 
-    color ray_color(const ray& r, int depth, const hittable_list& world) const;
+    color ray_color(const ray& r, int depth, const hittable_list& world);
 };
 
 #endif

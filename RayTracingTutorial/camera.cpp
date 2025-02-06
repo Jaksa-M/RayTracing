@@ -1,11 +1,14 @@
 #include "camera.h"
 #include "transformations.h"
+#include "glad/gl.h"
 
 void camera::setInitalValues() {
     vec3 cameraTarget = vec3(0.0f, 0.0f, -3.0f);
     camera_direction_ = unit_vector(center_ - cameraTarget);
     camera_up_ = vec3(0.0f, 1.0f, 0.0f);
     camera_right_ = unit_vector(cross(camera_up_, camera_direction_)); // the result is vec3 (1,0,0)
+
+    shader_prog_ = std::make_unique<Shader>("ShaderFiles/shader_camera_rays.vs.txt", "ShaderFiles/shader_camera_rays.fs.txt");
 }
 
 std::vector<unsigned char> camera::render(const hittable_list& world, std::vector<float>& image_data_acc, GUISettings& settings) {
@@ -22,6 +25,10 @@ std::vector<unsigned char> camera::render(const hittable_list& world, std::vecto
         std::fill(image_data_acc.begin(), image_data_acc.end(), 0.0f);
         
         camera_moved_ = false;
+    }
+
+    if (settings.freeze_camera == false) {
+        rays_to_trace_intersection_.clear();
     }
 
     // This will all be called for every frame (like a while loop that executes every frame)
@@ -42,7 +49,13 @@ std::vector<unsigned char> camera::render(const hittable_list& world, std::vecto
             }
 
             ray ra = get_ray(i, j, offset);
-            pixel_color = ray_color(ra, settings_.reflection_depth, world);
+
+            int step_size = std::max(10, image_width / 2000);  // Adjust step based on resolution
+            if (settings.freeze_camera == false && i % step_size == 0 && j % step_size == 0) {
+                rays_to_trace_intersection_.push_back(std::pair(ra, false)); // Save ray on every step size
+            }
+
+            pixel_color = ray_color(ra, settings_.reflection_depth, world);    
 
             write_color(image_data, image_data_acc, pixel_color, index, index_acc, false);
         }
@@ -92,11 +105,11 @@ vec3 camera::sample_square() const {
     return vec3(random_double() - 0.5f, random_double() - 0.5f, 0.0f);
 }
 
-color camera::ray_color(const ray& r, int depth, const hittable_list& world) const {
+color camera::ray_color(const ray& r, int depth, const hittable_list& world) {
     // If we've exceeded the ray bounce limit, no more light is gathered.
     if (depth <= 0) return color(0.0f, 0.0f, 0.0f);
 
-    hit_record rec;
+    HitRecord rec;
     //rec.t_ = std::numeric_limits<float>::max();
 
     // Variables can't be declared inside switch case
@@ -111,8 +124,10 @@ color camera::ray_color(const ray& r, int depth, const hittable_list& world) con
             if (world.hit(r, interval(0.001f, infinity), rec)) {
                 ray scattered;
                 color attenuation;
-                if (rec.mat->scatter(r, rec, attenuation, scattered))
+                if (rec.mat->scatter(r, rec, attenuation, scattered)) {
+                    rays_to_trace_intersection_.back().second = true;
                     return attenuation * ray_color(scattered, depth - 1, world);
+                }
                 return color(0.0f, 0.0f, 0.0f);
             }
 
@@ -147,6 +162,63 @@ color camera::ray_color(const ray& r, int depth, const hittable_list& world) con
             }
             return vec3(0.0f, 0.0f, 0.0f);
     }
+}
+
+void camera::drawRays() {
+    if (settings_.freeze_camera == true) {
+        // Intialize shader
+        shader_prog_->bind();
+        shader_prog_->setMat4("view", getViewMatrix().asPointer());
+        shader_prog_->setMat4("projection", getProjectionMatrix().asPointer());
+
+        // Draw those selected rays
+        for (int i = 0; i < rays_to_trace_intersection_.size(); i++) {
+            if (rays_to_trace_intersection_[i].second == true) {
+                vec3 color = vec3(0.0f, 1.0f, 0.0f); // Green
+                shader_prog_->setVec3("color", color.asPointer());
+            }
+            else {
+                continue;
+                vec3 color = vec3(1.0f, 0.0f, 0.0f); // Red
+                shader_prog_->setVec3("color", color.asPointer());
+            }
+
+            vec3 origin = rays_to_trace_intersection_[i].first.origin();
+            vec3 direction = unit_vector(rays_to_trace_intersection_[i].first.direction());
+
+            // Define the start and end points of the ray
+            std::vector<float> vertices = {
+                origin.x(), origin.y(), origin.z(),  // Ray start (camera origin)
+                origin.x() + direction.x() * 3.0f,  // Extend ray in its direction
+                origin.y() + direction.y() * 3.0f,
+                origin.z() + direction.z() * 3.0f
+            };
+
+            // Create and bind VAO/VBO
+            GLuint VAO, VBO;
+            glGenVertexArrays(1, &VAO);
+            glGenBuffers(1, &VBO);
+            glBindVertexArray(VAO);
+            glBindBuffer(GL_ARRAY_BUFFER, VBO);
+            glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+
+            // Define vertex attributes
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+            glEnableVertexAttribArray(0);
+
+            // Draw the ray
+            glLineWidth(1.0f); // Set the line width to 1 pixel
+            glBindVertexArray(VAO);
+            glDrawArrays(GL_LINES, 0, 2);
+
+            // Cleanup
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            glBindVertexArray(0);
+            glDeleteBuffers(1, &VBO);
+            glDeleteVertexArrays(1, &VAO);
+        }
+        shader_prog_->unbind();
+    }    
 }
 
 void camera::setCenterX(float val) { center_.setX(val); }
