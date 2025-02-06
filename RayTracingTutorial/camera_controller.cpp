@@ -1,7 +1,7 @@
 #include "camera_controller.h"
 #include "camera.h"
 
-CameraController::CameraController(camera& cam, float speed) : cam_(cam), speed_(speed), delta_time_seconds_(1.0) {}
+CameraController::CameraController(Camera& cam, float speed) : cam_(cam), speed_(speed), delta_time_seconds_(1.0) {}
 
 void CameraController::handleKeyboardInput(float dt) {
     delta_time_seconds_ = dt;

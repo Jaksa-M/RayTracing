@@ -14,11 +14,11 @@ public:
 
 	virtual void initialize() = 0;
 
-	virtual std::vector<unsigned char> update(int display_w, int display_h, camera& cam) = 0;
+	virtual std::vector<unsigned char> update(int display_w, int display_h, Camera& cam) = 0;
 
 	virtual ~Scene() = default;
 
-	virtual void draw_mesh_gizmos(camera& cam) {}
+	virtual void draw_mesh_gizmos(Camera& cam) {}
 	
 protected:
 	hittable_list world_;

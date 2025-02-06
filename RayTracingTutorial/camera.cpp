@@ -2,16 +2,16 @@
 #include "transformations.h"
 #include "glad/gl.h"
 
-void camera::setInitalValues() {
+void Camera::setInitalValues() {
     vec3 cameraTarget = vec3(0.0f, 0.0f, -3.0f);
     camera_direction_ = unit_vector(center_ - cameraTarget);
     camera_up_ = vec3(0.0f, 1.0f, 0.0f);
     camera_right_ = unit_vector(cross(camera_up_, camera_direction_)); // the result is vec3 (1,0,0)
 
-    shader_prog_ = std::make_unique<Shader>("ShaderFiles/shader_camera_rays.vs.txt", "ShaderFiles/shader_camera_rays.fs.txt");
+    shader_prog_ = std::make_unique<Shader>("ShaderFiles/shader_bounding_box.vs.txt", "ShaderFiles/shader_bounding_box.fs.txt");
 }
 
-std::vector<unsigned char> camera::render(const hittable_list& world, std::vector<float>& image_data_acc, GUISettings& settings) {
+std::vector<unsigned char> Camera::render(const hittable_list& world, std::vector<float>& image_data_acc, GUISettings& settings) {
     this->settings_ = settings;
     initialize();
 
@@ -63,7 +63,7 @@ std::vector<unsigned char> camera::render(const hittable_list& world, std::vecto
     return image_data;
 }
 
-void camera::initialize() {
+void Camera::initialize() {
     // Determine viewport dimensions.
     focal_length_ = 1.0f;
 
@@ -86,7 +86,7 @@ void camera::initialize() {
     projection_matrix_ = transformation::makeInfinitePerspectiveMatrix(0.1f, vec3(viewport_width, viewport_height, 0.0f), vec3(0.0f, 0.0f, 0.0f), focal_length_);
 }
 
-ray camera::get_ray(int i, int j, vec3 offset) const {
+ray Camera::get_ray(int i, int j, vec3 offset) const {
     // Construct a camera ray originating from the origin and directed at randomly sampled point around the pixel location i, j.
 
     auto pixel_sample = pixel00_loc_
@@ -100,12 +100,12 @@ ray camera::get_ray(int i, int j, vec3 offset) const {
     return ray(ray_origin, unit_vector(ray_direction));
 }
 
-vec3 camera::sample_square() const {
+vec3 Camera::sample_square() const {
     // Returns the vector to a random point in the [-.5,-.5]-[+.5,+.5] unit square.
     return vec3(random_double() - 0.5f, random_double() - 0.5f, 0.0f);
 }
 
-color camera::ray_color(const ray& r, int depth, const hittable_list& world) {
+color Camera::ray_color(const ray& r, int depth, const hittable_list& world) {
     // If we've exceeded the ray bounce limit, no more light is gathered.
     if (depth <= 0) return color(0.0f, 0.0f, 0.0f);
 
@@ -164,12 +164,13 @@ color camera::ray_color(const ray& r, int depth, const hittable_list& world) {
     }
 }
 
-void camera::drawRays() {
+void Camera::drawRays() {
     if (settings_.freeze_camera == true) {
         // Intialize shader
         shader_prog_->bind();
         shader_prog_->setMat4("view", getViewMatrix().asPointer());
         shader_prog_->setMat4("projection", getProjectionMatrix().asPointer());
+        shader_prog_->setMat4("model_matrix", matrix4x4().asPointer()); // We don't use it here
 
         // Draw those selected rays
         for (int i = 0; i < rays_to_trace_intersection_.size(); i++) {
@@ -221,40 +222,40 @@ void camera::drawRays() {
     }    
 }
 
-void camera::setCenterX(float val) { center_.setX(val); }
+void Camera::setCenterX(float val) { center_.setX(val); }
 
-void camera::setCenterY(float val) { center_.setY(val); }
+void Camera::setCenterY(float val) { center_.setY(val); }
 
-void camera::setCenterZ(float val) { center_.setZ(val); }
+void Camera::setCenterZ(float val) { center_.setZ(val); }
 
-float camera::getCenterX() { return center_.x(); }
+float Camera::getCenterX() { return center_.x(); }
 
-float camera::getCenterY() { return center_.y(); }
+float Camera::getCenterY() { return center_.y(); }
 
-float camera::getCenterZ() { return center_.z(); }
+float Camera::getCenterZ() { return center_.z(); }
 
-float camera::getFocalLength() { return focal_length_; }
+float Camera::getFocalLength() { return focal_length_; }
 
-void camera::setFocalLength(float val) { focal_length_ = val; }
+void Camera::setFocalLength(float val) { focal_length_ = val; }
 
-point3 camera::getPosition() { return center_; }
+point3 Camera::getPosition() { return center_; }
 
-void camera::setPosition(point3 pos) { center_ = pos; }
+void Camera::setPosition(point3 pos) { center_ = pos; }
 
-void camera::setCameraMoved(bool val) { camera_moved_ = val; }
+void Camera::setCameraMoved(bool val) { camera_moved_ = val; }
 
-vec3 camera::getDirection() { return camera_direction_; }
+vec3 Camera::getDirection() { return camera_direction_; }
 
-void camera::setDirection(vec3 direction) { camera_direction_ = direction; }
+void Camera::setDirection(vec3 direction) { camera_direction_ = direction; }
 
-vec3 camera::getUpVector() { return camera_up_; }
+vec3 Camera::getUpVector() { return camera_up_; }
 
-void camera::setUpVector(vec3 direction) { camera_up_ = direction; }
+void Camera::setUpVector(vec3 direction) { camera_up_ = direction; }
 
-vec3 camera::getRightVector() { return camera_right_; }
+vec3 Camera::getRightVector() { return camera_right_; }
 
-void camera::setRightVector(vec3 direction) { camera_right_ = direction; }
+void Camera::setRightVector(vec3 direction) { camera_right_ = direction; }
 
-matrix4x4 camera::getViewMatrix() { return view_matrix_; }
+matrix4x4 Camera::getViewMatrix() { return view_matrix_; }
 
-matrix4x4 camera::getProjectionMatrix() { return projection_matrix_; }
+matrix4x4 Camera::getProjectionMatrix() { return projection_matrix_; }

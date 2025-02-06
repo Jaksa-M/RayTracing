@@ -71,7 +71,12 @@ inline vec3 transformOrigin(const vec3& pos, const matrix4x4& m) {
 }
 
 inline vec3 transformDirection(const vec3& dir, const matrix3x3& m) {
-    return m * dir;
+    vec3 transformed_dir = m * dir;
+    //if (transformed_dir.x() > 1.0f || transformed_dir.x() < -1.0f) std::cout << transformed_dir.x()<<std::endl;
+    //if (transformed_dir.y() > 1.0f || transformed_dir.y() < -1.0f) std::cout << transformed_dir.y()<<std::endl;
+    //if (transformed_dir.z() > 1.0f || transformed_dir.z() < -1.0f) std::cout << transformed_dir.z()<<std::endl;
+    return transformed_dir;
+    //return unit_vector(m * dir);
 }
 
 
@@ -261,7 +266,7 @@ bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
     }
 }
 
-void RTMesh::drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32_t index, std::unique_ptr<Shader>& shader_prog, camera& cam) {
+void RTMesh::drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32_t index, std::unique_ptr<Shader>& shader_prog, Camera& cam) {
     shader_prog->bind();
     shader_prog->setMat4("view", cam.getViewMatrix().asPointer());
     shader_prog->setMat4("projection", cam.getProjectionMatrix().asPointer());
@@ -304,8 +309,7 @@ void RTMesh::drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32
     shader_prog->unbind();
 }
 
-
-void RTMesh::drawBVHLeaves(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32_t index, std::unique_ptr<Shader>& shader_prog, camera& cam) {
+void RTMesh::drawBVHLeaves(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32_t index, std::unique_ptr<Shader>& shader_prog, Camera& cam) {
     shader_prog->bind();
     shader_prog->setMat4("view", cam.getViewMatrix().asPointer());
     shader_prog->setMat4("projection", cam.getProjectionMatrix().asPointer());
@@ -326,20 +330,6 @@ void RTMesh::drawBVHLeaves(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint
         }
     }
     shader_prog->unbind();
-}
-
-std::uint32_t RTMesh::sizeBVHNodes() {
-    return bvh_nodes_.size();
-}
-
-std::uint32_t RTMesh::sizeBVHLeaves() {
-    std::uint32_t leaf_count = 0;
-    for (const auto& node : bvh_nodes_) {
-        if (node.isLeaf()) {
-            leaf_count++;
-        }
-    }
-    return leaf_count;
 }
 
 MeshHandle RTMesh::getMeshHandle() const{

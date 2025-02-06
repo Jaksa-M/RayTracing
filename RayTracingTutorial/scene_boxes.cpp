@@ -46,7 +46,7 @@ void SceneBoxes::initShader() {
     mesh_ = std::make_unique<Mesh>(vertices, 3, 6, 0, 3, false, std::span<unsigned int>{});
 }
 
-std::vector<unsigned char> SceneBoxes::update(int display_w, int display_h, camera& cam) {
+std::vector<unsigned char> SceneBoxes::update(int display_w, int display_h, Camera& cam) {
     std::vector<unsigned char> image_data(display_w * display_h * 3);
 
     image_data = cam.render(world_, image_data_acc_, *(context.settings));
@@ -54,7 +54,7 @@ std::vector<unsigned char> SceneBoxes::update(int display_w, int display_h, came
     return image_data;
 }
 
-void SceneBoxes::draw_boxes(camera& cam) {
+void SceneBoxes::draw_boxes(Camera& cam) {
     // Drawing boxes around spheres
     for (int i = 0; i < world_.objects_.size(); i++) {
         auto& object = world_.objects_[i];

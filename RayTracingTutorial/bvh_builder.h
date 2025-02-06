@@ -2,6 +2,7 @@
 #define BVH_BUILDER_H
 
 #include "hittable.h"
+#include "math_constants.h"
 #include <span>
 
 struct BVHNode {
@@ -19,9 +20,9 @@ struct Triangle {
 };
 
 struct IntersectResult {
-    float t;   // Intersection distance
-    vec3 buv; // short for barycentrics uv, vec3(alpha, beta, gamma)
-    std::uint32_t closest_tri_index; 
+    float t = infinity;   // Intersection distance
+    vec3 buv = vec3(); // short for barycentrics uv, vec3(alpha, beta, gamma)
+    std::uint32_t closest_tri_index = ~0u; 
 };
 
 class BVHBuilder {

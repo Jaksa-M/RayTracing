@@ -53,7 +53,7 @@ void SceneMeshes::initShader() {
     //mesh_ = MeshUtils::GenerateSphereLines(60);
 }
 
-std::vector<unsigned char> SceneMeshes::update(int display_w, int display_h, camera& cam) {
+std::vector<unsigned char> SceneMeshes::update(int display_w, int display_h, Camera& cam) {
     std::vector<unsigned char> image_data(display_w * display_h * 3);
 
     image_data = cam.render(world_, image_data_acc_, *(context.settings));
@@ -101,7 +101,7 @@ std::vector<unsigned int> SceneMeshes::createIndicesArr(int num_of_vert) {
     return indices;
 }
 
-void SceneMeshes::draw_mesh_gizmos(camera& cam) {
+void SceneMeshes::draw_mesh_gizmos(Camera& cam) {
     shader_prog_->bind();
     shader_prog_->setMat4("view", cam.getViewMatrix().asPointer());
     shader_prog_->setMat4("projection", cam.getProjectionMatrix().asPointer());

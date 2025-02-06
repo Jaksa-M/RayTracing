@@ -23,10 +23,8 @@ public:
     bool hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const; // With BVH
 
     // Functions to draw box for every node inside BVH tree
-    void drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, std::uint32_t index, std::unique_ptr<Shader>& shader_prog, camera& cam);
-    void drawBVHLeaves(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32_t index, std::unique_ptr<Shader>& shader_prog, camera& cam);
-    std::uint32_t sizeBVHNodes();
-    std::uint32_t sizeBVHLeaves();
+    void drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, std::uint32_t index, std::unique_ptr<Shader>& shader_prog, Camera& cam);
+    void drawBVHLeaves(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32_t index, std::unique_ptr<Shader>& shader_prog, Camera& cam);
 
     MeshHandle getMeshHandle() const;
 
@@ -37,8 +35,6 @@ private:
     std::shared_ptr<material> mat_;
 
     std::span<const BVHNode> bvh_nodes_;
-    std::vector<Triangle> triangles_; // contains triangles (their coordinates) formed from indices and vertices arrays
-    std::vector<std::uint32_t> triangle_indices_; // in order not to swap whole triangles, we will just swap these indices
     
     void intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, bool& hit, float& closest_hit_t) const;
     bool intersectAABB(const ray& r, interval ray_t, IntersectResult& intersect_result, const vec3& bmin, const vec3& bmax, float& closest_side) const;

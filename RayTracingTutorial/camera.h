@@ -10,7 +10,7 @@
 #include <memory> // for unique_ptr
 #include <utility> // for std::pair
 
-class camera {
+class Camera {
 public:
     int    image_width = 100;  // Rendered image width in pixel count
     int    image_height;   // Rendered image height

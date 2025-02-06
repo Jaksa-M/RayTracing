@@ -81,7 +81,7 @@ void SceneCornellBox::initialize() {
     initShader();
 }
 
-std::vector<unsigned char> SceneCornellBox::update(int display_w, int display_h, camera& cam) {
+std::vector<unsigned char> SceneCornellBox::update(int display_w, int display_h, Camera& cam) {
     if (prev_BVH_technique_ != context.settings->BVH_technique) {
         world_.clear();
         initialize();
@@ -96,7 +96,7 @@ void SceneCornellBox::initShader() {
     shader_prog_ = std::make_unique<Shader>("ShaderFiles/shader_bounding_box.vs.txt", "ShaderFiles/shader_bounding_box.fs.txt");
 }
 
-void SceneCornellBox::drawBVH(camera& cam) {
+void SceneCornellBox::drawBVH(Camera& cam) {
     if (context.settings->selected_option != -1) {
         bounding_boxes_.resize(world_.objects_.size());
 

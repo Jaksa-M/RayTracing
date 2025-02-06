@@ -2,11 +2,11 @@
 #define CAMERA_CONTROLLER_H
 
 #include "imgui/imgui.h"
-class camera;
+class Camera;
 
 class CameraController {
 public:
-    CameraController(camera& cam, float speed);
+    CameraController(Camera& cam, float speed);
 
     void handleKeyboardInput(float dt);
 
@@ -17,7 +17,7 @@ public:
     }
 
 private:
-    camera& cam_;
+    Camera& cam_;
     float speed_;
     float delta_time_seconds_; // time that passed from last frame. formula = 1.0 / fps
     bool is_dragging_ = false; // Track if the mouse is dragging

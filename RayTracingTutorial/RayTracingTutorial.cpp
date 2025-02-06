@@ -127,7 +127,7 @@ int main(int, char**) {
     scene_cornell_box.context = context;
     scene_cornell_box.initialize();
 
-    camera cam;
+    Camera cam;
     cam.setInitalValues();
 
     // Decides how much pixels will be traced

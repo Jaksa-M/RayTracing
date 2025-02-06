@@ -65,7 +65,7 @@ void SceneRtMeshes::initialize() {
     initShader();
 }
 
-std::vector<unsigned char> SceneRtMeshes::update(int display_w, int display_h, camera& cam) {
+std::vector<unsigned char> SceneRtMeshes::update(int display_w, int display_h, Camera& cam) {
     if (prev_BVH_technique_ != context.settings->BVH_technique) {
         world_.clear();
         initialize();
@@ -81,7 +81,7 @@ void SceneRtMeshes::initShader() {
     shader_prog_ = std::make_unique<Shader>("ShaderFiles/shader_bounding_box.vs.txt", "ShaderFiles/shader_bounding_box.fs.txt");
 }
 
-void SceneRtMeshes::drawBVH(camera& cam) {
+void SceneRtMeshes::drawBVH(Camera& cam) {
     if (context.settings->selected_option != -1) {
         bounding_boxes_.resize(world_.objects_.size());
         
@@ -111,7 +111,7 @@ void SceneRtMeshes::drawBVH(camera& cam) {
 //    }
 //}
 
-void SceneRtMeshes::draw_mesh_gizmos(camera& cam) {
+void SceneRtMeshes::draw_mesh_gizmos(Camera& cam) {
     shader_prog_->bind();
     shader_prog_->setMat4("view", cam.getViewMatrix().asPointer());
     shader_prog_->setMat4("projection", cam.getProjectionMatrix().asPointer());
