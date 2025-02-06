@@ -9,13 +9,13 @@ public:
 
 	void boxAround(std::span<vec3> edges) override;
 
-	bool hit(const ray& r, interval ray_t, hit_record& rec) const override;
+	bool hit(const ray& r, interval ray_t, HitRecord& rec) const override;
 
 private:
-	point3 A;
-	point3 B;
-	point3 C;
-	point3 D;
-	point3 rectangle_normal;
+	point3 A_;
+	point3 B_;
+	point3 C_;
+	point3 D_;
+	point3 rectangle_normal_;
 };
 #endif

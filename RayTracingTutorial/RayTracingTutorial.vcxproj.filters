@@ -84,7 +84,7 @@
     <ClCompile Include="transformations.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CameraController.cpp">
+    <ClCompile Include="camera_controller.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="scene_boxes.cpp">
@@ -115,6 +115,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="bvh_builder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="bvh_manager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -185,7 +188,7 @@
     <ClInclude Include="ExternalLibraries\imgui\imstb_truetype.h">
       <Filter>External Libraries\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="CameraController.h">
+    <ClInclude Include="camera_controller.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="matrix.h">
@@ -239,6 +242,15 @@
     <ClInclude Include="gui_settings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="bvh_manager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="context.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ShaderFiles\shader.fs.txt">
@@ -257,6 +269,12 @@
       <Filter>Shader Files</Filter>
     </Text>
     <Text Include="ShaderFiles\shader_bounding_box.vs.txt">
+      <Filter>Shader Files</Filter>
+    </Text>
+    <Text Include="ShaderFiles\shader_camera_rays.fs.txt">
+      <Filter>Shader Files</Filter>
+    </Text>
+    <Text Include="ShaderFiles\shader_camera_rays.vs.txt">
       <Filter>Shader Files</Filter>
     </Text>
   </ItemGroup>

@@ -12,19 +12,19 @@ public:
 
     void boxAround(std::span<vec3> edges) override;
 
-    bool hit(const ray& r, interval ray_t, hit_record& rec) const override;
+    bool hit(const ray& r, interval ray_t, HitRecord& rec) const override;
 
     void transform(const matrix4x4& m) override;
 
 private:
-    point3 A; // used for translation
-    point3 B;
-    point3 C;
-    point3 A_original;
-    point3 B_original;
-    point3 C_original;
-    point3 triangle_normal;
-    std::shared_ptr<material> mat;
+    point3 A_; // used for translation
+    point3 B_;
+    point3 C_;
+    point3 A_original_;
+    point3 B_original_;
+    point3 C_original_;
+    point3 triangle_normal_;
+    std::shared_ptr<material> mat_;
 };
 
 #endif

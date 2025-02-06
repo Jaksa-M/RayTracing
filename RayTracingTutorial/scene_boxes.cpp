@@ -22,17 +22,17 @@ void SceneBoxes::initialize() {
     auto material_center = std::make_shared<lambertian>(color(0.1f, 0.2f, 0.5f));
     auto material_left = std::make_shared<metal>(color(0.8f, 0.8f, 0.8f), 0.3f);
     auto material_right = std::make_shared<metal>(color(0.8f, 0.6f, 0.2f), 1.0f);
-    //world.add(std::make_shared<sphere>(point3(0.0f, -100.5f, -1.0f), 100.0f, material_ground));
-    world.add(std::make_shared<sphere>(point3(0.0f, 0.0f, -1.2f), 0.5f, material_center));
-    world.add(std::make_shared<sphere>(point3(-1.0f, 0.0f, -1.0f), 0.5f, material_left));
-    world.add(std::make_shared<sphere>(point3(1.0f, 0.0f, -1.0f), 0.5f, material_right));
-    //world.add(std::make_shared<sphere>(point3(0.0f, 0.0f, 0.0f), 0.5f, material_right));
+    //world_.add(std::make_shared<sphere>(point3(0.0f, -100.5f, -1.0f), 100.0f, material_ground));
+    world_.add(std::make_shared<sphere>(point3(0.0f, 0.0f, -1.2f), 0.5f, material_center));
+    world_.add(std::make_shared<sphere>(point3(-1.0f, 0.0f, -1.0f), 0.5f, material_left));
+    world_.add(std::make_shared<sphere>(point3(1.0f, 0.0f, -1.0f), 0.5f, material_right));
+    //world_.add(std::make_shared<sphere>(point3(0.0f, 0.0f, 0.0f), 0.5f, material_right));
 
     initShader();
 }
 
 void SceneBoxes::initShader() {
-    shader_prog = std::make_unique<Shader>("ShaderFiles/shader.vs.txt", "ShaderFiles/shader.fs.txt");
+    shader_prog_ = std::make_unique<Shader>("ShaderFiles/shader.vs.txt", "ShaderFiles/shader.fs.txt");
     
     std::vector<float> vertices = std::vector<float>{
         0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,    // bottom right
@@ -43,21 +43,21 @@ void SceneBoxes::initShader() {
         0.5f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f     // top right
     };
    
-    mesh = std::make_unique<Mesh>(vertices, 3, 6, 0, 3, false, std::span<unsigned int>{});
+    mesh_ = std::make_unique<Mesh>(vertices, 3, 6, 0, 3, false, std::span<unsigned int>{});
 }
 
-std::vector<unsigned char> SceneBoxes::update(int display_w, int display_h, camera& cam) {
+std::vector<unsigned char> SceneBoxes::update(int display_w, int display_h, Camera& cam) {
     std::vector<unsigned char> image_data(display_w * display_h * 3);
 
-    image_data = cam.render(world, image_data_acc, settings);
+    image_data = cam.render(world_, image_data_acc_, *(context.settings));
 
     return image_data;
 }
 
-void SceneBoxes::draw_boxes(camera& cam) {
+void SceneBoxes::draw_boxes(Camera& cam) {
     // Drawing boxes around spheres
-    for (int i = 0; i < world.objects.size(); i++) {
-        auto& object = world.objects[i];
+    for (int i = 0; i < world_.objects_.size(); i++) {
+        auto& object = world_.objects_[i];
         std::vector<vec3> edges(24);
         if (object->object_type() == "sphere") {
             object->boxAround(edges);
@@ -74,13 +74,13 @@ void SceneBoxes::draw_boxes(camera& cam) {
                 flat_edges.push_back(0.0f);
                 flat_edges.push_back(0.0f);
             }
-            mesh->updateVBO(flat_edges);
+            mesh_->updateVBO(flat_edges);
 
-            shader_prog->bind();
-            shader_prog->setMat4("view", cam.getViewMatrix().asPointer());
-            shader_prog->setMat4("projection", cam.getProjectionMatrix().asPointer());
-            mesh->draw(GL_LINES);
-            shader_prog->unbind();
+            shader_prog_->bind();
+            shader_prog_->setMat4("view", cam.getViewMatrix().asPointer());
+            shader_prog_->setMat4("projection", cam.getProjectionMatrix().asPointer());
+            mesh_->draw(GL_LINES);
+            shader_prog_->unbind();
         }
     }
 }

@@ -4,9 +4,13 @@
 #include <iostream>
 #include <iomanip> // for std::setprecision
 #include <cmath>
+#include "context.h"
+#include "mesh_buffer_manager.h"
+#include "gui_settings.h"
+#include "bvh_manager.h"
 
-std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager,
-        unsigned int num_of_vert, GUISettings& settings, vec3 center , vec3 size)  // creating an unit cube
+std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(Context& context, const std::shared_ptr<material>& mat,
+        unsigned int num_of_vert, vec3 center , vec3 size)  // creating an unit cube
 {
     std::vector<float> vertices;
 
@@ -24,21 +28,27 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(const std::shared_ptr<ma
     
     std::vector<unsigned int> indices = createFaceIndices(num_of_vert);
 
-    /*unsigned int offset = mesh_buf_manager->addToBuffer(vertices, 2, indices);
-
-    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(
-        mesh_buf_manager, offset,
-        std::span(mesh_buf_manager->buffer.data() + offset, vertices.size()),
-        std::span(reinterpret_cast<std::uint32_t*>(mesh_buf_manager->buffer.data()) + offset + vertices.size(), indices.size()), 3, 6, 0, 3, mat);
-    return mesh;*/
-
     std::vector<vec3> normals;
+    int triangle_count_per_face = (num_of_vert - 1) * (num_of_vert - 1) * 2;
+    bool reverse_normal = false;
+    int counter = 0;
 
     for (int i = 0; i < indices.size(); i += 3) {
         const point3 p1 = point3(vertices[indices[i] * 6], vertices[indices[i] * 6 + 1], vertices[indices[i] * 6 + 2]);
         const point3 p2 = point3(vertices[indices[i + 1] * 6], vertices[indices[i + 1] * 6 + 1], vertices[indices[i + 1] * 6 + 2]);
         const point3 p3 = point3(vertices[indices[i + 2] * 6], vertices[indices[i + 2] * 6 + 1], vertices[indices[i + 2] * 6 + 2]);
+        
         point3 triangle_normal = unit_vector(cross(p2 - p1, p3 - p1));
+        if (reverse_normal == true) {
+            triangle_normal = -triangle_normal;
+        }
+
+        counter++;
+        if (counter == triangle_count_per_face) {
+            reverse_normal = !reverse_normal;
+            counter = 0;
+        }
+
         normals.emplace_back(triangle_normal);
     }
 
@@ -58,9 +68,10 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(const std::shared_ptr<ma
         vertex_normals[i] = unit_vector(vertex_normals[i]);
     }
 
-    std::size_t mesh_handle = mesh_buf_manager->addToBuffer(vertices, 2, indices, vertex_normals);
+    std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(vertices, 2, indices, vertex_normals);
+    context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
 
-    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat, settings);
+    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(context, mesh_handle, mat);
     return mesh;
 }
 
@@ -101,8 +112,8 @@ std::unique_ptr<Mesh> MeshUtils::GenerateLineCube(unsigned int num_of_vert, vec3
     return mesh;
 }
 
-std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager,
-    unsigned int num_of_vert, GUISettings& settings, vec3 center, vec3 size)
+std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(Context& context, const std::shared_ptr<material>& mat,
+    unsigned int num_of_vert, vec3 center, vec3 size)
 {
     std::vector<float> vertices;
 
@@ -179,9 +190,10 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(const std::shared_ptr<
         std::span(reinterpret_cast<std::uint32_t*>(mesh_buf_manager->buffer.data()) + offset + vertices.size(), indices.size()), 3, 6, 0, 3, mat);
     return mesh;*/
 
-    std::size_t mesh_handle = mesh_buf_manager->addToBuffer(vertices, 2, indices, vertex_normals);
+    std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(vertices, 2, indices, vertex_normals);
+    context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
 
-    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat, settings);
+    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(context, mesh_handle, mat);
     return mesh;
 }
 
@@ -252,8 +264,8 @@ std::unique_ptr<Mesh> MeshUtils::GenerateSphereLines(unsigned int num_of_vert, v
     return mesh;
 }
 
-std::shared_ptr<RTMesh> MeshUtils::GenerateIcosphere(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager,
-    std::uint32_t subdivisions, GUISettings& settings, vec3 center, vec3 size)
+std::shared_ptr<RTMesh> MeshUtils::GenerateIcosphere(Context& context, const std::shared_ptr<material>& mat,
+    std::uint32_t subdivisions, vec3 center, vec3 size)
 {
     std::vector<float> vertices;
     std::vector<std::uint32_t> indices;
@@ -271,24 +283,24 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateIcosphere(const std::shared_ptr<mater
     std::vector<vec3> vertex_normals(vertices.size() / 3, vec3(0, 0, 0));
     generateTriangleVertexNormals(vertex_normals, vertices, indices, 3);
 
-    std::size_t mesh_handle = mesh_buf_manager->addToBuffer(vertices, 1, indices, vertex_normals);
-    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat, settings);
+    std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(vertices, 1, indices, vertex_normals);
+    context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
+
+    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(context, mesh_handle, mat);
     return mesh;
 }
 
-std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager, std::uint32_t num_of_vert_row,
-    std::uint32_t num_of_vert_col, GUISettings& settings, vec3 center, vec3 size)
+std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(Context& context, const std::shared_ptr<material>& mat,
+    std::uint32_t num_of_vert_row, std::uint32_t num_of_vert_col, vec3 center, vec3 size)
 {
     std::vector<float> vertices;
 
-    vec3 min = center - (size * 0.5);
-    vec3 max = center + (size * 0.5);
-    vec3 d; //= (max - min) / static_cast<float>(num_of_vert - 1);
-    d.setX((max.x() - min.x()) / (num_of_vert_col - 1));
-    d.setY((max.y() - min.y()) / (num_of_vert_row - 1));
+    vec3 d;
+    d.setX((0.5f - (-0.5f)) / (num_of_vert_col - 1));
+    d.setZ((0.5f - (-0.5f)) / (num_of_vert_row - 1));
 
-    // center and normalize variables are not used here, since we are drawing cube
-    createFaceVertices(false, center, vertices, num_of_vert_row, num_of_vert_col, min.x(), max.y(), max.z(), d.x(), -d.y(), 0.0f, 1.0f, 0.0f, 0.0f); // front
+    // center and normalize variables are not used here, since we are drawing rectangle
+    createFaceVertices(false, center, vertices, num_of_vert_row, num_of_vert_col, -0.5f, 0.0f, -0.5f, d.x(), 0.0f, d.z(), 1.0f, 0.0f, 0.0f); // bottom
 
     std::vector<std::uint32_t> indices;
 
@@ -331,14 +343,15 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(const std::shared_p
         vertex_normals[i] = unit_vector(vertex_normals[i]);
     }
 
-    std::size_t mesh_handle = mesh_buf_manager->addToBuffer(vertices, 2, indices, vertex_normals);
+    std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(vertices, 2, indices, vertex_normals);
+    context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
 
-    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat, settings);
+    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(context, mesh_handle, mat);
     return mesh;
 }
 
-std::shared_ptr<RTMesh> MeshUtils::GenerateTestMesh(const std::shared_ptr<material>& mat, MeshBufferManager* mesh_buf_manager,
-        GUISettings& settings, vec3 center, vec3 size)
+std::shared_ptr<RTMesh> MeshUtils::GenerateTestMesh(Context& context, const std::shared_ptr<material>& mat,
+        vec3 center, vec3 size)
 { // Mesh consisting of 3 triangles that are separated a bit, for testing if BVH tree drawing works
     std::vector<float> vertices;
 
@@ -388,10 +401,10 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTestMesh(const std::shared_ptr<materi
     }
 
     // Add data to mesh buffer manager
-    std::size_t mesh_handle = mesh_buf_manager->addToBuffer(vertices, 2, indices, normals);
+    std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(vertices, 2, indices, normals);
+    context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
 
-    // Create and return the mesh
-    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(mesh_buf_manager, mesh_handle, mat, settings);
+    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(context, mesh_handle, mat);
     return mesh;
 }
 

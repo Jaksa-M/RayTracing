@@ -2,6 +2,7 @@
 #define BVH_BUILDER_H
 
 #include "hittable.h"
+#include "math_constants.h"
 #include <span>
 
 struct BVHNode {
@@ -19,16 +20,15 @@ struct Triangle {
 };
 
 struct IntersectResult {
-    float t;   // Intersection distance
-    vec3 Q; // hit_point
-    vec3 triangle_normal;
-    vec3 shading_normal;
+    float t = infinity;   // Intersection distance
+    vec3 buv = vec3(); // short for barycentrics uv, vec3(alpha, beta, gamma)
+    std::uint32_t closest_tri_index = ~0u; 
 };
 
 class BVHBuilder {
 public:
-    BVHBuilder(std::span<const float> vertices, std::span<const std::uint32_t> indices, std::span<const float> vertex_normals, std::vector<Triangle>& triangles,
-        std::vector<std::uint32_t>& triangle_indices);
+    BVHBuilder(std::span<const float> vertices, std::span<std::uint32_t> indices, std::span<const Triangle> triangles,
+        std::span<std::uint32_t> triangle_indices);
 
     std::vector<BVHNode> buildBVH();
     std::vector<BVHNode> buildBVHSAH();
@@ -37,17 +37,17 @@ public:
     void subdivideSAH(std::uint32_t node_index);
 
 private:
-    std::span<const float> vertices;
-    std::span<const std::uint32_t> indices;
-    std::span<const float> vertex_normals;
+    std::span<const float> vertices_;
+    std::span<std::uint32_t> indices_;
 
-    std::vector<BVHNode> bvh_nodes;
-    std::vector<Triangle>& triangles; // contains triangles (their coordinates) formed from indices and vertices arrays
-    std::vector<std::uint32_t>& triangle_indices; // in order not to swap whole triangles, we will just swap these indices
+    std::vector<BVHNode> bvh_nodes_;
+    std::span<const Triangle> triangles_; // contains triangles (their coordinates) formed from indices and vertices arrays
+    std::span<std::uint32_t> triangle_indices_; // in order not to swap whole triangles, we will just swap these indices
 
-    std::uint32_t nodesUsed = 1;
+    std::uint32_t nodes_used_ = 1;
 
     float evaluateSAH(BVHNode& node, int axis, float pos);
+    void reorderIndices(); // Because triangle_indices are getting swapped during BVH building, indices will have to swap also
 };
 
 #endif

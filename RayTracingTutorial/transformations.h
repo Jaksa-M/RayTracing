@@ -23,7 +23,6 @@ public:
 
     static void boxTransformations(std::vector<vec3>& edges, matrix4x4 view_matrix, matrix4x4 projection_matrix);
 
-private:
 };
 
 #endif

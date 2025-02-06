@@ -16,14 +16,14 @@ public:
 
     void boxAround(std::span<vec3> edges) override;
 
-    bool hit(const ray& r, interval ray_t, hit_record& rec) const override;
+    bool hit(const ray& r, interval ray_t, HitRecord& rec) const override;
 
 private:
-    point3 plane_point1;
-    point3 plane_point2;
-    point3 plane_point3;
-    point3 plane_normal;
-    std::shared_ptr<material> mat;
+    point3 plane_point1_;
+    point3 plane_point2_;
+    point3 plane_point3_;
+    point3 plane_normal_;
+    std::shared_ptr<material> mat_;
 };
 
 #endif

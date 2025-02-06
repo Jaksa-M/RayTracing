@@ -148,8 +148,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="bvh_builder.cpp" />
+    <ClCompile Include="bvh_manager.cpp" />
     <ClCompile Include="camera.cpp" />
-    <ClCompile Include="CameraController.cpp" />
+    <ClCompile Include="camera_controller.cpp" />
     <ClCompile Include="ExternalLibraries\imgui\imgui.cpp" />
     <ClCompile Include="ExternalLibraries\imgui\imgui_demo.cpp" />
     <ClCompile Include="ExternalLibraries\imgui\imgui_draw.cpp" />
@@ -179,9 +180,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bvh_builder.h" />
+    <ClInclude Include="bvh_manager.h" />
     <ClInclude Include="camera.h" />
-    <ClInclude Include="CameraController.h" />
+    <ClInclude Include="camera_controller.h" />
     <ClInclude Include="color.h" />
+    <ClInclude Include="context.h" />
     <ClInclude Include="ExternalLibraries\glad\gl.h" />
     <ClInclude Include="ExternalLibraries\imgui\imconfig.h" />
     <ClInclude Include="ExternalLibraries\imgui\imgui.h" />
@@ -217,6 +220,7 @@
     <ClInclude Include="stb_image_write.h" />
     <ClInclude Include="transformations.h" />
     <ClInclude Include="triangle.h" />
+    <ClInclude Include="types.h" />
     <ClInclude Include="vec3.h" />
   </ItemGroup>
   <ItemGroup>
@@ -224,6 +228,8 @@
     <Text Include="ShaderFiles\shader.vs.txt" />
     <Text Include="ShaderFiles\shader_bounding_box.fs.txt" />
     <Text Include="ShaderFiles\shader_bounding_box.vs.txt" />
+    <Text Include="ShaderFiles\shader_camera_rays.fs.txt" />
+    <Text Include="ShaderFiles\shader_camera_rays.vs.txt" />
     <Text Include="ShaderFiles\shader_mesh.fs.txt" />
     <Text Include="ShaderFiles\shader_mesh.vs.txt" />
   </ItemGroup>

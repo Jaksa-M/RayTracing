@@ -6,10 +6,10 @@
 #include <unordered_map>
 #include <span>
 #include "vec3.h"
+#include "types.h"
 
 class MeshBufferManager {
 public:
-	using MeshHandle = std::size_t;
 	MeshBufferManager();
 	
 	std::vector<float>& getBuffer();
@@ -19,9 +19,9 @@ public:
 
 	std::span<const float> getVerts(MeshHandle mesh, std::uint32_t attribute) const;
 	std::span<const std::uint32_t> getIndices(MeshHandle mesh) const;
+	std::span<std::uint32_t> getIndices(MeshHandle mesh);
 	std::span<const float> getNormals(MeshHandle mesh, std::uint32_t attribute) const;
 
-	//std::span<const std::uint32_t> getIndices(MeshHandle mesh) const;
 	std::vector<float> buffer;
 
 private:

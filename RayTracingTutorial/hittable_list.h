@@ -5,7 +5,7 @@
 
 class hittable_list : public hittable {
 public:
-    std::vector<std::shared_ptr<hittable>> objects;
+    std::vector<std::shared_ptr<hittable>> objects_;
 
     hittable_list();
     hittable_list(std::shared_ptr<hittable> object);
@@ -16,7 +16,7 @@ public:
 
     void boxAround(std::span<vec3> edges) override;
 
-    bool hit(const ray& r, interval ray_t, hit_record& rec) const override;
+    bool hit(const ray& r, interval ray_t, HitRecord& rec) const override;
 
 };
 

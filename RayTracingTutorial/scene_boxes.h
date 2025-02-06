@@ -6,10 +6,6 @@
 #include "mesh.h"
 
 class SceneBoxes : public Scene {
-private:
-    std::unique_ptr<Mesh> mesh;
-    std::unique_ptr<Shader> shader_prog;
-
 public:
     SceneBoxes();
 
@@ -17,9 +13,13 @@ public:
 
     void initShader();
 
-    std::vector<unsigned char> update(int display_w, int display_h, camera& cam) override;
-    
-    void draw_boxes(camera& cam);
+    std::vector<unsigned char> update(int display_w, int display_h, Camera& cam) override;
+
+    void draw_boxes(Camera& cam);
+
+private:
+    std::unique_ptr<Mesh> mesh_;
+    std::unique_ptr<Shader> shader_prog_;
 };
 
 #endif

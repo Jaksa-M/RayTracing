@@ -14,90 +14,104 @@
 #include "mesh_utils.h"
 #include "imgui/imgui.h"
 #include <GLFW/glfw3.h>
+#include "context.h"
 
-SceneCornellBox::SceneCornellBox() {}
+SceneCornellBox::SceneCornellBox() {
+
+}
 
 void SceneCornellBox::initialize() {
-    prev_BVH_technique = settings.BVH_technique;
+    prev_BVH_technique_ = context.settings->BVH_technique;
 
-    mesh_buf_manager = std::make_unique<MeshBufferManager>();
     auto mat_yellow = std::make_shared<lambertian>(color(0.8f, 0.8f, 0.0f));
     auto mat_green = std::make_shared<lambertian>(color(0.0f, 1.0f, 0.0f));
     auto mat_red = std::make_shared<lambertian>(color(1.0f, 0.0f, 0.0f));
     auto mat_white = std::make_shared<lambertian>(color(0.8f, 0.8f, 0.8f));
+    
+    // Creating meshes and their transformation matrices
+    rect_prism_mesh_ = MeshUtils::GenerateTriangleCube(context, mat_yellow, 2);
+    matrix4x4 m = transformation::create_rotation_matrix(0.0f, 30.0f * (3.14159f / 180.0f), 0.0f) *
+        transformation::create_translation_matrix(vec3(-0.1f, 1.0f, -0.2f)) *
+        transformation::create_scaling_matrix(0.7f, 1.2f, 0.7f);
+    rect_prism_mesh_->setTransformationMatrix(m);
 
-    // Creating shapes/meshes
-    rect_prism_mesh = MeshUtils::GenerateTriangleCube(mat_yellow, mesh_buf_manager.get(), 2, settings, vec3(-0.15f, 0.1f, -0.2f), vec3(0.3f, 0.8f, 0.3f));
-    cube_mesh = MeshUtils::GenerateTriangleCube(mat_yellow, mesh_buf_manager.get(), 2, settings, vec3(0.05f, 0.35f, 0.2f), vec3(0.3f, 0.3f, 0.3f));
-    rect_mesh_top = MeshUtils::GenerateTriangleRectangle(mat_white, mesh_buf_manager.get(), 6, 3, settings);
-    rect_mesh_bottom = MeshUtils::GenerateTriangleRectangle(mat_white, mesh_buf_manager.get(), 6, 3, settings);
-    rect_mesh_left = MeshUtils::GenerateTriangleRectangle(mat_red, mesh_buf_manager.get(), 6, 3, settings);
-    rect_mesh_right = MeshUtils::GenerateTriangleRectangle(mat_green, mesh_buf_manager.get(), 6, 3, settings);
-    rect_mesh_back = MeshUtils::GenerateTriangleRectangle(mat_white, mesh_buf_manager.get(), 6, 3, settings);
+    cube_mesh_ = std::make_shared<RTMesh>(context, rect_prism_mesh_->getMeshHandle(), mat_yellow);
+    m = transformation::create_rotation_matrix(0.0f, 40.0f * (3.14159f / 180.0f), 0.0f) *
+        transformation::create_translation_matrix(vec3(-0.05f, 0.6f, 0.4f)) *
+        transformation::create_scaling_matrix(0.5f, 0.5f, 0.5f);
+    cube_mesh_->setTransformationMatrix(m);
 
-    world.add(rect_prism_mesh);
-    world.add(cube_mesh);
-    world.add(rect_mesh_top);
-    world.add(rect_mesh_bottom);
-    world.add(rect_mesh_left);
-    world.add(rect_mesh_right);
-    world.add(rect_mesh_back);
+    rect_mesh_back_ = MeshUtils::GenerateTriangleRectangle(context, mat_white, 2, 2);
+    m = transformation::create_translation_matrix(vec3(0.0f, 1.0f, -0.99f)) *
+        transformation::create_rotation_matrix(90.0f * (3.14159f / 180.0f), 0.0f, 0.0f) *
+        transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
+    rect_mesh_back_->setTransformationMatrix(m);
 
-    createTransformations();
+    rect_mesh_top_ = std::make_shared<RTMesh>(context, rect_mesh_back_->getMeshHandle(), mat_white);
+    m = transformation::create_translation_matrix(vec3(0.0, 1.99f, 0.0f)) *
+        transformation::create_rotation_matrix(-180.0f * (3.14159f / 180.0f), 0.0f, 0.0f) *
+        transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
+    rect_mesh_top_->setTransformationMatrix(m);
+
+    rect_mesh_bottom_ = std::make_shared<RTMesh>(context, rect_mesh_back_->getMeshHandle(), mat_white);
+    m = transformation::create_translation_matrix(vec3(0.0, 0.01, 0.0f)) *
+        transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
+    rect_mesh_bottom_->setTransformationMatrix(m);
+
+    rect_mesh_left_ = std::make_shared<RTMesh>(context, rect_mesh_back_->getMeshHandle(), mat_red);
+    m = transformation::create_translation_matrix(vec3(-0.99, 1.0f, 0.0f)) *
+        transformation::create_rotation_matrix(0.0f, 0.0f, 90.0f * (3.14159f / 180.0f)) *
+        transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
+    rect_mesh_left_->setTransformationMatrix(m);
+
+    rect_mesh_right_ = std::make_shared<RTMesh>(context, rect_mesh_back_->getMeshHandle(), mat_green);
+    m = transformation::create_translation_matrix(vec3(0.99f, 1.f, 0.0f)) *
+        transformation::create_rotation_matrix(0.0f, 0.0f, -90.0f * (3.14159f / 180.0f)) *
+        transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
+    rect_mesh_right_->setTransformationMatrix(m);
+    
+    world_.add(rect_prism_mesh_);
+    world_.add(cube_mesh_);
+    world_.add(rect_mesh_top_);
+    world_.add(rect_mesh_bottom_);
+    world_.add(rect_mesh_left_);
+    world_.add(rect_mesh_right_);
+    world_.add(rect_mesh_back_);
+    
+    initShader();
 }
 
-std::vector<unsigned char> SceneCornellBox::update(int display_w, int display_h, camera& cam) {
-    if (prev_BVH_technique != settings.BVH_technique) {
-        world.clear();
+std::vector<unsigned char> SceneCornellBox::update(int display_w, int display_h, Camera& cam) {
+    if (prev_BVH_technique_ != context.settings->BVH_technique) {
+        world_.clear();
         initialize();
     }
 
     std::vector<unsigned char> image_data; 
-    image_data = cam.render(world, image_data_acc, settings);
+    image_data = cam.render(world_, image_data_acc_, *(context.settings));
     return image_data;
 }
 
-void SceneCornellBox::createTransformations() {
-    matrix4x4 m = transformation::create_rotation_matrix(0.0f, 30.0f * (3.14159f / 180.0f), 0.0f); // 30 degrees rotation on y-axis
-    std::vector<matrix4x4> transformations_rect_prism;
-    transformations_rect_prism.push_back(m);
-    rect_prism_mesh->applyTransformations(transformations_rect_prism);
-    rect_prism_mesh->buildBVH();
+void SceneCornellBox::initShader() {
+    shader_prog_ = std::make_unique<Shader>("ShaderFiles/shader_bounding_box.vs.txt", "ShaderFiles/shader_bounding_box.fs.txt");
+}
 
-    m = transformation::create_rotation_matrix(0.0f, 40.0f * (3.14159f / 180.0f), 0.0f); // 50 degrees rotation on y-axis
-    std::vector<matrix4x4> transformations_rect_cube;
-    transformations_rect_cube.push_back(m);
-    cube_mesh->applyTransformations(transformations_rect_cube);
-    cube_mesh->buildBVH();
+void SceneCornellBox::drawBVH(Camera& cam) {
+    if (context.settings->selected_option != -1) {
+        bounding_boxes_.resize(world_.objects_.size());
 
-    m = transformation::create_rotation_matrix(0.0f, 270.0f * (3.14159f / 180.0f), 0.0f); // 270 degrees rotation on y-axis only
-    std::vector<matrix4x4> transformations_rect_left;
-    transformations_rect_left.push_back(m);
-    rect_mesh_left->applyTransformations(transformations_rect_left);
-    rect_mesh_left->buildBVH();
+        for (int i = 0; i < world_.objects_.size(); i++) { // Drawing BVH tree or leaves
+            auto& object = world_.objects_[i];
+            RTMesh* rtMesh = dynamic_cast<RTMesh*>(object.get());
 
-    m = transformation::create_rotation_matrix(0.0f, 90.0f * (3.14159f / 180.0f), 0.0f); // 90 degrees rotation on y-axis only
-    std::vector<matrix4x4> transformations_rect_right;
-    transformations_rect_right.push_back(m);
-    rect_mesh_right->applyTransformations(transformations_rect_right);
-    rect_mesh_right->buildBVH();
-
-    m = transformation::create_translation_matrix(vec3(0.0f, 0.0f, -1.0f));
-    std::vector<matrix4x4> transformations_rect_back;
-    transformations_rect_back.push_back(m);
-    rect_mesh_back->applyTransformations(transformations_rect_back);
-    rect_mesh_back->buildBVH();
-
-    //m = transformation::create_rotation_matrix(0.0f * (3.14159f / 180.0f), 0.0f, 0.0f); // 90 degrees rotation on y-axis only
-    m = transformation::rotation_x(90.0f * (3.14159f / 180.0f)); // 90 degrees rotation on y-axis only
-    std::vector<matrix4x4> transformations_rect_top;
-    transformations_rect_top.push_back(m);
-    rect_mesh_top->applyTransformations(transformations_rect_top);
-    rect_mesh_top->buildBVH();
-
-    m = transformation::rotation_x(270.0f * (3.14159f / 180.0f)); // 90 degrees rotation on y-axis only
-    std::vector<matrix4x4> transformations_rect_bottom;
-    transformations_rect_bottom.push_back(m);
-    rect_mesh_bottom->applyTransformations(transformations_rect_bottom);
-    rect_mesh_bottom->buildBVH();
+            if (rtMesh) { // If the cast succeeds, the object is of type RTMesh
+                if (context.settings->selected_option == 0) { // Drawing whole tree
+                    rtMesh->drawBVHTree(bounding_boxes_, i, shader_prog_, cam);
+                }
+                else if (context.settings->selected_option == 1) { // Drawing only leaves
+                    rtMesh->drawBVHLeaves(bounding_boxes_, i, shader_prog_, cam);
+                }
+            }
+        }
+    }
 }

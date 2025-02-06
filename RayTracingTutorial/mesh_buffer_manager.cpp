@@ -8,7 +8,7 @@ std::vector<float>& MeshBufferManager::getBuffer() {
     return this->buffer;
 }
 
-MeshBufferManager::MeshHandle MeshBufferManager::addToBuffer(std::span<float> vertices, std::uint32_t attribute_count,
+MeshHandle MeshBufferManager::addToBuffer(std::span<float> vertices, std::uint32_t attribute_count,
         std::span<std::uint32_t> indices, std::span<vec3> normals)
 {
     MeshHandle new_handle = ++mesh_ids_;
@@ -39,7 +39,7 @@ MeshBufferManager::MeshHandle MeshBufferManager::addToBuffer(std::span<float> ve
             std::memcpy(buffer.data() + dest_index, vertices.data() + src_index, 3 * sizeof(float));
         }
     }
-    mesh_info.count_v = vertices.size() / attribute_count; // count for each attribute (counts will be the same)
+    mesh_info.count_v = vertices.size() / attribute_count; // Count for each attribute (counts will be the same)
 
     // Insert vertex normals into the buffer
     std::size_t normal_start = buffer.size();
@@ -73,9 +73,16 @@ std::span<const float> MeshBufferManager::getVerts(MeshHandle mesh, std::uint32_
     return {};
 }
 
-std::span<const std::uint32_t> MeshBufferManager::getIndices(MeshHandle mesh) const {
+std::span<const std::uint32_t> MeshBufferManager::getIndices(MeshHandle mesh) const{
     if (auto it = mesh_info_.find(mesh); it != mesh_info_.end()) {
         return std::span<const std::uint32_t>(reinterpret_cast<const std::uint32_t*>(buffer.data() + it->second.offset_i), it->second.count_i);
+    }
+    return {};
+}
+
+std::span<std::uint32_t> MeshBufferManager::getIndices(MeshHandle mesh) {
+    if (auto it = mesh_info_.find(mesh); it != mesh_info_.end()) {
+        return std::span<std::uint32_t>(reinterpret_cast<std::uint32_t*>(buffer.data() + it->second.offset_i), it->second.count_i);
     }
     return {};
 }
