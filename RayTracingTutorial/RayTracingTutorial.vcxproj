@@ -228,8 +228,6 @@
     <Text Include="ShaderFiles\shader.vs.txt" />
     <Text Include="ShaderFiles\shader_bounding_box.fs.txt" />
     <Text Include="ShaderFiles\shader_bounding_box.vs.txt" />
-    <Text Include="ShaderFiles\shader_camera_rays.fs.txt" />
-    <Text Include="ShaderFiles\shader_camera_rays.vs.txt" />
     <Text Include="ShaderFiles\shader_mesh.fs.txt" />
     <Text Include="ShaderFiles\shader_mesh.vs.txt" />
   </ItemGroup>
