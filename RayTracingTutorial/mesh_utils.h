@@ -8,7 +8,7 @@
 #include "vec3.h"
 #include "RTMesh.h"
 
-class Context;
+struct Context;
 
 class MeshUtils {
 public:

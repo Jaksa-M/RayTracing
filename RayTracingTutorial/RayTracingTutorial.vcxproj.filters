@@ -57,19 +57,7 @@
     <ClCompile Include="interval.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="scene_transformations.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="triangle.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="sphere.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="plane.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="rectangle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="camera.cpp">
@@ -85,9 +73,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="camera_controller.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="scene_boxes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="shader.cpp">
@@ -149,15 +134,6 @@
     <ClInclude Include="camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="plane.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="triangle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="rectangle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="material.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -197,16 +173,10 @@
     <ClInclude Include="transformations.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="scene_transformations.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="scene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="math_constants.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="scene_boxes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ExternalLibraries\glad\gl.h">
@@ -251,6 +221,9 @@
     <ClInclude Include="context.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ShaderFiles\shader.fs.txt">
@@ -269,12 +242,6 @@
       <Filter>Shader Files</Filter>
     </Text>
     <Text Include="ShaderFiles\shader_bounding_box.vs.txt">
-      <Filter>Shader Files</Filter>
-    </Text>
-    <Text Include="ShaderFiles\shader_camera_rays.fs.txt">
-      <Filter>Shader Files</Filter>
-    </Text>
-    <Text Include="ShaderFiles\shader_camera_rays.vs.txt">
       <Filter>Shader Files</Filter>
     </Text>
   </ItemGroup>

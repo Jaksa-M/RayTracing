@@ -164,19 +164,14 @@
     <ClCompile Include="mesh.cpp" />
     <ClCompile Include="mesh_buffer_manager.cpp" />
     <ClCompile Include="mesh_utils.cpp" />
-    <ClCompile Include="plane.cpp" />
     <ClCompile Include="RayTracingTutorial.cpp" />
-    <ClCompile Include="rectangle.cpp" />
     <ClCompile Include="RTMesh.cpp" />
-    <ClCompile Include="scene_boxes.cpp" />
     <ClCompile Include="scene_cornell_box.cpp" />
     <ClCompile Include="scene_meshes.cpp" />
     <ClCompile Include="scene_rt_meshes.cpp" />
-    <ClCompile Include="scene_transformations.cpp" />
     <ClCompile Include="shader.cpp" />
     <ClCompile Include="sphere.cpp" />
     <ClCompile Include="transformations.cpp" />
-    <ClCompile Include="triangle.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="bvh_builder.h" />
@@ -205,22 +200,18 @@
     <ClInclude Include="mesh.h" />
     <ClInclude Include="mesh_buffer_manager.h" />
     <ClInclude Include="mesh_utils.h" />
-    <ClInclude Include="plane.h" />
     <ClInclude Include="ray.h" />
-    <ClInclude Include="rectangle.h" />
     <ClInclude Include="RTMesh.h" />
     <ClInclude Include="scene.h" />
-    <ClInclude Include="scene_boxes.h" />
     <ClInclude Include="scene_cornell_box.h" />
     <ClInclude Include="scene_meshes.h" />
     <ClInclude Include="scene_rt_meshes.h" />
-    <ClInclude Include="scene_transformations.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="sphere.h" />
     <ClInclude Include="stb_image_write.h" />
     <ClInclude Include="transformations.h" />
-    <ClInclude Include="triangle.h" />
     <ClInclude Include="types.h" />
+    <ClInclude Include="utility.h" />
     <ClInclude Include="vec3.h" />
   </ItemGroup>
   <ItemGroup>

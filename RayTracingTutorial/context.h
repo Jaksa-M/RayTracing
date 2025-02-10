@@ -3,7 +3,7 @@
 
 class MeshBufferManager;
 class BVHManager;
-class GUISettings;
+struct GUISettings;
 
 // Holds settings, managers that will be passed from scene to where needed
 struct Context {

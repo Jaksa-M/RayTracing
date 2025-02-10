@@ -170,7 +170,7 @@ void Camera::drawRays() {
         shader_prog_->bind();
         shader_prog_->setMat4("view", getViewMatrix().asPointer());
         shader_prog_->setMat4("projection", getProjectionMatrix().asPointer());
-        shader_prog_->setMat4("model_matrix", matrix4x4().asPointer()); // We don't use it here
+        shader_prog_->setMat4("model_matrix", matrix4x4().asPointer()); // We don't use it here, so it's set to identity matrix
 
         // Draw those selected rays
         for (int i = 0; i < rays_to_trace_intersection_.size(); i++) {

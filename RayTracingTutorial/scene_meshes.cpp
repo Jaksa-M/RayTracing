@@ -9,7 +9,6 @@
 #include "matrix.h"
 #include "transformations.h"
 #include "color.h"
-#include "triangle.h"
 #include "sphere.h"
 #include "mesh_utils.h"
 #include "imgui/imgui.h"

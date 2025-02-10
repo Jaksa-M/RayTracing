@@ -9,7 +9,7 @@
 #include "camera.h"
 #include "types.h"
 
-class Context;
+struct Context;
 
 class RTMesh: public hittable {
 public:
@@ -28,6 +28,8 @@ public:
 
     MeshHandle getMeshHandle() const;
 
+    void setTransformationMatrix(const matrix4x4& mat) override;
+
 private:
     Context& context_;
 
@@ -35,6 +37,10 @@ private:
     std::shared_ptr<material> mat_;
 
     std::span<const BVHNode> bvh_nodes_;
+
+    // AABB bounds in world space
+    vec3 aabb_min;
+    vec3 aabb_max;
     
     void intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, bool& hit, float& closest_hit_t) const;
     bool intersectAABB(const ray& r, interval ray_t, IntersectResult& intersect_result, const vec3& bmin, const vec3& bmax, float& closest_side) const;

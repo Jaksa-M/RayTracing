@@ -9,8 +9,6 @@
 #include "matrix.h"
 #include "transformations.h"
 #include "color.h"
-#include "triangle.h"
-#include "sphere.h"
 #include "mesh_utils.h"
 #include "imgui/imgui.h"
 #include <GLFW/glfw3.h>
@@ -48,18 +46,18 @@ void SceneCornellBox::initialize() {
     rect_mesh_back_->setTransformationMatrix(m);
 
     rect_mesh_top_ = std::make_shared<RTMesh>(context, rect_mesh_back_->getMeshHandle(), mat_white);
-    m = transformation::create_translation_matrix(vec3(0.0, 1.99f, 0.0f)) *
+    m = transformation::create_translation_matrix(vec3(0.0f, 1.99f, 0.0f)) *
         transformation::create_rotation_matrix(-180.0f * (3.14159f / 180.0f), 0.0f, 0.0f) *
         transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
     rect_mesh_top_->setTransformationMatrix(m);
 
     rect_mesh_bottom_ = std::make_shared<RTMesh>(context, rect_mesh_back_->getMeshHandle(), mat_white);
-    m = transformation::create_translation_matrix(vec3(0.0, 0.01, 0.0f)) *
+    m = transformation::create_translation_matrix(vec3(0.0f, 0.01f, 0.0f)) *
         transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
     rect_mesh_bottom_->setTransformationMatrix(m);
 
     rect_mesh_left_ = std::make_shared<RTMesh>(context, rect_mesh_back_->getMeshHandle(), mat_red);
-    m = transformation::create_translation_matrix(vec3(-0.99, 1.0f, 0.0f)) *
+    m = transformation::create_translation_matrix(vec3(-0.99f, 1.0f, 0.0f)) *
         transformation::create_rotation_matrix(0.0f, 0.0f, 90.0f * (3.14159f / 180.0f)) *
         transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
     rect_mesh_left_->setTransformationMatrix(m);
