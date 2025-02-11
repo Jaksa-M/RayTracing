@@ -42,8 +42,6 @@ public:
 
     virtual void transform(const matrix4x4& m) {}
 
-    virtual void boxAround(std::span<vec3> edges) = 0;
-
     virtual bool hit(const ray& r, interval ray_t, HitRecord& rec) const = 0;
 
     virtual void setTransformationMatrix(const matrix4x4& mat) {

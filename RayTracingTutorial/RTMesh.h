@@ -17,8 +17,6 @@ public:
 
     std::string object_type() const override { return "cube triangle mesh"; }
 
-    void boxAround(std::span<vec3> edges) override;
-
     bool hit(const ray& r, interval ray_t, HitRecord& rec) const override; // Without BVH
     bool hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const; // With BVH
 
@@ -39,8 +37,8 @@ private:
     std::span<const BVHNode> bvh_nodes_;
 
     // AABB bounds in world space
-    vec3 aabb_min;
-    vec3 aabb_max;
+    vec3 aabb_min_;
+    vec3 aabb_max_;
     
     void intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, bool& hit, float& closest_hit_t) const;
     bool intersectAABB(const ray& r, interval ray_t, IntersectResult& intersect_result, const vec3& bmin, const vec3& bmax, float& closest_side) const;

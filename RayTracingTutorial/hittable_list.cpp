@@ -11,10 +11,6 @@ void hittable_list::add(std::shared_ptr<hittable> object) {
     objects_.push_back(object);
 }
 
-void hittable_list::boxAround(std::span<vec3> edges) { // YET TO BE DEFINED
-    
-}
-
 bool hittable_list::hit(const ray& r, interval ray_t, HitRecord& rec) const {
     HitRecord temp_rec;
     bool hit_anything = false;

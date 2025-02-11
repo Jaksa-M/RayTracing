@@ -14,8 +14,6 @@ public:
 
     void add(std::shared_ptr<hittable> object);
 
-    void boxAround(std::span<vec3> edges) override;
-
     bool hit(const ray& r, interval ray_t, HitRecord& rec) const override;
 
 };

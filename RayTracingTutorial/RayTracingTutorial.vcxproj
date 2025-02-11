@@ -170,7 +170,6 @@
     <ClCompile Include="scene_meshes.cpp" />
     <ClCompile Include="scene_rt_meshes.cpp" />
     <ClCompile Include="shader.cpp" />
-    <ClCompile Include="sphere.cpp" />
     <ClCompile Include="transformations.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -207,7 +206,6 @@
     <ClInclude Include="scene_meshes.h" />
     <ClInclude Include="scene_rt_meshes.h" />
     <ClInclude Include="shader.h" />
-    <ClInclude Include="sphere.h" />
     <ClInclude Include="stb_image_write.h" />
     <ClInclude Include="transformations.h" />
     <ClInclude Include="types.h" />

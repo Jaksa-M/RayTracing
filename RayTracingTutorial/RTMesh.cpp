@@ -19,28 +19,24 @@ RTMesh::RTMesh(Context& context, MeshHandle mesh_handle, std::shared_ptr<materia
     bvh_nodes_ = context_.bvh_manager->getBVHNodes(mesh_handle_);
 }
 
-void RTMesh::boxAround(std::span<vec3> edges) {}
-
 bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
     bool hit = false;
     float closest_hit_t = ray_t.max;
-
-    // Create new ray that will be changing
-    ray changed_ray = r;
 
     IntersectResult intersect_result;
     intersect_result.t = ray_t.max;
     // skip bounds that can`t produce closer t (looking in world space, where multiple BVH's are)
     float closest_side; // not even used for root node, but have to leave it for correct function call
-    if (!intersectAABB(r, ray_t, intersect_result, aabb_min, aabb_max, closest_side) || closest_side > closest_hit_t)
+    if (!intersectAABB(r, ray_t, intersect_result, aabb_min_, aabb_max_, closest_side) || closest_side > closest_hit_t)
         return false;
 
+    ray changed_ray = r; // Create new ray that will be changing
     // Apply inversed transformation to the new ray.
-    changed_ray.setOrigin(transformOrigin(r.origin(), world_to_local_mat_));
+    changed_ray.setOrigin(transformPoint(r.origin(), world_to_local_mat_));
     //changed_ray.setOrigin(transformOrigin(r.at(closest_side), world_to_local_mat_));
     changed_ray.setDirection(transformDirection(r.direction(), matrix3x3(world_to_local_mat_)));
 
-   
+    closest_hit_t = std::numeric_limits<float>::max();
     //intersectBVH(changed_ray, ray_t, intersect_result, 0, hit, closest_hit_t);
     intersectBVH(changed_ray, {0, std::numeric_limits<float>::max()}, intersect_result, 0, hit, closest_hit_t);
 
@@ -80,14 +76,121 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
     return hit;
 }
 
-// Hit function without using BVH
+//// Hit function without using BVH
+//bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
+//    if (context_.settings->enable_BVH == false) {
+//        bool hit = false;
+//        float closest_hit_t = ray_t.max;
+//
+//        IntersectResult closest_intersection;
+//        closest_intersection.t = ray_t.max;
+//
+//        std::span<const float> vertices = context_.mesh_buf_manager->getVerts(mesh_handle_, 0);
+//        std::span<const std::uint32_t> indices = context_.mesh_buf_manager->getIndices(mesh_handle_);
+//
+//        float closest_side;
+//        if (!intersectAABB(r, ray_t, closest_intersection, aabb_min_, aabb_max_, closest_side) || closest_side > closest_hit_t) {
+//            return false;
+//        }
+//
+//        //ray changed_ray = r;
+//        /*changed_ray.setOrigin(transformPoint(r.origin(), world_to_local_mat_));
+//        changed_ray.setDirection(transformDirection(r.direction(), matrix3x3(world_to_local_mat_)));*/
+//
+//        int triangle_index = 0;
+//
+//        // Iterate over every triangle inside the mesh
+//        for (int i = 0; i < indices.size(); i += 3, triangle_index++) {
+//            point3 p1 = point3(vertices[indices[i] * 3], vertices[indices[i] * 3 + 1], vertices[indices[i] * 3 + 2]);
+//            point3 p2 = point3(vertices[indices[i + 1] * 3], vertices[indices[i + 1] * 3 + 1], vertices[indices[i + 1] * 3 + 2]);
+//            point3 p3 = point3(vertices[indices[i + 2] * 3], vertices[indices[i + 2] * 3 + 1], vertices[indices[i + 2] * 3 + 2]);
+//
+//            // Transform vertices to world space (triangle by triangle)
+//            p1 = local_to_world_mat_ * p1;
+//            p2 = local_to_world_mat_ * p2;
+//            p3 = local_to_world_mat_ * p3;
+//
+//            IntersectResult intersect_res = intersectTriangle(r, ray_t, p1, p2, p3);
+//                if (intersect_res.t < closest_hit_t) {  // Update only if this hit is closer
+//                    intersect_res.closest_tri_index = i;
+//                    closest_intersection = intersect_res;
+//
+//                    hit = true;
+//                    closest_hit_t = intersect_res.t;  // Update the closest intersection distance
+//                }
+//        }
+//        if (hit == true) {
+//            rec.type_of_normal = false;
+//            rec.object_type = "triangle";
+//            rec.mat = mat_;
+//            rec.t = closest_intersection.t;
+//
+//            rec.p = r.at(closest_intersection.t);
+//            vec3 v0;
+//            vec3 v1;
+//            vec3 v2;
+//            getTriangleVertices(closest_intersection.closest_tri_index, v0, v1, v2);
+//            v0 = local_to_world_mat_ * v0;
+//            v1 = local_to_world_mat_ * v1;
+//            v2 = local_to_world_mat_ * v2;
+//            vec3 triangle_normal = unit_vector(cross(v1 - v0, v2 - v0));
+//            rec.set_face_normal(r, triangle_normal);
+//
+//            rec.set_shading_normal(r, triangle_normal);
+//
+//            //vec3 v0;
+//            //vec3 v1;
+//            //vec3 v2;
+//            //getTriangleVertices(closest_intersection.closest_tri_index, v0, v1, v2);
+//            //v0 = local_to_world_mat_ * v0;
+//            //v1 = local_to_world_mat_ * v1;
+//            //v2 = local_to_world_mat_ * v2;
+//            //vec3 triangle_normal = unit_vector(cross(v1 - v0, v2 - v0));
+//            //rec.set_face_normal(r, triangle_normal);
+//
+//            //rec.p = barycentricInterpolate(v0, v1, v2, closest_intersection.buv);
+//
+//            //// has to be in world space.
+//            //rec.t = (r.origin() - rec.p).length();
+//
+//            //vec3 n0;
+//            //vec3 n1;
+//            //vec3 n2;
+//            //getTriangleNormals(closest_intersection.closest_tri_index, n0, n1, n2);
+//
+//            //vec3 shading_normal = unit_vector(barycentricInterpolate(n0, n1, n2, closest_intersection.buv));
+//
+//            //matrix3x3 normal_matrix = local_to_world_mat_.convertTo3x3().invert().transpose();
+//            //shading_normal = unit_vector(normal_matrix * shading_normal);
+//            //rec.set_shading_normal(r, shading_normal);
+//        }
+//        return hit;
+//    }
+//    else {
+//        return hit_BVH(r, ray_t, rec);
+//    }
+//}
+
+// CHANGED RAY VERSION
 bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
     if (context_.settings->enable_BVH == false) {
         bool hit = false;
-        float min = ray_t.max;
+        float closest_hit_t = ray_t.max;
+
+        IntersectResult closest_intersection;
+        closest_intersection.t = ray_t.max;
+
         std::span<const float> vertices = context_.mesh_buf_manager->getVerts(mesh_handle_, 0);
         std::span<const std::uint32_t> indices = context_.mesh_buf_manager->getIndices(mesh_handle_);
-        std::span<const float> vertex_normals = context_.mesh_buf_manager->getNormals(mesh_handle_, 2);
+
+        float closest_side;
+        if (!intersectAABB(r, ray_t, closest_intersection, aabb_min_, aabb_max_, closest_side) || closest_side > closest_hit_t) {
+            return false;
+        }
+        closest_hit_t = std::numeric_limits<float>::max();
+        ray changed_ray = r;
+        changed_ray.setOrigin(transformPoint(r.origin(), world_to_local_mat_));
+        changed_ray.setDirection(transformDirection(r.direction(), matrix3x3(world_to_local_mat_)));
 
         // Iterate over every triangle inside the mesh
         for (int i = 0; i < indices.size(); i += 3) {
@@ -95,57 +198,46 @@ bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
             point3 p2 = point3(vertices[indices[i + 1] * 3], vertices[indices[i + 1] * 3 + 1], vertices[indices[i + 1] * 3 + 2]);
             point3 p3 = point3(vertices[indices[i + 2] * 3], vertices[indices[i + 2] * 3 + 1], vertices[indices[i + 2] * 3 + 2]);
 
-            // Transform vertices to world space (triangle by triangle)
-            p1 = local_to_world_mat_ *  p1;
-            p2 = local_to_world_mat_ *  p2;
-            p3 = local_to_world_mat_ *  p3;
+            IntersectResult intersect_res = intersectTriangle(changed_ray, ray_t, p1, p2, p3);
+            if (intersect_res.t < closest_hit_t) {  // Update only if this hit is closer
+                intersect_res.closest_tri_index = i;
+                closest_intersection = intersect_res;
 
-            // Formula for intersecting with the plane is t = (c - p*n) / d*n
-            // denominator d is ray direction, p is ray origin, n is normal, c is constant
-            point3 triangle_normal = unit_vector(cross(p2 - p1, p3 - p1));
-            float c = dot(triangle_normal, p1);
-            float denominator = dot(triangle_normal, r.direction());
-            if (fabs(denominator) < 1e-8) continue;
-            float t = (c - dot(triangle_normal, r.origin())) / denominator;
-            if (!ray_t.surrounds(t)) { // Check if the intersection is within the ray's valid range
-                continue;
-            }
-            // Plugging in t inside ray formula R(x) = P + td
-            point3 Q = r.at(float(t));
-            // Now we have to check if our intersection point is inside triangle
-            // Q is inside if following conditions are met in this order:
-            // [(B-A) x (Q-A)] * n >= 0
-            // [(C-B) x (Q-B)] * n >= 0
-            // [(A-C) x (Q-C)] * n >= 0
-            if (dot(cross((p2 - p1), (Q - p1)), triangle_normal) < 0 ||
-                dot(cross((p3 - p2), (Q - p2)), triangle_normal) < 0 ||
-                dot(cross((p1 - p3), (Q - p3)), triangle_normal) < 0) {
-                continue;
-            }
-            // Adding Barycentric coordinates
-            // alpha = ([(C-B) x (Q-B)] * n) / ([(B-A) x (C-A)] * n)
-            // beta = ([(A-C) x (Q-C)] * n) / ([(B-A) x (C-A)] * n)
-            // gamma = ([(B-A) x (Q-A)] * n) / ([(B-A) x (C-A)] * n)
-            const float area = dot(cross((p2 - p1), (p3 - p1)), triangle_normal);
-            float alpha = dot(cross((p3 - p2), (Q - p2)), triangle_normal) / area;
-            float beta = dot(cross((p1 - p3), (Q - p3)), triangle_normal) / area;
-            float gamma = dot(cross((p2 - p1), (Q - p1)), triangle_normal) / area;
-            const point3 n1 = point3(vertex_normals[indices[i] * 3], vertex_normals[indices[i] * 3 + 1], vertex_normals[indices[i] * 3 + 2]);
-            const point3 n2 = point3(vertex_normals[indices[i + 1] * 3], vertex_normals[indices[i + 1] * 3 + 1], vertex_normals[indices[i + 1] * 3 + 2]);
-            const point3 n3 = point3(vertex_normals[indices[i + 2] * 3], vertex_normals[indices[i + 2] * 3 + 1], vertex_normals[indices[i + 2] * 3 + 2]);
-            vec3 n = unit_vector(n1 * alpha + n2 * beta + n3 * gamma); // barycentric interpolation
-            // if we reached this step, that means ray has hit triangle, so we have to check if this is the most front triangle
-            if (t <= min) {
-                rec.t = t;
-                rec.p = Q;
-                rec.set_face_normal(r, triangle_normal);
-                rec.set_shading_normal(r, n);
-                rec.type_of_normal = false;
-                rec.object_type = "triangle";
-                rec.mat = mat_;
                 hit = true;
-                min = t;
+                closest_hit_t = intersect_res.t;  // Update the closest intersection distance
             }
+        }
+        if (hit == true) {
+            rec.type_of_normal = false;
+            rec.object_type = "triangle";
+            rec.mat = mat_;
+            rec.t = closest_intersection.t;
+
+            vec3 v0;
+            vec3 v1;
+            vec3 v2;
+            getTriangleVertices(closest_intersection.closest_tri_index, v0, v1, v2);
+            v0 = local_to_world_mat_ * v0;
+            v1 = local_to_world_mat_ * v1;
+            v2 = local_to_world_mat_ * v2;
+            vec3 triangle_normal = unit_vector(cross(v1 - v0, v2 - v0));
+            rec.set_face_normal(r, triangle_normal);
+
+            rec.p = barycentricInterpolate(v0, v1, v2, closest_intersection.buv);
+
+            // has to be in world space.
+            rec.t = (r.origin() - rec.p).length();
+
+            vec3 n0;
+            vec3 n1;
+            vec3 n2;
+            getTriangleNormals(closest_intersection.closest_tri_index, n0, n1, n2);
+
+            vec3 shading_normal = unit_vector(barycentricInterpolate(n0, n1, n2, closest_intersection.buv));
+
+            matrix3x3 normal_matrix = local_to_world_mat_.convertTo3x3().invert().transpose();
+            shading_normal = unit_vector(normal_matrix * shading_normal);
+            rec.set_shading_normal(r, shading_normal);
         }
         return hit;
     }
@@ -229,9 +321,9 @@ void RTMesh::setTransformationMatrix(const matrix4x4& mat) {
 
     const BVHNode& node = bvh_nodes_[0];
 
-    aabb_min = node.aabbMin;
-    aabb_max = node.aabbMax;
-    calculateWorldAABB(aabb_min, aabb_max, local_to_world_mat_);
+    aabb_min_ = node.aabbMin;
+    aabb_max_ = node.aabbMax;
+    calculateWorldAABB(aabb_min_, aabb_max_, local_to_world_mat_);
 }
 
 void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, bool& hit, float& closest_hit_t) const {

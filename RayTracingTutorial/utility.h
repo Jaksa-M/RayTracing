@@ -79,7 +79,7 @@ inline void calculateWorldAABB(vec3& pmin, vec3& pmax, const matrix4x4& transfor
     }
 }
 
-inline vec3 transformOrigin(const vec3& pos, const matrix4x4& m) {
+inline vec3 transformPoint(const vec3& pos, const matrix4x4& m) {
     // Convert the position to a homogeneous coordinate (w = 1)
     vec4 homogenous_pos = vec4(pos.x(), pos.y(), pos.z(), 1.0f);
 
@@ -91,7 +91,7 @@ inline vec3 transformOrigin(const vec3& pos, const matrix4x4& m) {
 
 inline vec3 transformDirection(const vec3& dir, const matrix3x3& m) {
     vec3 transformed_dir = m * dir;
-    //return transformed_dir;
+    return transformed_dir;
     return unit_vector(transformed_dir);
 }
 
