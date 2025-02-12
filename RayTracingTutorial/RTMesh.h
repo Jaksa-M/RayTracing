@@ -39,9 +39,11 @@ private:
     // AABB bounds in world space
     vec3 aabb_min_;
     vec3 aabb_max_;
+    std::span<const float> vertices_;
+    std::span<const std::uint32_t> indices_;
     
     void intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, bool& hit, float& closest_hit_t) const;
-    bool intersectAABB(const ray& r, interval ray_t, IntersectResult& intersect_result, const vec3& bmin, const vec3& bmax, float& closest_side) const;
+    bool intersectAABB(const ray& r, interval ray_t, float t, const vec3& bmin, const vec3& bmax, float& closest_side) const;
 
     void getTriangleVertices(std::uint32_t triangle_index, vec3& v0, vec3& v1, vec3& v2) const;
     void getTriangleNormals(std::uint32_t triangle_index, vec3& n0, vec3& n1, vec3& n2) const;

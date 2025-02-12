@@ -19,12 +19,6 @@ struct Triangle {
     point3 centroid;   // Center of the triangle
 };
 
-struct IntersectResult {
-    float t = infinity;   // Intersection distance
-    vec3 buv = vec3(); // short for barycentrics uv, vec3(alpha, beta, gamma)
-    std::uint32_t closest_tri_index = ~0u; 
-};
-
 class BVHBuilder {
 public:
     BVHBuilder(std::span<const float> vertices, std::span<std::uint32_t> indices, std::span<const Triangle> triangles,
