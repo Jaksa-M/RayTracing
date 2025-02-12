@@ -51,6 +51,28 @@ inline IntersectResult intersectTriangle(const ray& r, interval ray_t, const vec
     return { t, vec3(alpha, beta, gamma), 0 }; // same as return true
 }
 
+inline bool intersectAABB(const ray& r, interval ray_t, float t, const vec3& bmin, const vec3& bmax, float& closest_side) {
+    vec3 dir = vec3(std::abs(r.direction().x()) < 0.00001f ? r.direction().x() + 0.0001f : r.direction().x(),
+                    std::abs(r.direction().y()) < 0.00001f ? r.direction().y() + 0.0001f : r.direction().y(),
+                    std::abs(r.direction().z()) < 0.00001f ? r.direction().z() + 0.0001f : r.direction().z());
+
+    float tx1 = (bmin.x() - r.origin().x()) / dir.x();
+    float tx2 = (bmax.x() - r.origin().x()) / dir.x();
+    float tmin = std::min(tx1, tx2);
+    float tmax = std::max(tx1, tx2);
+    float ty1 = (bmin.y() - r.origin().y()) / dir.y();
+    float ty2 = (bmax.y() - r.origin().y()) / dir.y();
+    tmin = std::max(tmin, std::min(ty1, ty2));
+    tmax = std::min(tmax, std::max(ty1, ty2));
+    float tz1 = (bmin.z() - r.origin().z()) / dir.z();
+    float tz2 = (bmax.z() - r.origin().z()) / dir.z();
+    tmin = std::max(tmin, std::min(tz1, tz2));
+    tmax = std::min(tmax, std::max(tz1, tz2));
+
+    closest_side = tmin;
+    return tmax >= tmin && tmin < t && tmax > 0;
+}
+
 inline void transformAABB(vec3& pmin, vec3& pmax, const matrix4x4& transform) {
     vec3 corners[8] = {
         transform * vec3(pmin.x(), pmin.y(), pmin.z()),

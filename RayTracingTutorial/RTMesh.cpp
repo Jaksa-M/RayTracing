@@ -82,7 +82,10 @@ bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
         changed_ray.setOrigin(transformPoint(r.origin(), world_to_local_mat_));
         changed_ray.setDirection(transformDirection(r.direction(), matrix3x3(world_to_local_mat_)));
 
-        //// Converting bounds to local space
+        // ray_t min and max are currently in world space and we need to convert them to local space because the
+        // intersection is being done in local space.
+
+        //// TODO: Converting bounds to local space
         //float local_min = (changed_ray.origin() - transformPoint(r.at(ray_t.min), world_to_local_mat_)).length();
         //float local_max = (changed_ray.origin() - transformPoint(r.at(ray_t.max), world_to_local_mat_)).length();
         //ray_t.min = (local_min < local_max) ? local_min : local_max;
@@ -225,8 +228,7 @@ void RTMesh::setTransformationMatrix(const matrix4x4& mat) {
     transformAABB(aabb_min_, aabb_max_, local_to_world_mat_); // transforms aabb from local to world space
 }
 
-void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx,
-                          bool& hit, float& closest_hit_t) const {
+void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, bool& hit, float& closest_hit_t) const {
     const BVHNode& node = bvh_nodes_[nodeIdx];
 
     if (node.isLeaf() == true) {
@@ -281,28 +283,6 @@ void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& interse
     }
 
     hit = leftHit || rightHit;  // Combine results from child nodes
-}
-
-bool RTMesh::intersectAABB(const ray& r, interval ray_t, float t, const vec3& bmin, const vec3& bmax, float& closest_side) const {
-    vec3 dir = vec3(std::abs(r.direction().x()) < 0.00001f ? r.direction().x() + 0.0001f : r.direction().x(),
-                    std::abs(r.direction().y()) < 0.00001f ? r.direction().y() + 0.0001f : r.direction().y(),
-                    std::abs(r.direction().z()) < 0.00001f ? r.direction().z() + 0.0001f : r.direction().z());
-
-    float tx1 = (bmin.x() - r.origin().x()) / dir.x();
-    float tx2 = (bmax.x() - r.origin().x()) / dir.x();
-    float tmin = std::min(tx1, tx2);
-    float tmax = std::max(tx1, tx2);
-    float ty1 = (bmin.y() - r.origin().y()) / dir.y();
-    float ty2 = (bmax.y() - r.origin().y()) / dir.y();
-    tmin = std::max(tmin, std::min(ty1, ty2));
-    tmax = std::min(tmax, std::max(ty1, ty2));
-    float tz1 = (bmin.z() - r.origin().z()) / dir.z();
-    float tz2 = (bmax.z() - r.origin().z()) / dir.z();
-    tmin = std::max(tmin, std::min(tz1, tz2));
-    tmax = std::min(tmax, std::max(tz1, tz2));
-
-    closest_side = tmin;
-    return tmax >= tmin && tmin < t && tmax > 0;
 }
 
 void RTMesh::getTriangleVertices(std::uint32_t triangle_index, vec3& v0, vec3& v1, vec3& v2) const {
