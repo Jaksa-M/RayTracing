@@ -51,7 +51,7 @@ inline IntersectResult intersectTriangle(const ray& r, interval ray_t, const vec
     return { t, vec3(alpha, beta, gamma), 0 }; // same as return true
 }
 
-inline bool intersectAABB(const ray& r, interval ray_t, float t, const vec3& bmin, const vec3& bmax, float& closest_side) {
+inline bool intersectAABB(const ray& r, float t, const vec3& bmin, const vec3& bmax, float& closest_side) {
     vec3 dir = vec3(std::abs(r.direction().x()) < 0.00001f ? r.direction().x() + 0.0001f : r.direction().x(),
                     std::abs(r.direction().y()) < 0.00001f ? r.direction().y() + 0.0001f : r.direction().y(),
                     std::abs(r.direction().z()) < 0.00001f ? r.direction().z() + 0.0001f : r.direction().z());

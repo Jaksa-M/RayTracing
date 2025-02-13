@@ -7,7 +7,7 @@ class interval {
 public:
     float min, max;
 
-    interval() : min(+infinity), max(-infinity) {} // Default interval is empty
+    interval() : min(+float_max), max(float_min) {} // Default interval is empty
 
     interval(float min, float max) : min(min), max(max) {}
 

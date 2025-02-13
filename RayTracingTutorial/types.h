@@ -26,7 +26,7 @@ enum class MeshColor {
 
 // Code types
 struct IntersectResult {
-    float t = infinity;  // Intersection distance
+    float t = float_max;  // Intersection distance
     vec3 buv = vec3();   // short for barycentrics uv, vec3(alpha, beta, gamma)
     std::uint32_t closest_tri_index = ~0u;
 };

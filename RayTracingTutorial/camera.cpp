@@ -121,7 +121,7 @@ color Camera::ray_color(const ray& r, int depth, const hittable_list& world) {
             // If we've exceeded the ray bounce limit, no more light is gathered.
             if (depth <= 0) return color(0.0f, 0.0f, 0.0f);
 
-            if (world.hit(r, interval(0.001f, infinity), rec)) {
+            if (world.hit(r, interval(0.001f, float_max), rec)) {
                 ray scattered;
                 color attenuation;
                 if (rec.mat->scatter(r, rec, attenuation, scattered)) {
@@ -141,7 +141,7 @@ color Camera::ray_color(const ray& r, int depth, const hittable_list& world) {
                 return rec.face_normal_ * 0.5 + vec3(0.5f, 0.5f, 0.5f);
             }
             return vec3(0.0f, 0.0f, 0.0f);*/
-            if (world.hit(r, interval(0.001f, infinity), rec)) {
+            if (world.hit(r, interval(0.001f, float_max), rec)) {
                 return vec3(
                     std::abs(rec.shading_normal.x()),
                     std::abs(rec.shading_normal.y()),
@@ -156,7 +156,7 @@ color Camera::ray_color(const ray& r, int depth, const hittable_list& world) {
             return vec3(0.0f, 0.0f, 0.0f);
 
         case MeshColor::DEPTH: // Showing colors based on the depth
-            if (world.hit(r, interval(0.001f, infinity), rec)) {
+            if (world.hit(r, interval(0.001f, float_max), rec)) {
                 float tt = rec.t / 100.0f;
                 return vec3(tt, tt, tt);
             }

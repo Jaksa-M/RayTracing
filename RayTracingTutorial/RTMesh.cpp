@@ -22,26 +22,28 @@ RTMesh::RTMesh(Context& context, MeshHandle mesh_handle, std::shared_ptr<materia
 }
 
 bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
-    bool hit = false;
-
     ray changed_ray = r;  // Create new ray that will be changing
     // Apply inversed transformation to the new ray.
     changed_ray.setOrigin(transformPoint(r.origin(), world_to_local_mat_));
     changed_ray.setDirection(transformDirection(r.direction(), matrix3x3(world_to_local_mat_)));
 
-    float closest_hit_t = std::numeric_limits<float>::max();
-    ray_t = {0, std::numeric_limits<float>::max()};  // this ray_t is for local bounds checking
-    IntersectResult intersect_result;
-    intersectBVH(changed_ray, ray_t, intersect_result, 0, hit, closest_hit_t);
+    // Converting bounds to local space
+    float local_min = (changed_ray.origin() - transformPoint(r.at(ray_t.min), world_to_local_mat_)).length();
+    float local_max = (changed_ray.origin() - transformPoint(r.at(ray_t.max), world_to_local_mat_)).length();
+    ray_t.min = (local_min < local_max) ? local_min : local_max;
+    ray_t.max = (local_max > local_min) ? local_max : local_min;
+    //ray_t = {0, std::numeric_limits<float>::max()};  // this ray_t is for local bounds checking
 
-    if (hit == true) {
+    IntersectResult intersect_result;
+    float closest_hit_t = std::numeric_limits<float>::max();
+    intersectBVH(changed_ray, ray_t, intersect_result, 0, closest_hit_t);
+
+    if (closest_hit_t != std::numeric_limits<float>::max()) {
         rec.type_of_normal = false;
         rec.object_type = "triangle";
         rec.mat = mat_;
 
-        vec3 v0;
-        vec3 v1;
-        vec3 v2;
+        vec3 v0, v1, v2;
         getTriangleVertices(intersect_result.closest_tri_index, v0, v1, v2);
         v0 = local_to_world_mat_ * v0;
         v1 = local_to_world_mat_ * v1;
@@ -54,9 +56,7 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
         // has to be in world space.
         rec.t = (r.origin() - rec.p).length();
 
-        vec3 n0;
-        vec3 n1;
-        vec3 n2;
+        vec3 n0, n1, n2;
         getTriangleNormals(intersect_result.closest_tri_index, n0, n1, n2);
 
         vec3 shading_normal = unit_vector(barycentricInterpolate(n0, n1, n2, intersect_result.buv));
@@ -66,18 +66,16 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
         rec.set_shading_normal(r, shading_normal);
     }
 
-    return hit;
+    return closest_hit_t != std::numeric_limits<float>::max();
 }
 
 bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
     // Skipping bounds that can`t produce closer t (looking in world space, where multiple BVH's are)
     float closest_side;  // not even used for root node, but have to leave it for correct function call
-    if (!intersectAABB(r, ray_t, ray_t.max, aabb_min_, aabb_max_, closest_side) || closest_side > ray_t.max)
+    if (!intersectAABB(r, ray_t.max, aabb_min_, aabb_max_, closest_side) || closest_side > ray_t.max)
         return false;
 
     if (context_.settings->enable_BVH == false) {
-        bool hit = false;
-
         ray changed_ray = r;
         changed_ray.setOrigin(transformPoint(r.origin(), world_to_local_mat_));
         changed_ray.setDirection(transformDirection(r.direction(), matrix3x3(world_to_local_mat_)));
@@ -85,12 +83,12 @@ bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
         // ray_t min and max are currently in world space and we need to convert them to local space because the
         // intersection is being done in local space.
 
-        //// TODO: Converting bounds to local space
-        //float local_min = (changed_ray.origin() - transformPoint(r.at(ray_t.min), world_to_local_mat_)).length();
-        //float local_max = (changed_ray.origin() - transformPoint(r.at(ray_t.max), world_to_local_mat_)).length();
-        //ray_t.min = (local_min < local_max) ? local_min : local_max;
-        //ray_t.max = (local_max > local_min) ? local_max : local_min;
-        ray_t = {0, std::numeric_limits<float>::max()};
+        // Converting bounds to local space
+        float local_min = (changed_ray.origin() - transformPoint(r.at(ray_t.min), world_to_local_mat_)).length();
+        float local_max = (changed_ray.origin() - transformPoint(r.at(ray_t.max), world_to_local_mat_)).length();
+        ray_t.min = (local_min < local_max) ? local_min : local_max;
+        ray_t.max = (local_max > local_min) ? local_max : local_min;
+        //ray_t = {0, std::numeric_limits<float>::max()};
 
         IntersectResult closest_intersection;
 
@@ -104,18 +102,14 @@ bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
             if (intersect_res.t < closest_intersection.t) {  // Update only if this hit is closer
                 intersect_res.closest_tri_index = i;
                 closest_intersection = intersect_res;
-
-                hit = true;
             }
         }
-        if (hit == true) {
+        if (closest_intersection.t != float_max) {
             rec.type_of_normal = false;
             rec.object_type = "triangle";
             rec.mat = mat_;
 
-            vec3 v0;
-            vec3 v1;
-            vec3 v2;
+            vec3 v0, v1, v2;
             getTriangleVertices(closest_intersection.closest_tri_index, v0, v1, v2);
             v0 = local_to_world_mat_ * v0;
             v1 = local_to_world_mat_ * v1;
@@ -128,9 +122,7 @@ bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
             // Has to be in world space
             rec.t = (r.origin() - rec.p).length();
 
-            vec3 n0;
-            vec3 n1;
-            vec3 n2;
+            vec3 n0, n1, n2;
             getTriangleNormals(closest_intersection.closest_tri_index, n0, n1, n2);
 
             vec3 shading_normal = unit_vector(barycentricInterpolate(n0, n1, n2, closest_intersection.buv));
@@ -138,10 +130,12 @@ bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
             matrix3x3 normal_matrix = local_to_world_mat_.convertTo3x3().invert().transpose();
             shading_normal = unit_vector(normal_matrix * shading_normal);
             rec.set_shading_normal(r, shading_normal);
-        }
 
-        return hit;
-    } else {
+            return true;
+        }
+        return false;
+    }
+    else {
         return hit_BVH(r, ray_t, rec);
     }
 }
@@ -228,7 +222,7 @@ void RTMesh::setTransformationMatrix(const matrix4x4& mat) {
     transformAABB(aabb_min_, aabb_max_, local_to_world_mat_); // transforms aabb from local to world space
 }
 
-void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, bool& hit, float& closest_hit_t) const {
+void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, float& closest_hit_t) const {
     const BVHNode& node = bvh_nodes_[nodeIdx];
 
     if (node.isLeaf() == true) {
@@ -245,44 +239,39 @@ void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& interse
                 if (intersect_res.t < closest_hit_t) {  // Update only if this hit is closer
                     intersect_res.closest_tri_index = triangle_index;
                     intersect_result = intersect_res;
-
-                    hit = true;
                     closest_hit_t = intersect_res.t;  // Update the closest intersection distance
                 }
             }
         }
         return;
     }
-    // These 2 variables check if there was a hit inside left or right child
-    bool leftHit = false, rightHit = false;
 
     float closest_side_left;
     float closest_side_right;
     const BVHNode* node_left = &bvh_nodes_[node.left_child];
     const BVHNode* node_right = &bvh_nodes_[node.right_child];
     bool left_check =
-        intersectAABB(r, ray_t, intersect_result.t, node_left->aabbMin, node_left->aabbMax, closest_side_left);
+        intersectAABB(r, intersect_result.t, node_left->aabbMin, node_left->aabbMax, closest_side_left);
     bool right_check =
-        intersectAABB(r, ray_t, intersect_result.t, node_right->aabbMin, node_right->aabbMax, closest_side_right);
+        intersectAABB(r, intersect_result.t, node_right->aabbMin, node_right->aabbMax, closest_side_right);
 
     std::uint32_t left_child = node.left_child;
     std::uint32_t right_child = node.right_child;
 
-    if (closest_side_right <
-        closest_side_left) {  // If closest side of node.right is smaller than closest side of node.left, then swap them
+    if (closest_side_right < closest_side_left) {  // If closest side of node.right is smaller than closest side of node.left, then swap them
         std::swap(node_left, node_right);
         std::swap(left_check, right_check);
         std::swap(closest_side_left, closest_side_right);
         std::swap(left_child, right_child);
     }
+
     if (left_check == true && closest_side_left < closest_hit_t) {
-        intersectBVH(r, ray_t, intersect_result, left_child, leftHit, closest_hit_t);
+        intersectBVH(r, ray_t, intersect_result, left_child, closest_hit_t);
     }
     if (right_check == true && closest_side_right < closest_hit_t) {
-        intersectBVH(r, ray_t, intersect_result, right_child, rightHit, closest_hit_t);
+        intersectBVH(r, ray_t, intersect_result, right_child, closest_hit_t);
     }
 
-    hit = leftHit || rightHit;  // Combine results from child nodes
 }
 
 void RTMesh::getTriangleVertices(std::uint32_t triangle_index, vec3& v0, vec3& v1, vec3& v2) const {
