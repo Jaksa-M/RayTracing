@@ -59,7 +59,4 @@ private:
     float data[3][3];
 };
 
-
-
-
 #endif

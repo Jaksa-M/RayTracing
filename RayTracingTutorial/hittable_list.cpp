@@ -11,10 +11,6 @@ void hittable_list::add(std::shared_ptr<hittable> object) {
     objects_.push_back(object);
 }
 
-void hittable_list::boxAround(std::span<vec3> edges) { // YET TO BE DEFINED
-    
-}
-
 bool hittable_list::hit(const ray& r, interval ray_t, HitRecord& rec) const {
     HitRecord temp_rec;
     bool hit_anything = false;
@@ -23,6 +19,7 @@ bool hittable_list::hit(const ray& r, interval ray_t, HitRecord& rec) const {
 
     for (const auto& object : objects_) {
         if (object->hit(r, interval(ray_t.min, closest_so_far), temp_rec)) {
+            // Reducing the ray_t.max if there is closer object in world space (to reduce unnecessary checks)
             hit_anything = true;
             closest_so_far = temp_rec.t;
             rec = temp_rec;

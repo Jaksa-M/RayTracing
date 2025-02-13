@@ -10,7 +10,7 @@
 #include "types.h"
 
 class MeshBufferManager;
-class GUISettings;
+struct GUISettings;
 
 class BVHManager {
 public:
