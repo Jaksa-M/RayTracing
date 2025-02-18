@@ -28,6 +28,9 @@
     <Filter Include="Shader Files">
       <UniqueIdentifier>{8e31cc48-def1-4f12-8ec1-ea6119631042}</UniqueIdentifier>
     </Filter>
+    <Filter Include="External Libraries\tinyobjloader">
+      <UniqueIdentifier>{47b63211-c4bb-4849-a5fc-1fdd092ab972}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RayTracingTutorial.cpp">
@@ -100,6 +103,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="bvh_manager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="obj_loader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="scene_custom_meshes.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -216,6 +225,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="obj_loader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalLibraries\tinyobjloader\tiny_obj_loader.h">
+      <Filter>External Libraries\tinyobjloader</Filter>
+    </ClInclude>
+    <ClInclude Include="scene_custom_meshes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

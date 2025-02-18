@@ -28,6 +28,7 @@
 //#include "scene_meshes.h"
 #include "scene_rt_meshes.h"
 #include "scene_cornell_box.h"
+#include "scene_custom_meshes.h"
 
 // ImGui things
 #include "imgui/imgui.h"
@@ -108,8 +109,13 @@ int main(int, char**) {
     std::unique_ptr<MeshBufferManager> mesh_buf_manager = std::make_unique<MeshBufferManager>();
     std::unique_ptr<BVHManager> bvh_manager = std::make_unique<BVHManager>(gui_settings.get());
 
+    SceneType selected_scene_index = SceneType::CUSTOM_MESHES;
+    BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
+    MeshColor chosen_mesh_color = MeshColor::MATERIAL;
+
     Context context;
     context.settings = gui_settings.get();
+    context.settings->BVH_technique = chosen_technique_index;
     context.mesh_buf_manager = mesh_buf_manager.get();
     context.bvh_manager = bvh_manager.get();
 
@@ -126,6 +132,9 @@ int main(int, char**) {
     SceneCornellBox scene_cornell_box;
     scene_cornell_box.context = context;
     scene_cornell_box.initialize();
+    SceneCustomMeshes scene_custom_meshes;
+    scene_custom_meshes.context = context;
+    scene_custom_meshes.initialize();
 
     Camera cam;
     cam.setInitalValues();
@@ -135,9 +144,6 @@ int main(int, char**) {
     int reflection_depth = 2;
     bool reset_accumulated = false;
     bool freeze_camera = false;
-    SceneType selected_scene_index = SceneType::CORNELL_BOX;
-    BVHTechnique chosen_technique_index = BVHTechnique::SAH;
-    MeshColor chosen_mesh_color = MeshColor::MATERIAL;
     int selected_option = -1;
     std::vector<unsigned char> image_data;
 
@@ -163,7 +169,7 @@ int main(int, char**) {
             //ImGui::ShowDemoWindow(&show_demo_window);
         {
             static float f = 0.0f;
-            const char* scenes[] = { "scene_rt_meshes", "scene_cornell_box" }; // Dropdown list (combo) items for scene selection
+            const char* scenes[] = { "scene_rt_meshes", "scene_cornell_box", "scene_custom_meshes" }; // Dropdown list (combo) items for scene selection
             const char* techniques[] = { "midpoint split", "SAH" }; // Dropdown list (combo) items for technique selection
             const char* mesh_colors[] = { "material", "normal", "depth"}; // Dropdown list (combo) items for color representation selection
             
@@ -215,6 +221,12 @@ int main(int, char**) {
                     scene_cornell_box.context.settings->selected_option = selected_option;
                     scene_cornell_box.context.settings->mesh_color = chosen_mesh_color;
                     break;
+                case SceneType::CUSTOM_MESHES: // scene_custom_meshes
+                    ImGui::Checkbox("Enable BVH", &scene_custom_meshes.context.settings->enable_BVH);
+                    scene_custom_meshes.context.settings->BVH_technique = chosen_technique_index;
+                    scene_custom_meshes.context.settings->selected_option = selected_option;
+                    scene_custom_meshes.context.settings->mesh_color = chosen_mesh_color;
+                    break;
             }
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
@@ -250,6 +262,12 @@ int main(int, char**) {
                 scene_cornell_box.context.settings->freeze_camera = freeze_camera;
                 image_data = scene_cornell_box.update(display_w, display_h, cam);
                 break;
+            case SceneType::CUSTOM_MESHES:
+                scene_custom_meshes.context.settings->trace_percentage = trace_percentage;
+                scene_custom_meshes.context.settings->reflection_depth = reflection_depth;
+                scene_custom_meshes.context.settings->freeze_camera = freeze_camera;
+                image_data = scene_custom_meshes.update(display_w, display_h, cam);
+                break;
         }
       
         glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
@@ -261,6 +279,9 @@ int main(int, char**) {
                 break;
             case SceneType::CORNELL_BOX:
                 scene_cornell_box.drawBVH(cam);
+                break;
+            case SceneType::CUSTOM_MESHES:
+                scene_custom_meshes.drawBVH(cam);
                 break;
         }
 

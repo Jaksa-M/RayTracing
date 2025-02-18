@@ -5,6 +5,7 @@
 #include <vector>
 #include <utility> // for std::pair
 #include <map>
+#include "material.h"
 #include "vec3.h"
 #include "RTMesh.h"
 

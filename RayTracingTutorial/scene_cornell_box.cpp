@@ -13,6 +13,7 @@
 #include "imgui/imgui.h"
 #include <GLFW/glfw3.h>
 #include "context.h"
+#include <chrono> // Time
 
 SceneCornellBox::SceneCornellBox() {
 
@@ -75,7 +76,25 @@ void SceneCornellBox::initialize() {
 	world_.add(rect_mesh_left_);
 	world_.add(rect_mesh_right_);
 	world_.add(rect_mesh_back_);
+ //   auto start_time = std::chrono::high_resolution_clock::now();  // Start timing
+	//
+ //   obj_loader_ = std::make_unique<ObjLoader>("Resources/teapot.obj");
+ //   if (!obj_loader_->load(context, mat_green)) std::cout << "custom mesh failed to load" << std::endl;
 
+ //   std::span<MeshHandle> meshes = obj_loader_->getMeshes();
+ //   for (std::uint32_t i = 0; i < meshes.size(); i++) {
+ //       rt_meshes_.push_back(std::make_shared<RTMesh>(context, meshes[i], mat_green));
+ //   }
+ //   m = //matrix4x4::identity();
+ //   transformation::create_scaling_matrix(0.05f, 0.05f, 0.05f);
+	//for (std::uint32_t i = 0; i < rt_meshes_.size(); i++) {
+ //       rt_meshes_[i]->setTransformationMatrix(m);
+ //       world_.add(rt_meshes_[i]);
+ //   }
+ //   auto end_time = std::chrono::high_resolution_clock::now();  // End timing
+ //   std::chrono::duration<double> elapsed = end_time - start_time;
+
+ //   std::cout << "Execution time: " << elapsed.count() << " seconds" << std::endl;
 	initShader();
 }
 
