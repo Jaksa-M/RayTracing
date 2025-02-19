@@ -108,7 +108,7 @@
     <ClCompile Include="obj_loader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="scene_custom_meshes.cpp">
+    <ClCompile Include="scene_obj_loader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

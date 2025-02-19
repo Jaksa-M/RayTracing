@@ -120,7 +120,6 @@ int main(int, char**) {
     context.bvh_manager = bvh_manager.get();
 
     std::unique_ptr<Scene> active_scene;
-    bool scene_initalization[3] = {false, false, false};
 
     Camera cam;
     cam.setInitalValues();
@@ -185,7 +184,7 @@ int main(int, char**) {
             }
 
             int scene_index = static_cast<int>(selected_scene_index); // Convert enum class to int
-            ImGui::Combo("Scene", &scene_index, scenes, IM_ARRAYSIZE(scenes));
+            bool scene_changed = ImGui::Combo("Scene", &scene_index, scenes, IM_ARRAYSIZE(scenes)); // Ret value is true when combo has changed
             selected_scene_index = static_cast<SceneType>(scene_index); // Convert int back to enum class
 
             int technique_index = static_cast<int>(chosen_technique_index); // Convert enum class to int
@@ -205,34 +204,24 @@ int main(int, char**) {
             }
 
             // Initialize a scene depending on which scene is chosen (only if scene is not already initalized)
-            switch (selected_scene_index) {
-                case SceneType::RT_MESHES:  // scene_rt_meshes
-                    if (scene_initalization[0] == false) {
-                        std::fill(std::begin(scene_initalization), std::end(scene_initalization), false);
+            if (scene_changed == true || !active_scene) {
+                switch (selected_scene_index) {
+                    case SceneType::RT_MESHES:  // scene_rt_meshes
                         active_scene = std::make_unique<SceneRtMeshes>();
                         active_scene->context = context;
                         active_scene->initialize();
-                        scene_initalization[0] = true;
-                    }
-                    break;
-                case SceneType::CORNELL_BOX:  // scene_cornell_box
-                    if (scene_initalization[1] == false) {
-                        std::fill(std::begin(scene_initalization), std::end(scene_initalization), false);
+                        break;
+                    case SceneType::CORNELL_BOX:  // scene_cornell_box
                         active_scene = std::make_unique<SceneCornellBox>();
                         active_scene->context = context;
                         active_scene->initialize();
-                        scene_initalization[1] = true;
-                    }
-                    break;
-                case SceneType::OBJ_LOADER:  // scene_custom_meshes
-                    if (scene_initalization[2] == false) {
-                        std::fill(std::begin(scene_initalization), std::end(scene_initalization), false);
+                        break;
+                    case SceneType::OBJ_LOADER:  // scene_custom_meshes
                         active_scene = std::make_unique<SceneObjLoader>();
                         active_scene->context = context;
                         active_scene->initialize();
-                        scene_initalization[2] = true;
-                    }
-                    break;
+                        break;
+                }
             }
 
             // Enable/Disable BVH for active scene + assign the BVH technique

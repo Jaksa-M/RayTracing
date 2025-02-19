@@ -168,7 +168,7 @@
     <ClCompile Include="RayTracingTutorial.cpp" />
     <ClCompile Include="RTMesh.cpp" />
     <ClCompile Include="scene_cornell_box.cpp" />
-    <ClCompile Include="scene_custom_meshes.cpp" />
+    <ClCompile Include="scene_obj_loader.cpp" />
     <ClCompile Include="scene_meshes.cpp" />
     <ClCompile Include="scene_rt_meshes.cpp" />
     <ClCompile Include="shader.cpp" />
