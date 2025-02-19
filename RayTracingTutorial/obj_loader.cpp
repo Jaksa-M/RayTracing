@@ -35,7 +35,7 @@ bool ObjLoader::load(Context& context) {
     auto& materials = reader.GetMaterials();
 
     // Loop over shapes
-    for (size_t s = 0; s < shapes.size(); s++) {
+    for (size_t s = shapes.size()-2; s < shapes.size(); s++) {
         //if (s % 3 == 0) continue;
         std::vector<float> vertices;
         std::vector<std::uint32_t> indices;

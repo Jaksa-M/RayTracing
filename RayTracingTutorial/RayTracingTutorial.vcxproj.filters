@@ -233,7 +233,7 @@
     <ClInclude Include="ExternalLibraries\tinyobjloader\tiny_obj_loader.h">
       <Filter>External Libraries\tinyobjloader</Filter>
     </ClInclude>
-    <ClInclude Include="scene_custom_meshes.h">
+    <ClInclude Include="scene_obj_loader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

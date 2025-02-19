@@ -6,7 +6,6 @@
 #include "mesh.h"
 #include "RTMesh.h"
 #include "types.h"
-#include "obj_loader.h"
 #include <memory.h>
 
 class SceneCornellBox: public Scene {
@@ -31,9 +30,6 @@ private:
     std::shared_ptr<RTMesh> rect_mesh_left_;
     std::shared_ptr<RTMesh> rect_mesh_right_;
     std::shared_ptr<RTMesh> rect_mesh_back_;
-
-    std::vector<std::shared_ptr<RTMesh>> rt_meshes_;
-    std::unique_ptr<ObjLoader> obj_loader_;
 
     std::unique_ptr<Mesh> mesh_;
     std::unique_ptr<Shader> shader_prog_;

@@ -1,5 +1,5 @@
-#ifndef SCENE_CUSTOM_MESHES_H
-#define SCENE_CUSTOM_MESHES_H
+#ifndef SCENE_OBJ_LOADER_H
+#define SCENE_OBJ_LOADER_H
 
 #include <memory.h>
 #include "RTMesh.h"
@@ -9,9 +9,9 @@
 #include "shader.h"
 #include "types.h"
 
-class SceneCustomMeshes : public Scene {
+class SceneObjLoader : public Scene {
    public:
-    SceneCustomMeshes();
+    SceneObjLoader();
 
     void initialize() override;
 
@@ -19,6 +19,8 @@ class SceneCustomMeshes : public Scene {
 
     void initShader();
     void drawBVH(Camera& cam);
+
+    ~SceneObjLoader();
 
    private:
     std::unique_ptr<MeshBufferManager> mesh_buf_manager_;

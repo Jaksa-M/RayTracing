@@ -19,6 +19,8 @@ public:
 	virtual ~Scene() = default;
 
 	virtual void draw_mesh_gizmos(Camera& cam) {}
+
+	virtual void drawBVH(Camera& cam) {}
 	
 protected:
 	hittable_list world_;

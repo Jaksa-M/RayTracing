@@ -1,4 +1,4 @@
-#include "scene_custom_meshes.h"
+#include "scene_obj_loader.h"
 #include <vector>
 #include <cmath>
 #include <memory>
@@ -15,15 +15,16 @@
 #include "context.h"
 #include <chrono> // Time
 
-SceneCustomMeshes::SceneCustomMeshes() {}
+SceneObjLoader::SceneObjLoader() {}
 
-void SceneCustomMeshes::initialize() {
+void SceneObjLoader::initialize() {
     prev_BVH_technique_ = context.settings->BVH_technique;
+
     auto mat_green = std::make_shared<lambertian>(color(0.0f, 1.0f, 0.0f));
 
     auto start_time = std::chrono::high_resolution_clock::now();  // Start timing
 
-    obj_loader_ = std::make_unique<ObjLoader>("Resources/sponza.obj");
+    obj_loader_ = std::make_unique<ObjLoader>("Resources/sponza/sponza.obj");
     if (!obj_loader_->load(context))
         std::cout << "custom mesh failed to load" << std::endl;
 
@@ -50,7 +51,7 @@ void SceneCustomMeshes::initialize() {
     initShader();
 }
 
-std::vector<unsigned char> SceneCustomMeshes::update(int display_w, int display_h, Camera& cam) {
+std::vector<unsigned char> SceneObjLoader::update(int display_w, int display_h, Camera& cam) {
     if (prev_BVH_technique_ != context.settings->BVH_technique) {
         world_.clear();
         initialize();
@@ -61,11 +62,11 @@ std::vector<unsigned char> SceneCustomMeshes::update(int display_w, int display_
     return image_data;
 }
 
-void SceneCustomMeshes::initShader() {
+void SceneObjLoader::initShader() {
     shader_prog_ = std::make_unique<Shader>("ShaderFiles/shader_bounding_box.vs.txt", "ShaderFiles/shader_bounding_box.fs.txt");
 }
 
-void SceneCustomMeshes::drawBVH(Camera& cam) {
+void SceneObjLoader::drawBVH(Camera& cam) {
     if (context.settings->selected_option != -1) {
         bounding_boxes_.resize(world_.objects_.size());
 
@@ -82,4 +83,10 @@ void SceneCustomMeshes::drawBVH(Camera& cam) {
             }
         }
     }
+}
+
+SceneObjLoader::~SceneObjLoader() {
+    world_.clear();
+    rt_meshes_.clear();
+    bounding_boxes_.clear();
 }
