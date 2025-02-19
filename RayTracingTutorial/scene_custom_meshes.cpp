@@ -19,10 +19,11 @@ SceneCustomMeshes::SceneCustomMeshes() {}
 
 void SceneCustomMeshes::initialize() {
     prev_BVH_technique_ = context.settings->BVH_technique;
+    auto mat_green = std::make_shared<lambertian>(color(0.0f, 1.0f, 0.0f));
 
     auto start_time = std::chrono::high_resolution_clock::now();  // Start timing
 
-    obj_loader_ = std::make_unique<ObjLoader>("Resources/teapot.obj");
+    obj_loader_ = std::make_unique<ObjLoader>("Resources/sponza.obj");
     if (!obj_loader_->load(context))
         std::cout << "custom mesh failed to load" << std::endl;
 
@@ -30,9 +31,14 @@ void SceneCustomMeshes::initialize() {
     std::span<const std::shared_ptr<material>> materials = obj_loader_->getMaterials();
     std::span<const int> materials_indices = obj_loader_->getMaterialsIndices();
     for (std::uint32_t i = 0; i < meshes.size(); i++) {
-        rt_meshes_.push_back(std::make_shared<RTMesh>(context, meshes[i], materials[materials_indices[i]]));
+        if (materials.empty() == false) {
+            rt_meshes_.push_back(std::make_shared<RTMesh>(context, meshes[i], materials[materials_indices[i]]));
+        } else { // if there are no materials specified in obj file
+            rt_meshes_.push_back(std::make_shared<RTMesh>(context, meshes[i], mat_green));
+        }
     }
-    matrix4x4 m = transformation::create_scaling_matrix(0.05f, 0.05f, 0.05f);
+    //matrix4x4 m = transformation::create_scaling_matrix(0.02f, 0.02f, 0.02f);
+    matrix4x4 m = transformation::create_scaling_matrix(1.0f, 1.0f, 1.0f);
     for (std::uint32_t i = 0; i < rt_meshes_.size(); i++) {
         rt_meshes_[i]->setTransformationMatrix(m);
         world_.add(rt_meshes_[i]);

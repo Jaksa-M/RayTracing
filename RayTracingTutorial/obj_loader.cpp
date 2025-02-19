@@ -36,16 +36,19 @@ bool ObjLoader::load(Context& context) {
 
     // Loop over shapes
     for (size_t s = 0; s < shapes.size(); s++) {
+        //if (s % 3 == 0) continue;
         std::vector<float> vertices;
         std::vector<std::uint32_t> indices;
         std::vector<vec3> face_normals;
 
         // Assigning materials to mesh the belong
-        int material_id = shapes[s].mesh.material_ids[0];
-        color col(materials[material_id].diffuse[0], materials[material_id].diffuse[1], materials[material_id].diffuse[2]);
-        auto mat = std::make_shared<lambertian>(col);
-        materials_.push_back(mat);
-        materials_indices_.push_back(material_id);
+        /*if (materials.empty() == false) {
+            int material_id = shapes[s].mesh.material_ids[0];
+            color col(materials[material_id].diffuse[0], materials[material_id].diffuse[1], materials[material_id].diffuse[2]);
+            auto mat = std::make_shared<lambertian>(col);
+            materials_.push_back(mat);
+            materials_indices_.push_back(material_id);
+        }*/
 
         for (std::uint32_t i = 0; i < shapes[s].mesh.indices.size(); i++) {
             indices.push_back(shapes[s].mesh.indices[i].vertex_index);

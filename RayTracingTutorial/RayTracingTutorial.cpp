@@ -145,9 +145,10 @@ int main(int, char**) {
     bool reset_accumulated = false;
     bool freeze_camera = false;
     int selected_option = -1;
-    std::vector<unsigned char> image_data;
+    bool fast_mode = true;
 
     CameraController cam_controller(cam, 2.0f);
+    std::vector<unsigned char> image_data;
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -184,8 +185,18 @@ int main(int, char**) {
             // Slider for percentage of pixels that should be traced
             ImGui::SliderFloat("pixel traced", &trace_percentage, 0.0f, 1.0f);
             ImGui::SliderInt("reflection bounces", &reflection_depth, 0, 15);
+            ImGui::Checkbox("Fast mode", &fast_mode);
             ImGui::Checkbox("Reset accumulated", &reset_accumulated);
             ImGui::Checkbox("Freeze camera", &freeze_camera);
+
+            if (fast_mode == true) {
+                trace_percentage = 0.05f;
+                reflection_depth = 2;
+            } 
+            else {
+                trace_percentage = 4.0f;
+                reflection_depth = 5;
+            }
 
             int scene_index = static_cast<int>(selected_scene_index); // Convert enum class to int
             ImGui::Combo("Scene", &scene_index, scenes, IM_ARRAYSIZE(scenes));
