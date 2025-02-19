@@ -6,6 +6,7 @@
 #include "mesh.h"
 #include "RTMesh.h"
 #include "types.h"
+#include <memory.h>
 
 class SceneCornellBox: public Scene {
 public:

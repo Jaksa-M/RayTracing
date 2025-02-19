@@ -125,7 +125,9 @@ color Camera::ray_color(const ray& r, int depth, const hittable_list& world) {
                 ray scattered;
                 color attenuation;
                 if (rec.mat->scatter(r, rec, attenuation, scattered)) {
-                    rays_to_trace_intersection_.back().second = true;
+                    if (rays_to_trace_intersection_.empty() == false) {
+                        rays_to_trace_intersection_.back().second = true;
+                    }
                     return attenuation * ray_color(scattered, depth - 1, world);
                 }
                 return color(0.0f, 0.0f, 0.0f);

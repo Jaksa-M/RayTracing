@@ -28,6 +28,7 @@
 //#include "scene_meshes.h"
 #include "scene_rt_meshes.h"
 #include "scene_cornell_box.h"
+#include "scene_obj_loader.h"
 
 // ImGui things
 #include "imgui/imgui.h"
@@ -108,24 +109,17 @@ int main(int, char**) {
     std::unique_ptr<MeshBufferManager> mesh_buf_manager = std::make_unique<MeshBufferManager>();
     std::unique_ptr<BVHManager> bvh_manager = std::make_unique<BVHManager>(gui_settings.get());
 
+    SceneType selected_scene_index = SceneType::OBJ_LOADER;
+    BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
+    MeshColor chosen_mesh_color = MeshColor::MATERIAL;
+
     Context context;
     context.settings = gui_settings.get();
+    context.settings->BVH_technique = chosen_technique_index;
     context.mesh_buf_manager = mesh_buf_manager.get();
     context.bvh_manager = bvh_manager.get();
 
-    // Scene Initialization
-    //SceneTransformations scene_transf;
-    //scene_transf.initialize();
-    /*SceneBoxes scene_boxes;
-    scene_boxes.initialize();*/
-    /*SceneMeshes scene_meshes;
-    scene_meshes.initialize();*/
-    SceneRtMeshes scene_rt_meshes;
-    scene_rt_meshes.context = context;
-    scene_rt_meshes.initialize();
-    SceneCornellBox scene_cornell_box;
-    scene_cornell_box.context = context;
-    scene_cornell_box.initialize();
+    std::unique_ptr<Scene> active_scene;
 
     Camera cam;
     cam.setInitalValues();
@@ -135,13 +129,11 @@ int main(int, char**) {
     int reflection_depth = 2;
     bool reset_accumulated = false;
     bool freeze_camera = false;
-    SceneType selected_scene_index = SceneType::CORNELL_BOX;
-    BVHTechnique chosen_technique_index = BVHTechnique::SAH;
-    MeshColor chosen_mesh_color = MeshColor::MATERIAL;
     int selected_option = -1;
-    std::vector<unsigned char> image_data;
+    bool fast_mode = true;
 
     CameraController cam_controller(cam, 2.0f);
+    std::vector<unsigned char> image_data;
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -163,7 +155,7 @@ int main(int, char**) {
             //ImGui::ShowDemoWindow(&show_demo_window);
         {
             static float f = 0.0f;
-            const char* scenes[] = { "scene_rt_meshes", "scene_cornell_box" }; // Dropdown list (combo) items for scene selection
+            const char* scenes[] = { "scene_rt_meshes", "scene_cornell_box", "scene_custom_meshes" }; // Dropdown list (combo) items for scene selection
             const char* techniques[] = { "midpoint split", "SAH" }; // Dropdown list (combo) items for technique selection
             const char* mesh_colors[] = { "material", "normal", "depth"}; // Dropdown list (combo) items for color representation selection
             
@@ -181,8 +173,18 @@ int main(int, char**) {
             ImGui::Checkbox("Reset accumulated", &reset_accumulated);
             ImGui::Checkbox("Freeze camera", &freeze_camera);
 
+            if (ImGui::Button("Fast Mode")) {
+                trace_percentage = 0.05f;
+                reflection_depth = 2;
+            }
+            ImGui::SameLine();  // Places the next widget on the same line
+            if (ImGui::Button("Quality Mode")) {
+                trace_percentage = 1.0f;
+                reflection_depth = 5;
+            }
+
             int scene_index = static_cast<int>(selected_scene_index); // Convert enum class to int
-            ImGui::Combo("Scene", &scene_index, scenes, IM_ARRAYSIZE(scenes));
+            bool scene_changed = ImGui::Combo("Scene", &scene_index, scenes, IM_ARRAYSIZE(scenes)); // Ret value is true when combo has changed
             selected_scene_index = static_cast<SceneType>(scene_index); // Convert int back to enum class
 
             int technique_index = static_cast<int>(chosen_technique_index); // Convert enum class to int
@@ -201,21 +203,32 @@ int main(int, char**) {
                 selected_option = (selected_option == 1) ? -1 : 1;
             }
 
-            // Enable/Disable BVH for active scene + assign the BVH technique
-            switch (selected_scene_index) {
-                case SceneType::RT_MESHES: // scene_rt_meshes
-                    ImGui::Checkbox("Enable BVH", &scene_rt_meshes.context.settings->enable_BVH);
-                    scene_rt_meshes.context.settings->BVH_technique = chosen_technique_index;
-                    scene_rt_meshes.context.settings->selected_option = selected_option;
-                    scene_rt_meshes.context.settings->mesh_color = chosen_mesh_color;
-                    break;
-                case SceneType::CORNELL_BOX: // scene_cornell_box
-                    ImGui::Checkbox("Enable BVH", &scene_cornell_box.context.settings->enable_BVH);
-                    scene_cornell_box.context.settings->BVH_technique = chosen_technique_index;
-                    scene_cornell_box.context.settings->selected_option = selected_option;
-                    scene_cornell_box.context.settings->mesh_color = chosen_mesh_color;
-                    break;
+            // Initialize a scene depending on which scene is chosen (only if scene is not already initalized)
+            if (scene_changed == true || !active_scene) {
+                switch (selected_scene_index) {
+                    case SceneType::RT_MESHES:  // scene_rt_meshes
+                        active_scene = std::make_unique<SceneRtMeshes>();
+                        active_scene->context = context;
+                        active_scene->initialize();
+                        break;
+                    case SceneType::CORNELL_BOX:  // scene_cornell_box
+                        active_scene = std::make_unique<SceneCornellBox>();
+                        active_scene->context = context;
+                        active_scene->initialize();
+                        break;
+                    case SceneType::OBJ_LOADER:  // scene_custom_meshes
+                        active_scene = std::make_unique<SceneObjLoader>();
+                        active_scene->context = context;
+                        active_scene->initialize();
+                        break;
+                }
             }
+
+            // Enable/Disable BVH for active scene + assign the BVH technique
+            ImGui::Checkbox("Enable BVH", &active_scene->context.settings->enable_BVH);
+            active_scene->context.settings->BVH_technique = chosen_technique_index;
+            active_scene->context.settings->selected_option = selected_option;
+            active_scene->context.settings->mesh_color = chosen_mesh_color;
 
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
             ImGui::End();
@@ -237,32 +250,15 @@ int main(int, char**) {
         cam.image_width = display_w;
         cam.image_height = display_h;
         
-        switch (selected_scene_index) {
-            case SceneType::RT_MESHES:
-                scene_rt_meshes.context.settings->trace_percentage = trace_percentage;
-                scene_rt_meshes.context.settings->reflection_depth = reflection_depth;
-                scene_rt_meshes.context.settings->freeze_camera = freeze_camera;
-                image_data = scene_rt_meshes.update(display_w, display_h, cam);
-                break;
-            case SceneType::CORNELL_BOX:
-                scene_cornell_box.context.settings->trace_percentage = trace_percentage;
-                scene_cornell_box.context.settings->reflection_depth = reflection_depth;
-                scene_cornell_box.context.settings->freeze_camera = freeze_camera;
-                image_data = scene_cornell_box.update(display_w, display_h, cam);
-                break;
-        }
+        active_scene->context.settings->trace_percentage = trace_percentage;
+        active_scene->context.settings->reflection_depth = reflection_depth;
+        active_scene->context.settings->freeze_camera = freeze_camera;
+        image_data = active_scene->update(display_w, display_h, cam);
       
         glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
 
-        // Drawing of BVH tree/leaves
-        switch (selected_scene_index) {
-            case SceneType::RT_MESHES:
-                scene_rt_meshes.drawBVH(cam);
-                break;
-            case SceneType::CORNELL_BOX:
-                scene_cornell_box.drawBVH(cam);
-                break;
-        }
+        
+        active_scene->drawBVH(cam); // Drawing of BVH tree/leaves
 
         cam.drawRays();
         

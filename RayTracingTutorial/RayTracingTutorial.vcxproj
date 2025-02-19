@@ -164,9 +164,11 @@
     <ClCompile Include="mesh.cpp" />
     <ClCompile Include="mesh_buffer_manager.cpp" />
     <ClCompile Include="mesh_utils.cpp" />
+    <ClCompile Include="obj_loader.cpp" />
     <ClCompile Include="RayTracingTutorial.cpp" />
     <ClCompile Include="RTMesh.cpp" />
     <ClCompile Include="scene_cornell_box.cpp" />
+    <ClCompile Include="scene_obj_loader.cpp" />
     <ClCompile Include="scene_meshes.cpp" />
     <ClCompile Include="scene_rt_meshes.cpp" />
     <ClCompile Include="shader.cpp" />
@@ -189,6 +191,7 @@
     <ClInclude Include="ExternalLibraries\imgui\imstb_rectpack.h" />
     <ClInclude Include="ExternalLibraries\imgui\imstb_textedit.h" />
     <ClInclude Include="ExternalLibraries\imgui\imstb_truetype.h" />
+    <ClInclude Include="ExternalLibraries\tinyobjloader\tiny_obj_loader.h" />
     <ClInclude Include="gui_settings.h" />
     <ClInclude Include="hittable.h" />
     <ClInclude Include="hittable_list.h" />
@@ -199,10 +202,12 @@
     <ClInclude Include="mesh.h" />
     <ClInclude Include="mesh_buffer_manager.h" />
     <ClInclude Include="mesh_utils.h" />
+    <ClInclude Include="obj_loader.h" />
     <ClInclude Include="ray.h" />
     <ClInclude Include="RTMesh.h" />
     <ClInclude Include="scene.h" />
     <ClInclude Include="scene_cornell_box.h" />
+    <ClInclude Include="scene_obj_loader.h" />
     <ClInclude Include="scene_meshes.h" />
     <ClInclude Include="scene_rt_meshes.h" />
     <ClInclude Include="shader.h" />
