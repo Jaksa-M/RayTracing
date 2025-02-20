@@ -1,6 +1,8 @@
 #include "camera.h"
 #include "transformations.h"
 #include "glad/gl.h"
+#include <future>
+#include <list>
 
 void Camera::setInitalValues() {
     vec3 cameraTarget = vec3(0.0f, 0.0f, -3.0f);
@@ -31,35 +33,63 @@ std::vector<unsigned char> Camera::render(const hittable_list& world, std::vecto
         rays_to_trace_intersection_.clear();
     }
 
-    // This will all be called for every frame (like a while loop that executes every frame)
-    auto offset = sample_square();
-    for (int j = 0; j < image_height; j++) {
-        //int flipped_j = image_height_ - j - 1;  // Flip the row index
-        int flipped_j = j;  // Flip the row index
-        for (int i = 0; i < image_width; i++) {
-            int index = (flipped_j * image_width + i) * 3;
-            int index_acc = (flipped_j * image_width + i) * 4;
-            color pixel_color(0.0f, 0.0f, 0.0f);
+    // Define the number of blocks (4x4 grid in our case)
+    const int BLOCKS_X = 4;
+    const int BLOCKS_Y = 4;
+    int block_width = (image_width + BLOCKS_X - 1) / BLOCKS_X;
+    int block_height = (image_height + BLOCKS_Y - 1) / BLOCKS_Y;
 
-            // decides whether to trace current pixel or skip it and go on next
-            double trace_pixel = random_double(0.0f, 1.0f);
-            if (trace_pixel > settings_.trace_percentage) {
-                write_color(image_data, image_data_acc, pixel_color, index, index_acc, true);
-                continue;
+    // List to hold async futures
+    std::list<std::future<void>> futures;
+    int num_threads = std::thread::hardware_concurrency();
+
+    auto render_block = [&](int start_x, int start_y, int width, int height) {
+        // This will all be called for every frame (like a while loop that executes every frame)
+        auto offset = sample_square();
+        for (int j = start_y; j < start_y + height; j++) {
+            //int flipped_j = image_height_ - j - 1;  // Flip the row index
+            int flipped_j = j;
+            for (int i = start_x; i < start_x + width; i++) {
+                int index = (flipped_j * image_width + i) * 3;
+                int index_acc = (flipped_j * image_width + i) * 4;
+                color pixel_color(0.0f, 0.0f, 0.0f);
+
+                // decides whether to trace current pixel or skip it and go on next
+                double trace_pixel = random_double(0.0f, 1.0f);
+                if (trace_pixel > settings_.trace_percentage) {
+                    write_color(image_data, image_data_acc, pixel_color, index, index_acc, true);
+                    continue;
+                }
+
+                ray ra = get_ray(i, j, offset);
+
+                int step_size = std::max(10, image_width / 2000);  // Adjust step based on resolution
+                if (settings.freeze_camera == false && i % step_size == 0 && j % step_size == 0) {
+                    rays_to_trace_intersection_.push_back(std::pair(ra, false));  // Save ray on every step size
+                }
+
+                pixel_color = ray_color(ra, settings_.reflection_depth, world);
+
+                write_color(image_data, image_data_acc, pixel_color, index, index_acc, false);
             }
-
-            ray ra = get_ray(i, j, offset);
-
-            int step_size = std::max(10, image_width / 2000);  // Adjust step based on resolution
-            if (settings.freeze_camera == false && i % step_size == 0 && j % step_size == 0) {
-                rays_to_trace_intersection_.push_back(std::pair(ra, false)); // Save ray on every step size
-            }
-
-            pixel_color = ray_color(ra, settings_.reflection_depth, world);    
-
-            write_color(image_data, image_data_acc, pixel_color, index, index_acc, false);
+        }
+    };
+    // Launch tasks for each block
+    for (int by = 0; by < BLOCKS_Y; by++) {
+        for (int bx = 0; bx < BLOCKS_X; bx++) {
+            int start_x = bx * block_width;
+            int start_y = by * block_height;
+            futures.push_back(std::async(std::launch::async, render_block, start_x, start_y, block_width, block_height));
         }
     }
+    // Wait for all tasks to complete
+    while (!futures.empty()) {
+        if (futures.front().wait_for(std::chrono::milliseconds(1)) == std::future_status::ready) {
+            futures.pop_front();
+        }
+        std::this_thread::yield();
+    }
+
     return image_data;
 }
 
