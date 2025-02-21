@@ -3,7 +3,6 @@
 #include "glad/gl.h"
 #include <future> // threads
 #include <vector>
-#include <utility> // pair
 #include <mutex> // scope_lock
 #include <array>
 #include <list>
@@ -56,7 +55,7 @@ std::vector<unsigned char> Camera::render(const hittable_list& world, std::vecto
         while (true) {
             std::pair<int, int> block_id;
             {
-                std::scoped_lock(mutex); // Unlock right after this small scope ends
+                std::scoped_lock lock(mutex); // Unlock right after this small scope ends
                 if (jobs.empty()) break;
                 block_id = jobs.back();
                 jobs.pop_back();
