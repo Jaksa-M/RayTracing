@@ -131,6 +131,7 @@ int main(int, char**) {
     bool freeze_camera = false;
     int selected_option = -1;
     bool fast_mode = true;
+    bool debug_rays = false;
 
     CameraController cam_controller(cam, 2.0f);
     std::vector<unsigned char> image_data;
@@ -155,23 +156,18 @@ int main(int, char**) {
             //ImGui::ShowDemoWindow(&show_demo_window);
         {
             static float f = 0.0f;
-            const char* scenes[] = { "scene_rt_meshes", "scene_cornell_box", "scene_custom_meshes" }; // Dropdown list (combo) items for scene selection
+            const char* scenes[] = { "scene_rt_meshes", "scene_cornell_box", "scene_obj_loader" }; // Dropdown list (combo) items for scene selection
             const char* techniques[] = { "midpoint split", "SAH" }; // Dropdown list (combo) items for technique selection
             const char* mesh_colors[] = { "material", "normal", "depth"}; // Dropdown list (combo) items for color representation selection
             
-            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+            ImGui::Begin("Ray Tracer");                          // Create a window called "Hello, world!" and append into it.
 
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
             ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
-
-            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 
             // Slider for percentage of pixels that should be traced
             ImGui::SliderFloat("pixel traced", &trace_percentage, 0.0f, 1.0f);
             ImGui::SliderInt("reflection bounces", &reflection_depth, 0, 15);
             ImGui::Checkbox("Reset accumulated", &reset_accumulated);
-            ImGui::Checkbox("Freeze camera", &freeze_camera);
 
             if (ImGui::Button("Fast Mode")) {
                 trace_percentage = 0.05f;
@@ -182,6 +178,13 @@ int main(int, char**) {
                 trace_percentage = 1.0f;
                 reflection_depth = 5;
             }
+
+            ImGui::Separator();
+            ImGui::Checkbox("Debug Rays", &debug_rays);  // New checkbox
+            if (debug_rays == false) ImGui::BeginDisabled();  // Disable next widget(s) if Debug Rays is off
+            ImGui::Checkbox("Freeze camera", &freeze_camera);
+            if (debug_rays == false) ImGui::EndDisabled();  // Re-enable UI interactions
+            ImGui::Separator();
 
             int scene_index = static_cast<int>(selected_scene_index); // Convert enum class to int
             bool scene_changed = ImGui::Combo("Scene", &scene_index, scenes, IM_ARRAYSIZE(scenes)); // Ret value is true when combo has changed
@@ -252,6 +255,7 @@ int main(int, char**) {
         
         active_scene->context.settings->trace_percentage = trace_percentage;
         active_scene->context.settings->reflection_depth = reflection_depth;
+        active_scene->context.settings->debug_rays = debug_rays;
         active_scene->context.settings->freeze_camera = freeze_camera;
         image_data = active_scene->update(display_w, display_h, cam);
       
