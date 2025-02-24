@@ -1,6 +1,10 @@
 #include "camera.h"
 #include "transformations.h"
 #include "glad/gl.h"
+#include <future> // threads
+#include <vector>
+#include <array>
+#include <list>
 
 void Camera::setInitalValues() {
     vec3 cameraTarget = vec3(0.0f, 0.0f, -3.0f);
@@ -27,39 +31,98 @@ std::vector<unsigned char> Camera::render(const hittable_list& world, std::vecto
         camera_moved_ = false;
     }
 
-    if (settings.freeze_camera == false) {
+    if (settings.debug_rays == true && settings.freeze_camera == false) {
         rays_to_trace_intersection_.clear();
     }
 
-    // This will all be called for every frame (like a while loop that executes every frame)
-    auto offset = sample_square();
-    for (int j = 0; j < image_height; j++) {
-        //int flipped_j = image_height_ - j - 1;  // Flip the row index
-        int flipped_j = j;  // Flip the row index
-        for (int i = 0; i < image_width; i++) {
-            int index = (flipped_j * image_width + i) * 3;
-            int index_acc = (flipped_j * image_width + i) * 4;
-            color pixel_color(0.0f, 0.0f, 0.0f);
+    // Computing the number of blocks dynamically
+    int block_size = settings.block_size;
+    int BLOCKS_X;
+    int BLOCKS_Y;
+    if (settings_.multithreading == true) {
+        BLOCKS_X = (image_width + settings.block_size - 1) / settings.block_size;
+        BLOCKS_Y = (image_height + settings.block_size - 1) / settings.block_size;
+    } 
+    else {
+        BLOCKS_X = 1;
+        BLOCKS_Y = 1;
+        block_size = std::max(image_width, image_height);
+    }
 
-            // decides whether to trace current pixel or skip it and go on next
-            double trace_pixel = random_double(0.0f, 1.0f);
-            if (trace_pixel > settings_.trace_percentage) {
-                write_color(image_data, image_data_acc, pixel_color, index, index_acc, true);
-                continue;
-            }
-
-            ray ra = get_ray(i, j, offset);
-
-            int step_size = std::max(10, image_width / 2000);  // Adjust step based on resolution
-            if (settings.freeze_camera == false && i % step_size == 0 && j % step_size == 0) {
-                rays_to_trace_intersection_.push_back(std::pair(ra, false)); // Save ray on every step size
-            }
-
-            pixel_color = ray_color(ra, settings_.reflection_depth, world);    
-
-            write_color(image_data, image_data_acc, pixel_color, index, index_acc, false);
+    std::vector<std::pair<int, int>> jobs;
+    for (int i = 0; i < BLOCKS_X; i++) {
+        for (int j = 0; j < BLOCKS_Y; j++) {
+            jobs.push_back({i, j});
         }
     }
+
+    auto render_block = [&]() {
+        while (true) {
+            std::pair<int, int> block_id;
+            {
+                std::scoped_lock lock(mutex_render_);  // Unlock right after this small scope ends
+                if (jobs.empty()) break;
+                block_id = jobs.back();
+                jobs.pop_back();
+            }
+
+            std::uint32_t start_x = block_id.first * block_size;
+            std::uint32_t start_y = block_id.second * block_size;
+
+            // This will all be called for every frame (like a while loop that executes every frame)
+            auto offset = sample_square();
+            for (std::uint32_t j = start_y; j < std::min(start_y + block_size, std::uint32_t(image_height)); j++) {
+                //int flipped_j = image_height_ - j - 1;  // Flip the row index
+                int flipped_j = j;
+                for (std::uint32_t i = start_x; i < std::min(start_x + block_size, std::uint32_t(image_width)); i++) {
+                    std::uint32_t index = (flipped_j * image_width + i) * 3;
+                    std::uint32_t index_acc = (flipped_j * image_width + i) * 4;
+                    color pixel_color(0.0f, 0.0f, 0.0f);
+
+                    // decides whether to trace current pixel or skip it and go on next
+                    double trace_pixel = random_double(0.0f, 1.0f);
+                    if (trace_pixel > settings_.trace_percentage) {
+                        write_color(image_data, image_data_acc, pixel_color, index, index_acc, true);
+                        continue;
+                    }
+
+                    ray ra = get_ray(i, j, offset);
+
+                    int step_size = std::max(10, image_width / 2000);  // Adjust step based on resolution
+                    if (settings.debug_rays == true && settings.freeze_camera == false && i % step_size == 0 && j % step_size == 0) {
+                        std::scoped_lock lock(mutex_render_);
+                        rays_to_trace_intersection_.push_back(std::pair(ra, false));  // Save ray on every step size
+                    }
+
+                    pixel_color = ray_color(ra, settings_.reflection_depth, world);
+
+                    write_color(image_data, image_data_acc, pixel_color, index, index_acc, false);
+                }
+            }
+        }
+    };
+    if (settings_.multithreading == true) {
+        // Create worker threads
+        std::array<std::future<void>, 16> futures;  //  std::thread::hardware_concurrency() = 12 for my PC
+        int num_threads = std::min(16, static_cast<int>(std::thread::hardware_concurrency()));
+        for (int i = 0; i < num_threads; i++) {
+            futures[i] = (std::async(std::launch::async, render_block));
+        }
+
+        // Swap + Decrease Count Approach
+        int last = num_threads - 1;
+        while (last >= 0) {
+            if (futures[0].wait_for(std::chrono::milliseconds(1)) == std::future_status::ready) {
+                std::swap(futures[0], futures[last]);
+                last--;
+            }
+            std::this_thread::yield();
+        }
+    } 
+    else {
+        render_block();
+    }
+
     return image_data;
 }
 
@@ -125,8 +188,11 @@ color Camera::ray_color(const ray& r, int depth, const hittable_list& world) {
                 ray scattered;
                 color attenuation;
                 if (rec.mat->scatter(r, rec, attenuation, scattered)) {
-                    if (rays_to_trace_intersection_.empty() == false) {
-                        rays_to_trace_intersection_.back().second = true;
+                    if (settings_.debug_rays == true) {
+                        std::scoped_lock lock(mutex_render_);
+                        if (rays_to_trace_intersection_.empty() == false) {
+                            rays_to_trace_intersection_.back().second = true;
+                        }
                     }
                     return attenuation * ray_color(scattered, depth - 1, world);
                 }

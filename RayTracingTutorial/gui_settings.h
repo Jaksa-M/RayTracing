@@ -2,6 +2,7 @@
 #define GUI_SETTINGS_H
 
 #include "types.h"
+#include "utility" // std::pair
 
 struct GUISettings {
     bool enable_BVH = true;
@@ -10,7 +11,10 @@ struct GUISettings {
     int selected_option = -1;
     float trace_percentage = 0.1f;
     int reflection_depth = 2;
+    bool debug_rays = false;
     bool freeze_camera = false;
+    int block_size = 8;
+    bool multithreading = true;
 };
 
 #endif

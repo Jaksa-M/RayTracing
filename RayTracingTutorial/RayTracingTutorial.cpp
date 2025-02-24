@@ -20,7 +20,6 @@
 #include "mesh_buffer_manager.h"
 #include "bvh_manager.h"
 #include "context.h"
-//#include "shader.h"
 #include "camera.h"
 #include "camera_controller.h"
 //#include "scene_transformations.h"
@@ -131,6 +130,10 @@ int main(int, char**) {
     bool freeze_camera = false;
     int selected_option = -1;
     bool fast_mode = true;
+    bool debug_rays = false;
+    int block_size = 8;
+    int block_size_values[] = {8, 16, 64};
+    int block_size_index = 0;
 
     CameraController cam_controller(cam, 2.0f);
     std::vector<unsigned char> image_data;
@@ -155,23 +158,19 @@ int main(int, char**) {
             //ImGui::ShowDemoWindow(&show_demo_window);
         {
             static float f = 0.0f;
-            const char* scenes[] = { "scene_rt_meshes", "scene_cornell_box", "scene_custom_meshes" }; // Dropdown list (combo) items for scene selection
+            const char* scenes[] = { "scene_rt_meshes", "scene_cornell_box", "scene_obj_loader" }; // Dropdown list (combo) items for scene selection
             const char* techniques[] = { "midpoint split", "SAH" }; // Dropdown list (combo) items for technique selection
             const char* mesh_colors[] = { "material", "normal", "depth"}; // Dropdown list (combo) items for color representation selection
+            const char* block_sizes[] = {"8x8", "16x16", "64x64"}; // Dropdown list (combo) items for block size selection
             
-            ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+            ImGui::Begin("Ray Tracer");                          // Create a window called "Hello, world!" and append into it.
 
-            ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
             ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
-            ImGui::Checkbox("Another Window", &show_another_window);
-
-            ImGui::ColorEdit3("clear color", (float*)&clear_color); // Edit 3 floats representing a color
 
             // Slider for percentage of pixels that should be traced
             ImGui::SliderFloat("pixel traced", &trace_percentage, 0.0f, 1.0f);
             ImGui::SliderInt("reflection bounces", &reflection_depth, 0, 15);
             ImGui::Checkbox("Reset accumulated", &reset_accumulated);
-            ImGui::Checkbox("Freeze camera", &freeze_camera);
 
             if (ImGui::Button("Fast Mode")) {
                 trace_percentage = 0.05f;
@@ -182,6 +181,13 @@ int main(int, char**) {
                 trace_percentage = 1.0f;
                 reflection_depth = 5;
             }
+
+            ImGui::Separator();
+            ImGui::Checkbox("Debug Rays", &debug_rays);  // New checkbox
+            if (debug_rays == false) ImGui::BeginDisabled();  // Disable next widget(s) if Debug Rays is off
+            ImGui::Checkbox("Freeze camera", &freeze_camera);
+            if (debug_rays == false) ImGui::EndDisabled();  // Re-enable UI interactions
+            ImGui::Separator();
 
             int scene_index = static_cast<int>(selected_scene_index); // Convert enum class to int
             bool scene_changed = ImGui::Combo("Scene", &scene_index, scenes, IM_ARRAYSIZE(scenes)); // Ret value is true when combo has changed
@@ -195,6 +201,9 @@ int main(int, char**) {
             ImGui::Combo("Mesh color", &mesh_color_index, mesh_colors, IM_ARRAYSIZE(mesh_colors));
             chosen_mesh_color = static_cast<MeshColor>(mesh_color_index); // Convert int back to enum class
 
+            if (ImGui::Combo("Block Size", &block_size_index, block_sizes, IM_ARRAYSIZE(block_sizes))) { // Checks if combo has changed
+                block_size = block_size_values[block_size_index];
+            }
 
             if (ImGui::RadioButton("Draw tree", selected_option == 0)) {
                 selected_option = (selected_option == 0) ? -1 : 0;
@@ -230,6 +239,8 @@ int main(int, char**) {
             active_scene->context.settings->selected_option = selected_option;
             active_scene->context.settings->mesh_color = chosen_mesh_color;
 
+            ImGui::Checkbox("Multithreading", &active_scene->context.settings->multithreading);
+
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
             ImGui::End();
         }
@@ -252,7 +263,9 @@ int main(int, char**) {
         
         active_scene->context.settings->trace_percentage = trace_percentage;
         active_scene->context.settings->reflection_depth = reflection_depth;
+        active_scene->context.settings->debug_rays = debug_rays;
         active_scene->context.settings->freeze_camera = freeze_camera;
+        active_scene->context.settings->block_size = block_size;
         image_data = active_scene->update(display_w, display_h, cam);
       
         glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());

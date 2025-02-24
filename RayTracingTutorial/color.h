@@ -15,7 +15,7 @@ inline float linear_to_gamma(float linear_component)
     return 0;
 }
 
-inline void write_color(std::vector<unsigned char>& image_data, std::vector<float>& image_data_acc, const color& pixel_color, int index, int index_acc, bool skip) {
+inline void write_color(std::vector<unsigned char>& image_data, std::vector<float>& image_data_acc, const color& pixel_color, std::uint32_t index, std::uint32_t index_acc, bool skip) {
     if (skip == false) {
         image_data_acc[index_acc + 0] += pixel_color.x();  // Red channel
         image_data_acc[index_acc + 1] += pixel_color.y();  // Green channel
@@ -38,6 +38,7 @@ inline void write_color(std::vector<unsigned char>& image_data, std::vector<floa
         int rbyte;
         int gbyte;
         int bbyte;
+
         if (image_data_acc[index_acc + 3] != 0) {
             rbyte = int(255.999f * linear_to_gamma(intensity.clamp(image_data_acc[index_acc + 0] / image_data_acc[index_acc + 3])));
             gbyte = int(255.999f * linear_to_gamma(intensity.clamp(image_data_acc[index_acc + 1] / image_data_acc[index_acc + 3])));

@@ -9,11 +9,12 @@
 #include "shader.h"
 #include <memory> // for unique_ptr
 #include <utility> // for std::pair
+#include <mutex> // scope_lock
 
 class Camera {
 public:
-    int    image_width = 100;  // Rendered image width in pixel count
-    int    image_height;   // Rendered image height
+    int image_width = 100;  // Rendered image width in pixel count
+    int image_height;   // Rendered image height
     
     void setInitalValues();
 
@@ -54,6 +55,7 @@ private:
     vec3 camera_right_;
     matrix4x4 view_matrix_;
     matrix4x4 projection_matrix_;
+    std::mutex mutex_render_;
 
     std::vector<std::pair<ray, bool>> rays_to_trace_intersection_; // second pair tells us if it's hit or miss
     std::unique_ptr<Shader> shader_prog_;

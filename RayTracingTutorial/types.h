@@ -24,7 +24,6 @@ enum class MeshColor {
     DEPTH
 };
 
-
 // Code types
 struct IntersectResult {
     float t = float_max;  // Intersection distance
