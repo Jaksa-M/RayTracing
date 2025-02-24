@@ -15,8 +15,6 @@
 
 // Includes for my code
 #include <vector>
-#include <array>
-#include <utility>  // For std::pair
 #include "types.h"
 #include "gui_settings.h"
 #include "mesh_buffer_manager.h"

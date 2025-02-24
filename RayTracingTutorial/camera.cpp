@@ -32,7 +32,6 @@ std::vector<unsigned char> Camera::render(const hittable_list& world, std::vecto
     }
 
     if (settings.debug_rays == true && settings.freeze_camera == false) {
-        std::scoped_lock lock(mutex_render_);
         rays_to_trace_intersection_.clear();
     }
 
