@@ -38,11 +38,6 @@ inline void write_color(std::vector<unsigned char>& image_data, std::vector<floa
         int rbyte;
         int gbyte;
         int bbyte;
-        if (index_acc + 3 >= image_data_acc.size()) {
-            std::cerr << "index_acc: " << index_acc << ", image_data_acc.size(): " << image_data_acc.size() << "\n";
-            std::cerr << "Pixel: (" << index << ")\n";
-            std::abort();  // Stop execution to debug
-        }
 
         if (image_data_acc[index_acc + 3] != 0) {
             rbyte = int(255.999f * linear_to_gamma(intensity.clamp(image_data_acc[index_acc + 0] / image_data_acc[index_acc + 3])));
