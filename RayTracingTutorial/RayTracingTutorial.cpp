@@ -133,8 +133,8 @@ int main(int, char**) {
     int selected_option = -1;
     bool fast_mode = true;
     bool debug_rays = false;
-    std::pair<int, int> block_size = {8, 8};
-    std::array<std::pair<int, int>, 3> block_size_values = {{{8, 8}, {16, 16}, {64, 64}}};
+    int block_size = 8;
+    int block_size_values[] = {8, 16, 64};
     int block_size_index = 0;
 
     CameraController cam_controller(cam, 2.0f);

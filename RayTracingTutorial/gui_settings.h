@@ -13,7 +13,7 @@ struct GUISettings {
     int reflection_depth = 2;
     bool debug_rays = false;
     bool freeze_camera = false;
-    std::pair<int, int> block_size = {8, 8};
+    int block_size = 8;
     bool multithreading = true;
 };
 

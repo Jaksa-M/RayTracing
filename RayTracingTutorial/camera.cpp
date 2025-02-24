@@ -32,22 +32,22 @@ std::vector<unsigned char> Camera::render(const hittable_list& world, std::vecto
     }
 
     if (settings.debug_rays == true && settings.freeze_camera == false) {
-        std::scoped_lock lock(mutex);
+        std::scoped_lock lock(mutex_render_);
         rays_to_trace_intersection_.clear();
     }
 
     // Computing the number of blocks dynamically
+    int block_size = settings.block_size;
     int BLOCKS_X;
     int BLOCKS_Y;
     if (settings_.multithreading == true) {
-        BLOCKS_X = (image_width + settings.block_size.first - 1) / settings.block_size.first;
-        BLOCKS_Y = (image_height + settings.block_size.second - 1) / settings.block_size.second;
+        BLOCKS_X = (image_width + settings.block_size - 1) / settings.block_size;
+        BLOCKS_Y = (image_height + settings.block_size - 1) / settings.block_size;
     } 
     else {
         BLOCKS_X = 1;
         BLOCKS_Y = 1;
-        settings.block_size.first = image_width;
-        settings.block_size.second = image_height;
+        block_size = std::max(image_width, image_height);
     }
 
     std::vector<std::pair<int, int>> jobs;
@@ -61,21 +61,21 @@ std::vector<unsigned char> Camera::render(const hittable_list& world, std::vecto
         while (true) {
             std::pair<int, int> block_id;
             {
-                std::scoped_lock lock(mutex); // Unlock right after this small scope ends
+                std::scoped_lock lock(mutex_render_);  // Unlock right after this small scope ends
                 if (jobs.empty()) break;
                 block_id = jobs.back();
                 jobs.pop_back();
             }
 
-            std::uint32_t start_x = block_id.first * settings.block_size.first;
-            std::uint32_t start_y = block_id.second * settings.block_size.second;
+            std::uint32_t start_x = block_id.first * block_size;
+            std::uint32_t start_y = block_id.second * block_size;
 
             // This will all be called for every frame (like a while loop that executes every frame)
             auto offset = sample_square();
-            for (std::uint32_t j = start_y; j < std::min(start_y + settings.block_size.second, std::uint32_t(image_height)); j++) {
+            for (std::uint32_t j = start_y; j < std::min(start_y + block_size, std::uint32_t(image_height)); j++) {
                 //int flipped_j = image_height_ - j - 1;  // Flip the row index
                 int flipped_j = j;
-                for (std::uint32_t i = start_x; i < std::min(start_x + settings.block_size.first, std::uint32_t(image_width)); i++) {
+                for (std::uint32_t i = start_x; i < std::min(start_x + block_size, std::uint32_t(image_width)); i++) {
                     std::uint32_t index = (flipped_j * image_width + i) * 3;
                     std::uint32_t index_acc = (flipped_j * image_width + i) * 4;
                     color pixel_color(0.0f, 0.0f, 0.0f);
@@ -91,7 +91,7 @@ std::vector<unsigned char> Camera::render(const hittable_list& world, std::vecto
 
                     int step_size = std::max(10, image_width / 2000);  // Adjust step based on resolution
                     if (settings.debug_rays == true && settings.freeze_camera == false && i % step_size == 0 && j % step_size == 0) {
-                        std::scoped_lock lock(mutex);
+                        std::scoped_lock lock(mutex_render_);
                         rays_to_trace_intersection_.push_back(std::pair(ra, false));  // Save ray on every step size
                     }
 
@@ -189,9 +189,9 @@ color Camera::ray_color(const ray& r, int depth, const hittable_list& world) {
                 ray scattered;
                 color attenuation;
                 if (rec.mat->scatter(r, rec, attenuation, scattered)) {
-                    {
-                        std::scoped_lock lock(mutex);
-                        if (settings_.debug_rays == true && rays_to_trace_intersection_.empty() == false) {
+                    if (settings_.debug_rays == true) {
+                        std::scoped_lock lock(mutex_render_);
+                        if (rays_to_trace_intersection_.empty() == false) {
                             rays_to_trace_intersection_.back().second = true;
                         }
                     }
