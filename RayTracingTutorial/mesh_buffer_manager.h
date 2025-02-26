@@ -15,7 +15,8 @@ public:
 	std::vector<float>& getBuffer();
 
 	//unsigned int addToBuffer(std::span<float> vertices, std::span<unsigned int> indices); // returns the starting position of vertices inside buffer
-	MeshHandle addToBuffer(std::span<float> vertices, std::uint32_t attribute_count, std::span<std::uint32_t> indices, std::span<vec3> normals);
+	MeshHandle addToBuffer(std::span<float> vertices, std::uint32_t attribute_count, std::span<std::uint32_t> indices, std::span<vec3> normals,
+                           std::span<vec2> textures = {});
 
 	std::span<const float> getVerts(MeshHandle mesh, std::uint32_t attribute) const;
 	std::span<const std::uint32_t> getIndices(MeshHandle mesh) const;

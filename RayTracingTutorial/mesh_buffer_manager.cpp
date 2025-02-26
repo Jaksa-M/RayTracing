@@ -8,9 +8,8 @@ std::vector<float>& MeshBufferManager::getBuffer() {
     return this->buffer;
 }
 
-MeshHandle MeshBufferManager::addToBuffer(std::span<float> vertices, std::uint32_t attribute_count,
-        std::span<std::uint32_t> indices, std::span<vec3> normals)
-{
+MeshHandle MeshBufferManager::addToBuffer(std::span<float> vertices, std::uint32_t attribute_count, std::span<std::uint32_t> indices,
+                                          std::span<vec3> normals, std::span<vec2> textures) {
     MeshHandle new_handle = ++mesh_ids_;
     MeshInfo& mesh_info = mesh_info_[new_handle];
     //std::uint32_t offs = 0;

@@ -31,4 +31,9 @@ struct IntersectResult {
     std::uint32_t closest_tri_index = ~0u;
 };
 
+enum class Attribute {
+    Position,
+    Color,
+    UV
+};
 #endif

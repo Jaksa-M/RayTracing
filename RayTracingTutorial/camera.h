@@ -10,6 +10,7 @@
 #include <memory> // for unique_ptr
 #include <utility> // for std::pair
 #include <mutex> // scope_lock
+#include "texture.h"
 
 class Camera {
 public:
@@ -17,7 +18,7 @@ public:
     int image_height;   // Rendered image height
     
     void setInitalValues();
-
+    Camera() : background_texture("Resources/textures/san_giuseppe_bridge.hdr") {}
     std::vector<unsigned char> render(const hittable_list& world, std::vector<float>& image_data_acc, GUISettings& settings);
 
     void drawRays();
@@ -59,6 +60,7 @@ private:
 
     std::vector<std::pair<ray, bool>> rays_to_trace_intersection_; // second pair tells us if it's hit or miss
     std::unique_ptr<Shader> shader_prog_;
+    ImageTexture background_texture;
 
     void initialize();
 

@@ -178,7 +178,7 @@ color Camera::ray_color(const ray& r, int depth, const hittable_list& world) {
     // Variables can't be declared inside switch case
     vec3 unit_direction;
     float a;
-
+    float u, v;
     switch (settings_.mesh_color) {
         case MeshColor::MATERIAL:
             // If we've exceeded the ray bounce limit, no more light is gathered.
@@ -198,6 +198,16 @@ color Camera::ray_color(const ray& r, int depth, const hittable_list& world) {
                 }
                 return color(0.0f, 0.0f, 0.0f);
             }
+            // No object hit -> Use texture as background
+            unit_direction = unit_vector(r.direction());
+
+            // Convert unit_direction (x, y, z) to spherical coordinates (u, v)
+            u = (std::atan2(-unit_direction.z(), unit_direction.x()) + pi) / (2 * pi);
+            v = std::acos(-unit_direction.y()) / pi;
+
+            // Sample the background texture
+            return background_texture.value(u, v, point3(0, 0, 0));
+
 
             // Background gradient if no object is hit
             unit_direction = unit_vector(r.direction());
