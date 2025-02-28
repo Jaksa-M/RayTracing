@@ -17,8 +17,8 @@ public:
 
 class Lambertian : public Material {
 public:
-    Lambertian(const color& albedo) : albedo_(albedo) {}
-    Lambertian(std::shared_ptr<Texture> tex) : tex(tex) {}
+    Lambertian(const color& albedo) : tex_(std::make_shared<Texture>(albedo)) {}
+    Lambertian(std::shared_ptr<Texture> tex) : tex_(tex) {}
     
     bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered) const override {
 
@@ -29,14 +29,12 @@ public:
             (rec.type_of_normal == false) ? scatter_direction = rec.face_normal : scatter_direction = rec.shading_normal;
 
         scattered = ray(rec.p + rec.face_normal * 0.00001f, scatter_direction);
-        //attenuation = albedo_; //albedo represents how much light surface reflects
-        attenuation = tex->value(rec.u, rec.v, rec.p);
+        attenuation = tex_->value(rec.u, rec.v, rec.p);
         return true;
     }
 
 private:
-    color albedo_;
-    std::shared_ptr<Texture> tex;
+    std::shared_ptr<Texture> tex_;
 };
 
 

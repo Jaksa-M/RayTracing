@@ -30,7 +30,6 @@ class SceneObjLoader : public Scene {
     std::unique_ptr<ObjLoader> obj_loader_;
     std::shared_ptr<Texture> background_texture_;
     std::shared_ptr<Texture> erato_texture_;
-    std::shared_ptr<Lambertian> mat_erato_;
 
     std::unique_ptr<Shader> shader_prog_;
     std::vector<std::unique_ptr<Mesh>> bounding_boxes_;  // 1 bounding box for each object that will get translated while drawing

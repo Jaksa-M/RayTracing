@@ -21,7 +21,7 @@ MeshHandle MeshBufferManager::addToBuffer(std::span<Attribute> attributes, std::
             case AttributeType::Position:
             case AttributeType::Color:
             case AttributeType::Normal:
-                mesh_info.offsets_v[static_cast<std::uint32_t>(attributes[i].type)] = attribute_start;
+                mesh_info.offsets_v[static_cast<std::uint32_t>(attributes[i].type)] = static_cast<std::uint32_t>(attribute_start);
                 buffer.resize(attribute_start + vertex_count * 3);  // These are 3D coordinates
 
                 // Copy the attrib values into the buffer
@@ -31,7 +31,7 @@ MeshHandle MeshBufferManager::addToBuffer(std::span<Attribute> attributes, std::
                 }
                 break;
             case AttributeType::UV:
-                mesh_info.offsets_v[static_cast<std::uint32_t>(AttributeType::UV)] = attribute_start;
+                mesh_info.offsets_v[static_cast<std::uint32_t>(AttributeType::UV)] = static_cast<std::uint32_t>(attribute_start);
                 buffer.resize(attribute_start + vertex_count * 2); // UVs are 2D coordinates
 
                 // Copy the UV values into the buffer

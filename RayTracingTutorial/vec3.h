@@ -285,7 +285,7 @@ class vec2 {
     float length_squared() const { return e[0] * e[0] + e[1] * e[1]; }
 
     bool near_zero() const {
-        float s = 1e-8;
+        float s = 1e-8f;
         return (std::fabs(e[0]) < s) && (std::fabs(e[1]) < s);
     }
 };

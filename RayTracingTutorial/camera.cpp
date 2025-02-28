@@ -241,6 +241,9 @@ color Camera::ray_color(const ray& r, int depth, const hittable_list& world) {
             }
             return vec3(0.0f, 0.0f, 0.0f);
     }
+
+    // Won't happen but here to surpass warning
+    return color(0.0f, 0.0f, 0.0f);
 }
 
 void Camera::drawRays() {

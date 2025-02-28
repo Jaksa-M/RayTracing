@@ -24,7 +24,7 @@ void SceneObjLoader::initialize(Camera& cam) {
     cam.setBackgroundTexture(background_texture_);
 
     erato_texture_ = std::make_shared<Texture>("Resources/erato/erato.jpg");
-    mat_erato_ = std::make_shared<Lambertian>(erato_texture_);
+    std::shared_ptr<Lambertian> mat_erato_ = std::make_shared<Lambertian>(erato_texture_);
 
     auto mat_green = std::make_shared<Lambertian>(color(0.0f, 1.0f, 0.0f));
 
