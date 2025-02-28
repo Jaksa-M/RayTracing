@@ -1,12 +1,13 @@
 #ifndef TEXTURE_IMAGE_READER_H
 #define TEXTURE_IMAGE_READER_H
 #include <string>
+#include <vector>
 
 class TextureImageReader {
    public:
     TextureImageReader();
 
-    TextureImageReader(const char* image_filename);
+    TextureImageReader(const std::string& file_path);
     ~TextureImageReader();
 
     bool load(const std::string& filename);
@@ -18,7 +19,7 @@ class TextureImageReader {
 
    private:
     const int bytes_per_pixel_ = 3;
-    float* fdata_ = nullptr;          // Linear floating point pixel data
+    std::vector<float> fdata_; // Linear floating point pixel data
     unsigned char* bdata_ = nullptr;  // Linear 8-bit pixel data
     int image_width_ = 0;             // Loaded image width
     int image_height_ = 0;            // Loaded image height

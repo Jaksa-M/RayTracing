@@ -14,10 +14,10 @@
 #include "utility.h"
 #include "vec3.h"
 
-RTMesh::RTMesh(Context& context, MeshHandle mesh_handle, std::shared_ptr<material> mat)
+RTMesh::RTMesh(Context& context, MeshHandle mesh_handle, std::shared_ptr<Material> mat)
     : context_(context), mesh_handle_(mesh_handle), mat_(mat) {
     bvh_nodes_ = context_.bvh_manager->getBVHNodes(mesh_handle_);
-    vertices_ = context_.mesh_buf_manager->getVerts(mesh_handle_, 0);
+    vertices_ = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::Position);
     indices_ = context_.mesh_buf_manager->getIndices(mesh_handle_);
 }
 
@@ -53,7 +53,7 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
 
         rec.p = barycentricInterpolate(v0, v1, v2, intersect_result.buv);
 
-        // has to be in world space.
+        // Has to be in world space
         rec.t = (r.origin() - rec.p).length();
 
         vec3 n0, n1, n2;
@@ -64,6 +64,11 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
         matrix3x3 normal_matrix = local_to_world_mat_.convertTo3x3().invert().transpose();
         shading_normal = unit_vector(normal_matrix * shading_normal);
         rec.set_shading_normal(r, shading_normal);
+
+        vec3 uv;
+        getTriangleUVs(intersect_result.closest_tri_index, uv);
+        rec.u = uv[0];
+        rec.v = uv[1];
     }
 
     return closest_hit_t != std::numeric_limits<float>::max();
@@ -276,7 +281,7 @@ void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& interse
 
 void RTMesh::getTriangleVertices(std::uint32_t triangle_index, vec3& v0, vec3& v1, vec3& v2) const {
     std::span<const std::uint32_t> indices = context_.mesh_buf_manager->getIndices(mesh_handle_);
-    std::span<const float> vertices = context_.mesh_buf_manager->getVerts(mesh_handle_, 0);
+    std::span<const float> vertices = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::Position);
 
     std::uint32_t i0 = indices[triangle_index];
     std::uint32_t i1 = indices[triangle_index + 1];
@@ -314,4 +319,19 @@ void RTMesh::getTriangleNormals(std::uint32_t triangle_index, vec3& n0, vec3& n1
     n2.setX(vertex_normals[i2 * 3]);
     n2.setY(vertex_normals[i2 * 3 + 1]);
     n2.setZ(vertex_normals[i2 * 3 + 2]);
+}
+
+void RTMesh::getTriangleUVs(std::uint32_t triangle_index, vec3& buv) const {
+    std::span<const std::uint32_t> indices = context_.mesh_buf_manager->getIndices(mesh_handle_);
+    std::span<const float> uv = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::UV);
+
+    std::uint32_t i0 = indices[triangle_index];
+    std::uint32_t i1 = indices[triangle_index + 1];
+    std::uint32_t i2 = indices[triangle_index + 2];
+
+    vec2 uv0 = {uv[i0 * 2], uv[i0 * 2 + 1]};
+    vec2 uv1 = {uv[i1 * 2], uv[i1 * 2 + 1]};
+    vec2 uv2 = {uv[i2 * 2], uv[i2 * 2 + 1]};
+    
+    barycentricInterpolate(uv0, uv1, uv2, buv);
 }

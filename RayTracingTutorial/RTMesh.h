@@ -13,7 +13,7 @@ struct Context;
 
 class RTMesh: public hittable {
 public:
-    RTMesh(Context& context, MeshHandle mesh_handle, std::shared_ptr<material> mat);
+    RTMesh(Context& context, MeshHandle mesh_handle, std::shared_ptr<Material> mat);
 
     std::string object_type() const override { return "cube triangle mesh"; }
 
@@ -32,7 +32,7 @@ private:
     Context& context_;
 
     MeshHandle mesh_handle_;
-    std::shared_ptr<material> mat_;
+    std::shared_ptr<Material> mat_;
 
     std::span<const BVHNode> bvh_nodes_;
 
@@ -46,5 +46,6 @@ private:
 
     void getTriangleVertices(std::uint32_t triangle_index, vec3& v0, vec3& v1, vec3& v2) const;
     void getTriangleNormals(std::uint32_t triangle_index, vec3& n0, vec3& n1, vec3& n2) const;
+    void getTriangleUVs(std::uint32_t triangle_index, vec3& buv) const;
 };
 #endif

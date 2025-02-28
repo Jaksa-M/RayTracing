@@ -18,7 +18,7 @@ public:
     int image_height;   // Rendered image height
     
     void setInitalValues();
-    Camera() : background_texture("Resources/textures/san_giuseppe_bridge.hdr") {}
+    Camera();
     std::vector<unsigned char> render(const hittable_list& world, std::vector<float>& image_data_acc, GUISettings& settings);
 
     void drawRays();
@@ -42,6 +42,7 @@ public:
     void setRightVector(vec3 direction);
     matrix4x4 getViewMatrix();
     matrix4x4 getProjectionMatrix();
+    void setBackgroundTexture(std::shared_ptr<Texture> tex);
 
 private:
     GUISettings settings_;
@@ -60,7 +61,7 @@ private:
 
     std::vector<std::pair<ray, bool>> rays_to_trace_intersection_; // second pair tells us if it's hit or miss
     std::unique_ptr<Shader> shader_prog_;
-    ImageTexture background_texture;
+    std::shared_ptr<Texture> background_texture_;
 
     void initialize();
 

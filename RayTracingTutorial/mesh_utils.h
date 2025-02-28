@@ -13,31 +13,31 @@ struct Context;
 
 class MeshUtils {
 public:
-	static std::shared_ptr<RTMesh> GenerateTriangleCube(Context& context, const std::shared_ptr<material>& mat,
+	static std::shared_ptr<RTMesh> GenerateTriangleCube(Context& context, const std::shared_ptr<Material>& mat,
 		unsigned int num_of_vert, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
 
 	static std::unique_ptr<Mesh> GenerateLineCube(unsigned int num_of_vert, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
 
-	static std::shared_ptr<RTMesh> GenerateTriangleSphere(Context& context, const std::shared_ptr<material>& mat,
+	static std::shared_ptr<RTMesh> GenerateTriangleSphere(Context& context, const std::shared_ptr<Material>& mat,
 		unsigned int num_of_vert, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
 
 	static std::unique_ptr<Mesh> GenerateSphereLines(unsigned int num_of_vert, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
 
-	static std::shared_ptr<RTMesh> GenerateIcosphere(Context& context, const std::shared_ptr<material>& mat,
+	static std::shared_ptr<RTMesh> GenerateIcosphere(Context& context, const std::shared_ptr<Material>& mat,
 		std::uint32_t subdivisions, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
 
-	static std::shared_ptr<RTMesh> GenerateTriangleRectangle(Context& context, const std::shared_ptr<material>& mat,
+	static std::shared_ptr<RTMesh> GenerateTriangleRectangle(Context& context, const std::shared_ptr<Material>& mat,
 		std::uint32_t num_of_vert_row, std::uint32_t num_of_vert_col, vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
 
-	static std::shared_ptr<RTMesh> GenerateTestMesh(Context& context, const std::shared_ptr<material>& mat,
+	static std::shared_ptr<RTMesh> GenerateTestMesh(Context& context, const std::shared_ptr<Material>& mat,
 		vec3 center = vec3(0.0f, 0.0f, 0.0f), vec3 size = vec3(1.0f, 1.0f, 1.0f));
 
 private: // helper functions
 	static void createFaceVertices(bool normalize, const vec3& center, std::vector<float>& vertices, int num_of_vert_col, int num_of_vert_row,
-		float start_x, float start_y, float start_z, float step_x, float step_y, float step_z, float col_x, float col_y, float col_z);
+		float start_x, float start_y, float start_z, float step_x, float step_y, float step_z);
 	static std::vector<unsigned int> createFaceIndices(int num_of_vert);
 	static void PrintVertices(const std::vector<float>& vertices);
-	static void addVertex(bool normalize, const vec3& center, std::vector<float>& vertices, const vec3& position, const vec3& color);
+	static void addVertex(bool normalize, const vec3& center, std::vector<float>& vertices, const vec3& position);
 	static void generateTriangleVertexNormals(std::vector<vec3>& vertex_normals, std::vector<float>& vertices, std::vector<std::uint32_t>& indices, int stride);
 	static void icosahedron(std::vector<float>& vertices, std::vector<std::uint32_t>& indices); // 12 vertices, 20 faces (equilateral triangles)
 	static void loopSubdivision(std::vector<float>& vertices, std::vector<std::uint32_t>& indices);

@@ -10,7 +10,7 @@ BVHManager::BVHManager(GUISettings* settings): settings_(settings) {
 void BVHManager::buildBVH(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_handle) {
     // BVH for that mesh handle doesn't exists, so we have to build it
     if (auto it = bvh_info_.find(mesh_handle); it == bvh_info_.end()) {
-        std::span<const float> vertices = mesh_buf_manager->getVerts(mesh_handle, 0);
+        std::span<const float> vertices = mesh_buf_manager->getAttribute(mesh_handle, AttributeType::Position);
         std::span<std::uint32_t> indices = mesh_buf_manager->getIndices(mesh_handle);
 
         std::vector<Triangle> triangles;

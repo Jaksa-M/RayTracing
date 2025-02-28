@@ -6,7 +6,7 @@
 #include "ray.h"
 #include "matrix.h"
 
-class material;
+class Material;
 class matrix4x4;
 class interval;
 
@@ -16,10 +16,11 @@ public:
     vec3 face_normal;
     vec3 shading_normal;
     bool type_of_normal = false;
-    std::shared_ptr<material> mat;
+    std::shared_ptr<Material> mat;
     float t;
     bool front_face;
     std::string object_type;
+    float u, v;
 
     void set_face_normal(const ray& r, const vec3& outward_normal) {
         // NOTE: the parameter `outward_normal` is assumed to have unit length.

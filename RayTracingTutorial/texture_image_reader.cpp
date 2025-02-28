@@ -1,23 +1,22 @@
 #include "texture_image_reader.h"
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb image/stb_image.h"
+#include "stb_image/stb_image.h"
 #include <iostream>
 #include <cstdlib>
 
 TextureImageReader::TextureImageReader() {}
 
-TextureImageReader::TextureImageReader(const char* file_path) {
+TextureImageReader::TextureImageReader(const std::string& file_path) {
     // Loads image data from the specified file.
     // If the image was not loaded successfully, width() and height() will return 0.
 
     if (load(file_path)) return;
-
     std::cerr << "ERROR: Could not load image file '" << file_path << "'.\n";
 }
 
 TextureImageReader::~TextureImageReader() {
     delete[] bdata_;
-    STBI_FREE(fdata_);
+    fdata_.clear();
 }
 
 bool TextureImageReader::load(const std::string& filename) {
@@ -29,8 +28,12 @@ bool TextureImageReader::load(const std::string& filename) {
     // below, for the full height of the image.
 
     auto n = bytes_per_pixel_;
-    fdata_ = stbi_loadf(filename.c_str(), &image_width_, &image_height_, &n, bytes_per_pixel_);
-    if (fdata_ == nullptr) return false;
+    float* raw_fdata = stbi_loadf(filename.c_str(), &image_width_, &image_height_, &n, bytes_per_pixel_);
+    if (raw_fdata == nullptr) return false;
+
+    int total_floats = image_width_ * image_height_ * bytes_per_pixel_;
+    fdata_.assign(raw_fdata, raw_fdata + total_floats);  // Copy data into vector
+    STBI_FREE(raw_fdata);
 
     bytes_per_scanline_ = image_width_ * bytes_per_pixel_;
     convertToBytes();
@@ -38,16 +41,15 @@ bool TextureImageReader::load(const std::string& filename) {
 }
 
 int TextureImageReader::width() const {
-    return (fdata_ == nullptr) ? 0 : image_width_;
+    return fdata_.empty() ? 0 : image_width_;
 }
 
 int TextureImageReader::height() const {
-    return (fdata_ == nullptr) ? 0 : image_height_;
+    return fdata_.empty() ? 0 : image_height_;
 }
 
 const unsigned char* TextureImageReader::pixelData(int x, int y) const {
-    // Return the address of the three RGB bytes of the pixel at x,y. If there is no image
-    // data, returns magenta.
+    // Return the address of the three RGB bytes of the pixel at x,y. If there is no image data, returns magenta.
     static unsigned char magenta[] = {255, 0, 255};
     if (bdata_ == nullptr)
         return magenta;
@@ -60,10 +62,8 @@ const unsigned char* TextureImageReader::pixelData(int x, int y) const {
 
 int TextureImageReader::clamp(int x, int low, int high) {
     // Return the value clamped to the range [low, high).
-    if (x < low)
-        return low;
-    if (x < high)
-        return x;
+    if (x < low) return low;
+    if (x < high) return x;
     return high - 1;
 }
 
@@ -84,7 +84,7 @@ void TextureImageReader::convertToBytes() {
     // unsigned [0, 255] byte values.
 
     auto* bptr = bdata_;
-    auto* fptr = fdata_;
+    auto* fptr = fdata_.data();
     for (auto i = 0; i < total_bytes; i++, fptr++, bptr++) {
         *bptr = floatToByte(*fptr);
     }

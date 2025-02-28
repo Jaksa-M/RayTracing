@@ -8,37 +8,42 @@ std::vector<float>& MeshBufferManager::getBuffer() {
     return this->buffer;
 }
 
-MeshHandle MeshBufferManager::addToBuffer(std::span<float> vertices, std::uint32_t attribute_count, std::span<std::uint32_t> indices,
-                                          std::span<vec3> normals, std::span<vec2> textures) {
+MeshHandle MeshBufferManager::addToBuffer(std::span<Attribute> attributes, std::span<std::uint32_t> indices, std::span<vec3> normals) {
     MeshHandle new_handle = ++mesh_ids_;
     MeshInfo& mesh_info = mesh_info_[new_handle];
-    //std::uint32_t offs = 0;
-    //// The order of which things are places inside vertices is first all positions, than all colors, than all normals...etc
-    //for (std::uint32_t i = 0; i < attribute_count; i++) {
-    //    mesh_info.offsets_v[i] = offs;
-    //    offs += vertices.size() / attribute_count;
-    //}
+    std::size_t vertex_count = attributes[0].data.size() / 3; // Same as vertices.size() / 3
     
-    // Calculate the number of vertices
-    std::size_t vertex_count = vertices.size() / (attribute_count * 3);
-    
-    // Loop through each attribute and group its values
-    for (std::uint32_t attr = 0; attr < attribute_count; attr++) {
-        // Record the starting offset for this attribute in the buffer
+    // Iterate thorugh attributes and add them
+    for (std::size_t i = 0; i < attributes.size(); i++) {
         std::size_t attribute_start = buffer.size();
-        mesh_info.offsets_v[attr] = static_cast<std::uint32_t>(attribute_start);
 
-        buffer.resize(attribute_start + vertex_count * 3);
+        switch (attributes[i].type) {
+            case AttributeType::Position:
+            case AttributeType::Color:
+            case AttributeType::Normal:
+                mesh_info.offsets_v[static_cast<std::uint32_t>(attributes[i].type)] = attribute_start;
+                buffer.resize(attribute_start + vertex_count * 3);  // These are 3D coordinates
 
-        // Copy the attribute values into the buffer
-        for (std::size_t v = 0; v < vertex_count; v++) {
-            std::size_t src_index = v * attribute_count * 3 + attr * 3;
-            std::size_t dest_index = attribute_start + v * 3;
+                // Copy the attrib values into the buffer
+                for (std::size_t v = 0; v < vertex_count; v++) {
+                    std::size_t dest_index = attribute_start + v * 3;
+                    std::memcpy(buffer.data() + dest_index, attributes[i].data.data() + v * 3, 3 * sizeof(float));
+                }
+                break;
+            case AttributeType::UV:
+                mesh_info.offsets_v[static_cast<std::uint32_t>(AttributeType::UV)] = attribute_start;
+                buffer.resize(attribute_start + vertex_count * 2); // UVs are 2D coordinates
 
-            std::memcpy(buffer.data() + dest_index, vertices.data() + src_index, 3 * sizeof(float));
+                // Copy the UV values into the buffer
+                for (std::size_t v = 0; v < vertex_count; v++) {
+                    std::size_t dest_index = attribute_start + v * 2;
+                    std::memcpy(buffer.data() + dest_index, attributes[i].data.data() + v * 2, 2 * sizeof(float));
+                }
+                break;
         }
+
     }
-    mesh_info.count_v = vertices.size() / attribute_count; // Count for each attribute (counts will be the same)
+    mesh_info.count_v = vertex_count;
 
     // Insert vertex normals into the buffer
     std::size_t normal_start = buffer.size();
@@ -65,9 +70,9 @@ MeshHandle MeshBufferManager::addToBuffer(std::span<float> vertices, std::uint32
     return new_handle;
 }
 
-std::span<const float> MeshBufferManager::getVerts(MeshHandle mesh, std::uint32_t attribute) const {
+std::span<const float> MeshBufferManager::getVerts(MeshHandle mesh) const {
     if (auto it = mesh_info_.find(mesh); it != mesh_info_.end()) {
-        return std::span(&buffer[it->second.offsets_v[attribute]], it->second.count_v);
+        return std::span(&buffer[it->second.offsets_v[static_cast<std::uint32_t>(AttributeType::Position)]], it->second.count_v * 3);
     }
     return {};
 }
@@ -95,6 +100,17 @@ std::span<const float> MeshBufferManager::getNormals(MeshHandle mesh, std::uint3
         return std::span<const float>(buffer.data() + normal_offset, normal_count);
     }
     return {}; // Return empty span if mesh is not found
+}
+
+std::span<const float> MeshBufferManager::getAttribute(MeshHandle mesh, AttributeType attribute) const {
+    if (auto it = mesh_info_.find(mesh); it != mesh_info_.end()) {
+        if (attribute == AttributeType::UV) {
+            return std::span(&buffer[it->second.offsets_v[static_cast<std::uint32_t>(attribute)]], it->second.count_v * 2);
+        } else {
+            return std::span(&buffer[it->second.offsets_v[static_cast<std::uint32_t>(attribute)]], it->second.count_v * 3);
+        }
+    }
+    return {};
 }
 
 

@@ -3,6 +3,7 @@
 
 #include <cstdint> // std::size_t
 #include "vec3.h"
+#include <span>
 
 using MeshHandle = std::size_t;
 
@@ -31,9 +32,17 @@ struct IntersectResult {
     std::uint32_t closest_tri_index = ~0u;
 };
 
-enum class Attribute {
+enum class AttributeType {
     Position,
+    Normal,
     Color,
     UV
 };
+
+struct Attribute {
+    Attribute(AttributeType type, std::span<float> data) : type(type), data(data) {}
+    AttributeType type;
+    std::span<float> data;
+};
+
 #endif

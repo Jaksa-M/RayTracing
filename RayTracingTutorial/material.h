@@ -3,10 +3,11 @@
 
 #include "hittable.h"
 #include "color.h"
+#include "texture.h"
 
-class material {
+class Material {
 public:
-    virtual ~material() = default;
+    virtual ~Material() = default;
 
     virtual bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered) const {
         return false;
@@ -14,9 +15,10 @@ public:
 };
 
 
-class lambertian : public material {
+class Lambertian : public Material {
 public:
-    lambertian(const color& albedo) : albedo_(albedo) {}
+    Lambertian(const color& albedo) : albedo_(albedo) {}
+    Lambertian(std::shared_ptr<Texture> tex) : tex(tex) {}
     
     bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered) const override {
 
@@ -27,18 +29,20 @@ public:
             (rec.type_of_normal == false) ? scatter_direction = rec.face_normal : scatter_direction = rec.shading_normal;
 
         scattered = ray(rec.p + rec.face_normal * 0.00001f, scatter_direction);
-        attenuation = albedo_; //albedo represents how much light surface reflects
+        //attenuation = albedo_; //albedo represents how much light surface reflects
+        attenuation = tex->value(rec.u, rec.v, rec.p);
         return true;
     }
 
 private:
     color albedo_;
+    std::shared_ptr<Texture> tex;
 };
 
 
-class metal : public material {
+class Metal : public Material {
 public:
-    metal(const color& albedo, float fuzz) : albedo_(albedo), fuzz_(fuzz < 1 ? fuzz : 1) {}
+    Metal(const color& albedo, float fuzz) : albedo_(albedo), fuzz_(fuzz < 1 ? fuzz : 1) {}
 
     bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered) const override {
         //vec3 reflected = reflect(r_in.direction(), rec.face_normal);

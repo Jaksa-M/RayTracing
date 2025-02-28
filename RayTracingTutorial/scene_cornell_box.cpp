@@ -18,13 +18,16 @@ SceneCornellBox::SceneCornellBox() {
 
 }
 
-void SceneCornellBox::initialize() {
+void SceneCornellBox::initialize(Camera& cam) {
 	prev_BVH_technique_ = context.settings->BVH_technique;
 
-	auto mat_yellow = std::make_shared<lambertian>(color(0.8f, 0.8f, 0.0f));
-	auto mat_green = std::make_shared<lambertian>(color(0.0f, 1.0f, 0.0f));
-	auto mat_red = std::make_shared<lambertian>(color(1.0f, 0.0f, 0.0f));
-	auto mat_white = std::make_shared<lambertian>(color(0.8f, 0.8f, 0.8f));
+	background_texture_ = std::make_shared<Texture>("Resources/textures/san_giuseppe_bridge.hdr");
+    cam.setBackgroundTexture(background_texture_);
+
+	auto mat_yellow = std::make_shared<Lambertian>(color(0.8f, 0.8f, 0.0f));
+    auto mat_green = std::make_shared<Lambertian>(color(0.0f, 1.0f, 0.0f));
+    auto mat_red = std::make_shared<Lambertian>(color(1.0f, 0.0f, 0.0f));
+    auto mat_white = std::make_shared<Lambertian>(color(0.8f, 0.8f, 0.8f));
 
 	// Creating meshes and their transformation matrices
 	rect_prism_mesh_ = MeshUtils::GenerateTriangleCube(context, mat_yellow, 2);
@@ -82,7 +85,7 @@ void SceneCornellBox::initialize() {
 std::vector<unsigned char> SceneCornellBox::update(int display_w, int display_h, Camera& cam) {
 	if (prev_BVH_technique_ != context.settings->BVH_technique) {
 		world_.clear();
-		initialize();
+		initialize(cam);
 	}
 
 	std::vector<unsigned char> image_data;

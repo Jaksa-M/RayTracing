@@ -11,7 +11,7 @@ class SceneRtMeshes: public Scene {
 public:
     SceneRtMeshes();
 
-    void initialize() override;
+    void initialize(Camera& cam) override;
 
     std::vector<unsigned char> update(int display_w, int display_h, Camera& cam) override;
 
@@ -36,6 +36,8 @@ private:
 
     std::unique_ptr<Mesh> mesh_;
     std::unique_ptr<Shader> shader_prog_;
+
+    std::shared_ptr<Texture> background_texture_;
 
     std::vector<std::unique_ptr<Mesh>> bounding_boxes_; // 1 bounding box for each object that will get translated while drawing
 

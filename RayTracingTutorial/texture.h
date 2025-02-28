@@ -7,27 +7,10 @@
 #include "texture_image_reader.h"
 
 class Texture {
-public:
-    virtual color value(float u, float v, const point3& p) const = 0;
-};
-
-class SolidColorTexture : public Texture {
    public:
-    SolidColorTexture(const color& albedo) : albedo_(albedo) {}
+    Texture(const std::string& file) : image_(file) {}
 
-    SolidColorTexture(float red, float green, float blue) : SolidColorTexture(color(red, green, blue)) {}
-
-    color value(float u, float v, const point3& p) const override { return albedo_; }
-
-   private:
-    color albedo_;
-};
-
-class ImageTexture : public Texture {
-   public:
-    ImageTexture(const char* file) : image_(file) {}
-
-    color value(float u, float v, const point3& p) const override {
+    color value(float u, float v, const point3& p) const {
         // If we have no texture data, then return cyan
         if (image_.height() <= 0) return color(0, 1, 1);
 

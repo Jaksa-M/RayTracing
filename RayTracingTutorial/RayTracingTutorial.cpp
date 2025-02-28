@@ -9,10 +9,6 @@
 #include <glad/gl.h>
 #undef GLAD_GL_IMPLEMENTATION //must stay here because of multiple gl.h includes
 
-// Not using anymore, was using for writing image to a file
-//#define STB_IMAGE_WRITE_IMPLEMENTATION
-//#include "stb_image_write.h"
-
 // Includes for my code
 #include <vector>
 #include "types.h"
@@ -189,7 +185,7 @@ int main(int, char**) {
             if (debug_rays == false) ImGui::EndDisabled();  // Re-enable UI interactions
             ImGui::Separator();
 
-            int scene_index = static_cast<int>(selected_scene_index); // Convert enum class to int
+            int scene_index = static_cast<int>(selected_scene_index); // Convert enum class to int (bceause ImGui is C library)
             bool scene_changed = ImGui::Combo("Scene", &scene_index, scenes, IM_ARRAYSIZE(scenes)); // Ret value is true when combo has changed
             selected_scene_index = static_cast<SceneType>(scene_index); // Convert int back to enum class
 
@@ -218,17 +214,17 @@ int main(int, char**) {
                     case SceneType::RT_MESHES:  // scene_rt_meshes
                         active_scene = std::make_unique<SceneRtMeshes>();
                         active_scene->context = context;
-                        active_scene->initialize();
+                        active_scene->initialize(cam);
                         break;
                     case SceneType::CORNELL_BOX:  // scene_cornell_box
                         active_scene = std::make_unique<SceneCornellBox>();
                         active_scene->context = context;
-                        active_scene->initialize();
+                        active_scene->initialize(cam);
                         break;
                     case SceneType::OBJ_LOADER:  // scene_custom_meshes
                         active_scene = std::make_unique<SceneObjLoader>();
                         active_scene->context = context;
-                        active_scene->initialize();
+                        active_scene->initialize(cam);
                         break;
                 }
             }

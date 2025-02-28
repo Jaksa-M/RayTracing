@@ -17,10 +17,13 @@ SceneRtMeshes::SceneRtMeshes() {
 
 }
 
-void SceneRtMeshes::initialize() {
+void SceneRtMeshes::initialize(Camera& cam) {
     prev_BVH_technique_ = context.settings->BVH_technique;
 
-    auto mat = std::make_shared<lambertian>(color(0.8f, 0.8f, 0.0f));
+    background_texture_ = std::make_shared<Texture>("Resources/textures/san_giuseppe_bridge.hdr");
+    cam.setBackgroundTexture(background_texture_);
+
+    auto mat = std::make_shared<Lambertian>(color(0.8f, 0.8f, 0.0f));
     //cube_mesh_ = MeshUtils::GenerateTriangleCube(mat, mesh_buf_manager.get(), 2);
     //cube_sphere_ = MeshUtils::GenerateTriangleSphere(mat, mesh_buf_manager.get(), 4);
     //ico_sphere_ = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2, vec3(2.0f,0.0f,0.0f));
@@ -66,7 +69,7 @@ void SceneRtMeshes::initialize() {
 std::vector<unsigned char> SceneRtMeshes::update(int display_w, int display_h, Camera& cam) {
     if (prev_BVH_technique_ != context.settings->BVH_technique) {
         world_.clear();
-        initialize();
+        initialize(cam);
     }
 
     std::vector<unsigned char> image_data;

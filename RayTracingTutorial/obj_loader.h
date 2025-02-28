@@ -3,8 +3,11 @@
 
 #include <memory>
 #include <vector>
+#include <filesystem>
 #include "material.h"
 #include "types.h"
+
+namespace fs = std::filesystem;
 
 struct Context;
 
@@ -14,13 +17,13 @@ public:
 
     bool load(Context& context);
 
-    std::span<const std::shared_ptr<material>> getMaterials() const;
+    std::span<const std::shared_ptr<Material>> getMaterials() const;
     std::span<const int> getMaterialsIndices() const;
     std::span<MeshHandle> getMeshes();
 
 private:
-    std::string file_;
-    std::vector<std::shared_ptr<material>> materials_;
+    fs::path file_;
+    std::vector<std::shared_ptr<Material>> materials_;
     std::vector<int> materials_indices_;
     std::vector<MeshHandle> meshes_;
 };

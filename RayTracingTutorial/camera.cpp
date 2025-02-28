@@ -6,6 +6,8 @@
 #include <array>
 #include <list>
 
+Camera::Camera() {}
+
 void Camera::setInitalValues() {
     vec3 cameraTarget = vec3(0.0f, 0.0f, -3.0f);
     camera_direction_ = unit_vector(center_ - cameraTarget);
@@ -205,8 +207,7 @@ color Camera::ray_color(const ray& r, int depth, const hittable_list& world) {
             u = (std::atan2(-unit_direction.z(), unit_direction.x()) + pi) / (2 * pi);
             v = std::acos(-unit_direction.y()) / pi;
 
-            // Sample the background texture
-            return background_texture.value(u, v, point3(0, 0, 0));
+            return background_texture_->value(u, v, point3(0, 0, 0));
 
 
             // Background gradient if no object is hit
@@ -337,3 +338,7 @@ void Camera::setRightVector(vec3 direction) { camera_right_ = direction; }
 matrix4x4 Camera::getViewMatrix() { return view_matrix_; }
 
 matrix4x4 Camera::getProjectionMatrix() { return projection_matrix_; }
+
+void Camera::setBackgroundTexture(std::shared_ptr<Texture> tex) {
+    background_texture_ = tex;
+}

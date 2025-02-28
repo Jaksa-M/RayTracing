@@ -31,7 +31,7 @@
     <Filter Include="External Libraries\tinyobjloader">
       <UniqueIdentifier>{47b63211-c4bb-4849-a5fc-1fdd092ab972}</UniqueIdentifier>
     </Filter>
-    <Filter Include="External Libraries\stb image">
+    <Filter Include="External Libraries\stb_image">
       <UniqueIdentifier>{465f1a90-b903-4dc5-a4db-077b085e24da}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -249,10 +249,10 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ExternalLibraries\stb image\stb_image.h">
-      <Filter>External Libraries\stb image</Filter>
+      <Filter>External Libraries\stb_image</Filter>
     </ClInclude>
     <ClInclude Include="ExternalLibraries\stb image\stb_image_write.h">
-      <Filter>External Libraries\stb image</Filter>
+      <Filter>External Libraries\stb_image</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
