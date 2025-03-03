@@ -9,6 +9,7 @@
 #include "bvh_manager.h"
 #include "RTMesh.h"
 #include "texture.h"
+#include "texture_image_reader.h"
 
 ObjLoader::ObjLoader(std::string file) : file_(fs::path(file)) {}
 
@@ -37,7 +38,7 @@ bool ObjLoader::load(Context& context) {
 
     // Loop over shapes
     for (size_t s = 0; s < shapes.size(); s++) {
-        //if (s % 3 == 0) continue;
+        if (s % 3 == 0) continue;
         std::vector<float> vertices;
         std::vector<std::uint32_t> indices;
         std::vector<vec3> face_normals;
@@ -50,9 +51,14 @@ bool ObjLoader::load(Context& context) {
 
             // Check if diffuse is specified with image texture
             if (materials[material_id].diffuse_texname.empty() == false) {
-                fs::path texture_path = file_.parent_path() / materials[material_id].diffuse_texname;
-                std::shared_ptr<Texture> texture = std::make_shared<Texture>(texture_path.string());
-                mat = std::make_shared<Lambertian>(texture);
+                fs::path texture_path = file_.parent_path() / "textures" / materials[material_id].diffuse_texname;
+                TextureImageReader tex_reader(texture_path.string());
+                if (!tex_reader.load()) {
+                    std::cerr << "ERROR: Could not load texture file '" << texture_path << "'.\n";
+                }
+                std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_reader.getData(), tex_reader.getImageWidth(), tex_reader.getImageHeight(), 
+                    tex_reader.getBytesPerScanlline(), tex_reader.getBytesPerPixel());
+                mat = std::make_shared<Lambertian>(tex);
                 materials_.push_back(mat);
             } else {
                 color col(materials[material_id].diffuse[0], materials[material_id].diffuse[1], materials[material_id].diffuse[2]);

@@ -4,6 +4,7 @@
 #include "hittable.h"
 #include "color.h"
 #include "texture.h"
+#include <span>
 
 class Material {
 public:

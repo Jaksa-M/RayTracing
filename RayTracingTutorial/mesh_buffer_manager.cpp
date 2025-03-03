@@ -70,13 +70,6 @@ MeshHandle MeshBufferManager::addToBuffer(std::span<Attribute> attributes, std::
     return new_handle;
 }
 
-std::span<const float> MeshBufferManager::getVerts(MeshHandle mesh) const {
-    if (auto it = mesh_info_.find(mesh); it != mesh_info_.end()) {
-        return std::span(&buffer[it->second.offsets_v[static_cast<std::uint32_t>(AttributeType::Position)]], it->second.count_v * 3);
-    }
-    return {};
-}
-
 std::span<const std::uint32_t> MeshBufferManager::getIndices(MeshHandle mesh) const{
     if (auto it = mesh_info_.find(mesh); it != mesh_info_.end()) {
         return std::span<const std::uint32_t>(reinterpret_cast<const std::uint32_t*>(buffer.data() + it->second.offset_i), it->second.count_i);

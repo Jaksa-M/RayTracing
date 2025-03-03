@@ -2,6 +2,7 @@
 #define TEXTURE_IMAGE_READER_H
 #include <string>
 #include <vector>
+#include "texture.h"
 
 class TextureImageReader {
    public:
@@ -10,17 +11,18 @@ class TextureImageReader {
     TextureImageReader(const std::string& file_path);
     ~TextureImageReader();
 
-    bool load(const std::string& filename);
+    bool load();
 
-    int width() const;
-    int height() const;
-
-    const unsigned char* pixelData(int x, int y) const;
+    std::vector<unsigned char> getData() const;
+    int getImageWidth() const;
+    int getImageHeight() const;
+    int getBytesPerScanlline() const;
+    int getBytesPerPixel() const;
 
    private:
+    std::string file_path;
     const int bytes_per_pixel_ = 3;
-    std::vector<float> fdata_; // Linear floating point pixel data
-    unsigned char* bdata_ = nullptr;  // Linear 8-bit pixel data
+    std::vector<unsigned char> bdata_;  // Linear 8-bit pixel data
     int image_width_ = 0;             // Loaded image width
     int image_height_ = 0;            // Loaded image height
     int bytes_per_scanline_ = 0;
@@ -28,8 +30,6 @@ class TextureImageReader {
     static int clamp(int x, int low, int high);
 
     static unsigned char floatToByte(float value);
-
-    void convertToBytes();
 };
 
 #endif

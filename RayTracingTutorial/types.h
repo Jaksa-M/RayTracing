@@ -41,8 +41,8 @@ enum class AttributeType {
 
 struct Attribute {
     Attribute(AttributeType type, std::span<float> data) : type(type), data(data) {}
-    AttributeType type;
-    std::span<float> data;
+    const AttributeType type;
+    const std::span<float> data;
 };
 
 #endif

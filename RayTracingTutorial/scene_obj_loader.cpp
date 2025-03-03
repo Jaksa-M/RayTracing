@@ -20,19 +20,25 @@ SceneObjLoader::SceneObjLoader() {}
 void SceneObjLoader::initialize(Camera& cam) {
     prev_BVH_technique_ = context.settings->BVH_technique;
 
-    background_texture_ = std::make_shared<Texture>("Resources/textures/san_giuseppe_bridge.hdr");
+    TextureImageReader tex_reader("Resources/textures/san_giuseppe_bridge.hdr");
+    if (!tex_reader.load()) {
+        std::cerr << "ERROR: Could not load background texture file.\n";
+    }
+    background_texture_ = std::make_shared<Texture>(tex_reader.getData(), tex_reader.getImageWidth(), tex_reader.getImageHeight(),
+                            tex_reader.getBytesPerScanlline(), tex_reader.getBytesPerPixel());
     cam.setBackgroundTexture(background_texture_);
 
-    erato_texture_ = std::make_shared<Texture>("Resources/erato/erato.jpg");
-    std::shared_ptr<Lambertian> mat_erato_ = std::make_shared<Lambertian>(erato_texture_);
+    //erato_texture_ = std::make_shared<Texture>("Resources/erato/erato.jpg");
+    //std::shared_ptr<Lambertian> mat_erato_ = std::make_shared<Lambertian>(erato_texture_);
 
     auto mat_green = std::make_shared<Lambertian>(color(0.0f, 1.0f, 0.0f));
 
     auto start_time = std::chrono::high_resolution_clock::now();  // Start timing
 
-    obj_loader_ = std::make_unique<ObjLoader>("Resources/erato/erato.obj");
-    if (!obj_loader_->load(context))
-        std::cout << "custom mesh failed to load" << std::endl;
+    obj_loader_ = std::make_unique<ObjLoader>("Resources/sponza/sponza.obj");
+    if (!obj_loader_->load(context)) {
+        std::cout << "ERROR: custom mesh failed to load" << std::endl;
+    }
 
     std::span<MeshHandle> meshes = obj_loader_->getMeshes();
     std::span<const std::shared_ptr<Material>> materials = obj_loader_->getMaterials();
