@@ -166,7 +166,7 @@
     <ClCompile Include="mesh_utils.cpp" />
     <ClCompile Include="obj_loader.cpp" />
     <ClCompile Include="RayTracingTutorial.cpp" />
-    <ClCompile Include="texture_image_reader.cpp" />
+    <ClCompile Include="texture_loader.cpp" />
     <ClCompile Include="RTMesh.cpp" />
     <ClCompile Include="scene_cornell_box.cpp" />
     <ClCompile Include="scene_obj_loader.cpp" />
@@ -208,7 +208,7 @@
     <ClInclude Include="mesh_utils.h" />
     <ClInclude Include="obj_loader.h" />
     <ClInclude Include="ray.h" />
-    <ClInclude Include="texture_image_reader.h" />
+    <ClInclude Include="texture_loader.h" />
     <ClInclude Include="RTMesh.h" />
     <ClInclude Include="scene.h" />
     <ClInclude Include="scene_cornell_box.h" />

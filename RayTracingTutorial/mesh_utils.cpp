@@ -70,9 +70,19 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(Context& context, const 
         vertex_normals[i] = unit_vector(vertex_normals[i]);
     }
 
-    attributes.push_back(Attribute(AttributeType::Position, vertices));
+    // Convert vertex_normals from vec3 to float
+    std::vector<float> float_vertex_normals;
+    float_vertex_normals.reserve(vertex_normals.size() * 3);
+    for (const vec3& normal : vertex_normals) {
+        float_vertex_normals.push_back(normal.x());
+        float_vertex_normals.push_back(normal.y());
+        float_vertex_normals.push_back(normal.z());
+    }
 
-    std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices, vertex_normals);
+    attributes.push_back(Attribute(AttributeType::Position, vertices));
+    attributes.push_back(Attribute(AttributeType::Normal, float_vertex_normals));
+
+    std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
     context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
 
     std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(context, mesh_handle, mat);
@@ -136,66 +146,19 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(Context& context, cons
     std::vector<vec3> vertex_normals(vertices.size() / 3, vec3(0, 0, 0));
     generateTriangleVertexNormals(vertex_normals, vertices, indices, 6);
 
-    //// generating normals
-    //std::vector<vec3> normals(indices.size() / 3);
-
-    //for (int i = 0; i < indices.size(); i += 3) {
-    //    const point3 p1 = point3(vertices[indices[i] * 6], vertices[indices[i] * 6 + 1], vertices[indices[i] * 6 + 2]);
-    //    const point3 p2 = point3(vertices[indices[i+1] * 6], vertices[indices[i+1] * 6 + 1], vertices[indices[i+1] * 6 + 2]);
-    //    const point3 p3 = point3(vertices[indices[i+2] * 6], vertices[indices[i+2] * 6 + 1], vertices[indices[i+2] * 6 + 2]);
-    //    point3 triangle_normal = unit_vector(cross(p2 - p1, p3 - p1));
-    //    normals[i / 3] = triangle_normal;
-    //    //normals.emplace_back(triangle_normal);
-    //}
-    //
-    //std::vector<vec3> vertex_normals(vertices.size() / 6, vec3(0, 0, 0));
-    //for (int i = 0; i < indices.size(); i += 3) {
-    //    const vec3& triangle_normal = normals[i / 3];
-    //    vertex_normals[indices[i]] += triangle_normal;
-    //    vertex_normals[indices[i + 1]] += triangle_normal;
-    //    vertex_normals[indices[i + 2]] += triangle_normal;
-    //}
-
-    //// Normalize the normals
-    //for (int i = 0; i < vertex_normals.size(); i++) {
-    //    vertex_normals[i] = unit_vector(vertex_normals[i]);
-    //}
-
-
-    /*
-    1 ,2, 3 -> n1
-    2, 4, 5 -> n2
-    2, 6, 7 -> n3
-
-    for (index : index_buffer.size())
-        nt[triangle_index] = ... normal of the triangle
-
-
-    // n_vertex[1]+=n1; 
-    // n_vertex[2]+=n1;
-    // n_vertex[2]+=n2;
-    // n_vertex[2]+=n3;
-    // n_vertex[3]+=n1;
-    // n_vertex[4]+=n2;
-    for (index : index_buffer)
-        n_vertex[index_buffer[index]] += nt[triangle_index]
-
-    for (..) // normalize all
-        n_vertex[index] = normalize(n_vertex[index]);
-    use this for shading instead of face normal
-    */
-
-    /*unsigned int offset = mesh_buf_manager->addToBuffer(vertices, indices);
-
-    std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(
-        mesh_buf_manager, offset,
-        std::span(mesh_buf_manager->buffer.data() + offset, vertices.size()),
-        std::span(reinterpret_cast<std::uint32_t*>(mesh_buf_manager->buffer.data()) + offset + vertices.size(), indices.size()), 3, 6, 0, 3, mat);
-    return mesh;*/
+    // Convert vertex_normals from vec3 to float
+    std::vector<float> float_vertex_normals;
+    float_vertex_normals.reserve(vertex_normals.size() * 3);
+    for (const vec3& normal : vertex_normals) {
+        float_vertex_normals.push_back(normal.x());
+        float_vertex_normals.push_back(normal.y());
+        float_vertex_normals.push_back(normal.z());
+    }
     
     attributes.push_back(Attribute(AttributeType::Position, vertices));
+    attributes.push_back(Attribute(AttributeType::Normal, float_vertex_normals));
 
-    std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices, vertex_normals);
+    std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
     context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
 
     std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(context, mesh_handle, mat);
@@ -280,9 +243,19 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateIcosphere(Context& context, const std
     std::vector<vec3> vertex_normals(vertices.size() / 3, vec3(0, 0, 0));
     generateTriangleVertexNormals(vertex_normals, vertices, indices, 3);
 
-    attributes.push_back(Attribute(AttributeType::Position, vertices));
+    // Convert vertex_normals from vec3 to float
+    std::vector<float> float_vertex_normals;
+    float_vertex_normals.reserve(vertex_normals.size() * 3);
+    for (const vec3& normal : vertex_normals) {
+        float_vertex_normals.push_back(normal.x());
+        float_vertex_normals.push_back(normal.y());
+        float_vertex_normals.push_back(normal.z());
+    }
 
-    std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices, vertex_normals);
+    attributes.push_back(Attribute(AttributeType::Position, vertices));
+    attributes.push_back(Attribute(AttributeType::Normal, float_vertex_normals));
+
+    std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
     context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
 
     std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(context, mesh_handle, mat);
@@ -343,9 +316,19 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(Context& context, c
         vertex_normals[i] = unit_vector(vertex_normals[i]);
     }
 
-    attributes.push_back(Attribute(AttributeType::Position, vertices));
+    // Convert vertex_normals from vec3 to float
+    std::vector<float> float_vertex_normals;
+    float_vertex_normals.reserve(vertex_normals.size() * 3);
+    for (const vec3& normal : vertex_normals) {
+        float_vertex_normals.push_back(normal.x());
+        float_vertex_normals.push_back(normal.y());
+        float_vertex_normals.push_back(normal.z());
+    }
 
-    std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices, vertex_normals);
+    attributes.push_back(Attribute(AttributeType::Position, vertices));
+    attributes.push_back(Attribute(AttributeType::Normal, float_vertex_normals));
+
+    std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
     context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
 
     std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(context, mesh_handle, mat);
@@ -403,9 +386,19 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTestMesh(Context& context, const std:
         normal = unit_vector(normal);
     }
 
+    // Convert vertex_normals from vec3 to float
+    std::vector<float> float_vertex_normals;
+    float_vertex_normals.reserve(normals.size() * 3);
+    for (const vec3& normal : normals) {
+        float_vertex_normals.push_back(normal.x());
+        float_vertex_normals.push_back(normal.y());
+        float_vertex_normals.push_back(normal.z());
+    }
+
     attributes.push_back(Attribute(AttributeType::Position, vertices));
+    attributes.push_back(Attribute(AttributeType::Normal, float_vertex_normals));
     // Add data to mesh buffer manager
-    std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices, normals);
+    std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
     context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
 
     std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(context, mesh_handle, mat);

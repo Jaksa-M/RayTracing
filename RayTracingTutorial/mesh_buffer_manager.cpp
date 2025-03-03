@@ -8,7 +8,7 @@ std::vector<float>& MeshBufferManager::getBuffer() {
     return this->buffer;
 }
 
-MeshHandle MeshBufferManager::addToBuffer(std::span<Attribute> attributes, std::span<std::uint32_t> indices, std::span<vec3> normals) {
+MeshHandle MeshBufferManager::addToBuffer(std::span<Attribute> attributes, std::span<std::uint32_t> indices) {
     MeshHandle new_handle = ++mesh_ids_;
     MeshInfo& mesh_info = mesh_info_[new_handle];
     std::size_t vertex_count = attributes[0].data.size() / 3; // Same as vertices.size() / 3
@@ -45,21 +45,6 @@ MeshHandle MeshBufferManager::addToBuffer(std::span<Attribute> attributes, std::
     }
     mesh_info.count_v = vertex_count;
 
-    // Insert vertex normals into the buffer
-    std::size_t normal_start = buffer.size();
-    mesh_info.offset_n = normal_start;
-    mesh_info.count_n = static_cast<std::uint32_t>(vertex_count * 3);
-
-    buffer.resize(normal_start + vertex_count * 3);  // Normals have 3 components (x, y, z)
-    for (std::size_t v = 0; v < vertex_count; v++) {
-        const vec3& normal = normals[v];
-
-        // Insert each component of the normal into the buffer as floats
-        buffer[normal_start + v * 3] = normal.x();
-        buffer[normal_start + v * 3 + 1] = normal.y();
-        buffer[normal_start + v * 3 + 2] = normal.z();
-    }
-
     // Insert indices array
     std::size_t offs = buffer.size();
     buffer.resize(offs + indices.size());
@@ -82,17 +67,6 @@ std::span<std::uint32_t> MeshBufferManager::getIndices(MeshHandle mesh) {
         return std::span<std::uint32_t>(reinterpret_cast<std::uint32_t*>(buffer.data() + it->second.offset_i), it->second.count_i);
     }
     return {};
-}
-
-std::span<const float> MeshBufferManager::getNormals(MeshHandle mesh, std::uint32_t attribute) const {
-    if (auto it = mesh_info_.find(mesh); it != mesh_info_.end()) {
-        // Normals are stored after all vertex attributes, at offsets_v[attribute_count - 1]
-        std::size_t normal_offset = it->second.offset_n; // offset for normals
-        std::size_t normal_count = it->second.count_n; // mozda je * 3????
-
-        return std::span<const float>(buffer.data() + normal_offset, normal_count);
-    }
-    return {}; // Return empty span if mesh is not found
 }
 
 std::span<const float> MeshBufferManager::getAttribute(MeshHandle mesh, AttributeType attribute) const {

@@ -1,22 +1,22 @@
-#include "texture_image_reader.h"
+#include "texture_loader.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image/stb_image.h"
 #include <iostream>
 #include <cstdlib>
 
-TextureImageReader::TextureImageReader() {}
+TextureLoader::TextureLoader() {}
 
-TextureImageReader::TextureImageReader(const std::string& file_path) {
+TextureLoader::TextureLoader(const std::string& file_path) {
     // Loads image data from the specified file.
     // If the image was not loaded successfully, width() and height() will return 0.
     this->file_path = file_path;
 }
 
-TextureImageReader::~TextureImageReader() {
+TextureLoader::~TextureLoader() {
     bdata_.clear();
 }
 
-bool TextureImageReader::load() {
+bool TextureLoader::load() {
     // Loads the linear (gamma=1) image data from the given file name.
     // Returns true if the load succeeded.
     // The resulting data buffer contains the three [0.0, 1.0] floating-point values for the 
@@ -41,34 +41,34 @@ bool TextureImageReader::load() {
     return true;
 }
 
-std::vector<unsigned char> TextureImageReader::getData() const {
+std::vector<unsigned char> TextureLoader::getData() const {
     return bdata_;
 }
 
-int TextureImageReader::getImageWidth() const {
+int TextureLoader::getImageWidth() const {
     return image_width_;
 }
 
-int TextureImageReader::getImageHeight() const {
+int TextureLoader::getImageHeight() const {
     return image_height_;
 }
 
-int TextureImageReader::getBytesPerScanlline() const {
+int TextureLoader::getBytesPerScanlline() const {
     return bytes_per_scanline_;
 }
 
-int TextureImageReader::getBytesPerPixel() const {
+int TextureLoader::getBytesPerPixel() const {
     return bytes_per_pixel_;
 }
 
-int TextureImageReader::clamp(int x, int low, int high) {
+int TextureLoader::clamp(int x, int low, int high) {
     // Return the value clamped to the range [low, high).
     if (x < low) return low;
     if (x < high) return x;
     return high - 1;
 }
 
-unsigned char TextureImageReader::floatToByte(float value) {
+unsigned char TextureLoader::floatToByte(float value) {
     if (value <= 0.0) return 0;
     if (1.0 <= value) return 255;
     return static_cast<unsigned char>(256.0 * value);

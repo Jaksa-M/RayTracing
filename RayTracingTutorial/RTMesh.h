@@ -46,6 +46,6 @@ private:
 
     void getTriangleVertices(std::uint32_t triangle_index, vec3& v0, vec3& v1, vec3& v2) const;
     void getTriangleNormals(std::uint32_t triangle_index, vec3& n0, vec3& n1, vec3& n2) const;
-    void getTriangleUVs(std::uint32_t triangle_index, vec3& buv) const;
+    void getTriangleUVs(std::uint32_t triangle_index, vec2& uv0, vec2& uv1, vec2& uv2) const;
 };
 #endif

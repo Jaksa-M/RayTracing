@@ -13,7 +13,7 @@
 #include "imgui/imgui.h"
 #include <GLFW/glfw3.h>
 #include "context.h"
-#include "texture_image_reader.h"
+#include "texture_loader.h"
 
 SceneCornellBox::SceneCornellBox() {
 
@@ -22,12 +22,12 @@ SceneCornellBox::SceneCornellBox() {
 void SceneCornellBox::initialize(Camera& cam) {
 	prev_BVH_technique_ = context.settings->BVH_technique;
 
-	TextureImageReader tex_reader("Resources/textures/san_giuseppe_bridge.hdr");
-    if (!tex_reader.load()) {
+	TextureLoader tex_loader("Resources/textures/san_giuseppe_bridge.hdr");
+    if (!tex_loader.load()) {
         std::cerr << "ERROR: Could not load background texture file.\n";
     }
-    background_texture_ = std::make_shared<Texture>(tex_reader.getData(), tex_reader.getImageWidth(), tex_reader.getImageHeight(),
-                                                    tex_reader.getBytesPerScanlline(), tex_reader.getBytesPerPixel());
+    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight(),
+                                                    tex_loader.getBytesPerScanlline(), tex_loader.getBytesPerPixel());
     cam.setBackgroundTexture(background_texture_);
 
 	auto mat_yellow = std::make_shared<Lambertian>(color(0.8f, 0.8f, 0.0f));

@@ -4,11 +4,9 @@
 #include "color.h"
 #include "vec3.h"
 #include "interval.h"
-#include "texture_image_reader.h"
 
 class Texture {
    public:
-    //Texture(const std::string& file) : image_(file), solid_(false) {}
     Texture(const color& solid_color): 
         solid_color_(solid_color), image_width_(1), image_height_(1), bytes_per_scanline_(1), bytes_per_pixel_(1), solid_(true) {}
 

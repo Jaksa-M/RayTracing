@@ -9,7 +9,7 @@
 #include "bvh_manager.h"
 #include "RTMesh.h"
 #include "texture.h"
-#include "texture_image_reader.h"
+#include "texture_loader.h"
 
 ObjLoader::ObjLoader(std::string file) : file_(fs::path(file)) {}
 
@@ -52,12 +52,12 @@ bool ObjLoader::load(Context& context) {
             // Check if diffuse is specified with image texture
             if (materials[material_id].diffuse_texname.empty() == false) {
                 fs::path texture_path = file_.parent_path() / "textures" / materials[material_id].diffuse_texname;
-                TextureImageReader tex_reader(texture_path.string());
-                if (!tex_reader.load()) {
+                TextureLoader tex_loader(texture_path.string());
+                if (!tex_loader.load()) {
                     std::cerr << "ERROR: Could not load texture file '" << texture_path << "'.\n";
                 }
-                std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_reader.getData(), tex_reader.getImageWidth(), tex_reader.getImageHeight(), 
-                    tex_reader.getBytesPerScanlline(), tex_reader.getBytesPerPixel());
+                std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight(), 
+                    tex_loader.getBytesPerScanlline(), tex_loader.getBytesPerPixel());
                 mat = std::make_shared<Lambertian>(tex);
                 materials_.push_back(mat);
             } else {
@@ -90,12 +90,21 @@ bool ObjLoader::load(Context& context) {
 
         // Calculate normals for each vertex
         std::vector<vec3> vertex_normals(vertices.size() / 3, vec3(0, 0, 0));
+        // Convert vertex_normals from vec3 to float
+        std::vector<float> float_vertex_normals;
+        float_vertex_normals.reserve(vertex_normals.size() * 3);
+        for (const vec3& normal : vertex_normals) {
+            float_vertex_normals.push_back(normal.x());
+            float_vertex_normals.push_back(normal.y());
+            float_vertex_normals.push_back(normal.z());
+        }
 
         std::vector<Attribute> attributes;
         attributes.push_back(Attribute(AttributeType::Position, vertices));
+        attributes.push_back(Attribute(AttributeType::Normal, float_vertex_normals));
         attributes.push_back(Attribute(AttributeType::UV, uv));
 
-        std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices, vertex_normals);
+        std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
         context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
         meshes_.push_back(mesh_handle);
     }

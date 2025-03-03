@@ -1,15 +1,15 @@
-#ifndef TEXTURE_IMAGE_READER_H
-#define TEXTURE_IMAGE_READER_H
+#ifndef TEXTURE_LOADER_H
+#define TEXTURE_LOADER_H
 #include <string>
 #include <vector>
 #include "texture.h"
 
-class TextureImageReader {
+class TextureLoader {
    public:
-    TextureImageReader();
+    TextureLoader();
 
-    TextureImageReader(const std::string& file_path);
-    ~TextureImageReader();
+    TextureLoader(const std::string& file_path);
+    ~TextureLoader();
 
     bool load();
 

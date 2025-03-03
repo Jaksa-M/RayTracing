@@ -65,8 +65,12 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
         shading_normal = unit_vector(normal_matrix * shading_normal);
         rec.set_shading_normal(r, shading_normal);
 
+        // Caclulating the UV coords
+        vec2 uv0, uv1, uv2;
+        getTriangleUVs(intersect_result.closest_tri_index, uv0, uv1, uv2);
+
         vec3 uv;
-        getTriangleUVs(intersect_result.closest_tri_index, uv);
+        barycentricInterpolate(uv0, uv1, uv2, uv);
         rec.u = uv[0];
         rec.v = uv[1];
     }
@@ -302,7 +306,7 @@ void RTMesh::getTriangleVertices(std::uint32_t triangle_index, vec3& v0, vec3& v
 
 void RTMesh::getTriangleNormals(std::uint32_t triangle_index, vec3& n0, vec3& n1, vec3& n2) const {
     std::span<const std::uint32_t> indices = context_.mesh_buf_manager->getIndices(mesh_handle_);
-    std::span<const float> vertex_normals = context_.mesh_buf_manager->getNormals(mesh_handle_, 2);
+    std::span<const float> vertex_normals = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::Normal);
 
     std::uint32_t i0 = indices[triangle_index];
     std::uint32_t i1 = indices[triangle_index + 1];
@@ -321,7 +325,7 @@ void RTMesh::getTriangleNormals(std::uint32_t triangle_index, vec3& n0, vec3& n1
     n2.setZ(vertex_normals[i2 * 3 + 2]);
 }
 
-void RTMesh::getTriangleUVs(std::uint32_t triangle_index, vec3& buv) const {
+void RTMesh::getTriangleUVs(std::uint32_t triangle_index, vec2& uv0, vec2& uv1, vec2& uv2) const {
     std::span<const std::uint32_t> indices = context_.mesh_buf_manager->getIndices(mesh_handle_);
     std::span<const float> uv = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::UV);
 
@@ -329,9 +333,7 @@ void RTMesh::getTriangleUVs(std::uint32_t triangle_index, vec3& buv) const {
     std::uint32_t i1 = indices[triangle_index + 1];
     std::uint32_t i2 = indices[triangle_index + 2];
 
-    vec2 uv0 = {uv[i0 * 2], uv[i0 * 2 + 1]};
-    vec2 uv1 = {uv[i1 * 2], uv[i1 * 2 + 1]};
-    vec2 uv2 = {uv[i2 * 2], uv[i2 * 2 + 1]};
-    
-    barycentricInterpolate(uv0, uv1, uv2, buv);
+    uv0 = {uv[i0 * 2], uv[i0 * 2 + 1]};
+    uv1 = {uv[i1 * 2], uv[i1 * 2 + 1]};
+    uv2 = {uv[i2 * 2], uv[i2 * 2 + 1]};
 }
