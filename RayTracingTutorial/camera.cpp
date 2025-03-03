@@ -240,6 +240,17 @@ color Camera::ray_color(const ray& r, int depth, const hittable_list& world) {
                 return vec3(tt, tt, tt);
             }
             return vec3(0.0f, 0.0f, 0.0f);
+
+        case MeshColor::UV:
+            if (world.hit(r, interval(0.001f, float_max), rec)) {
+                // Ensure UV coordinates are in range [0, 1]
+                float u = std::fmod(std::abs(rec.u), 1.0f);
+                float v = std::fmod(std::abs(rec.v), 1.0f);
+
+                // Map UV to colors (U -> Red, V -> Green)
+                return color(u, v, 0.0f);
+            }
+            return color(0.0f, 0.0f, 0.0f);
     }
 
     // Won't happen but here to surpass warning
