@@ -15,9 +15,7 @@
 #include "context.h"
 #include "texture_loader.h"
 
-SceneCornellBox::SceneCornellBox() {
-
-}
+SceneCornellBox::SceneCornellBox() {}
 
 void SceneCornellBox::initialize(Camera& cam) {
 	prev_BVH_technique_ = context.settings->BVH_technique;
@@ -26,8 +24,7 @@ void SceneCornellBox::initialize(Camera& cam) {
     if (!tex_loader.load()) {
         std::cerr << "ERROR: Could not load background texture file.\n";
     }
-    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight(),
-                                                    tex_loader.getBytesPerScanlline(), tex_loader.getBytesPerPixel());
+    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight());
     cam.setBackgroundTexture(background_texture_);
 
 	auto mat_yellow = std::make_shared<Lambertian>(color(0.8f, 0.8f, 0.0f));
@@ -85,6 +82,14 @@ void SceneCornellBox::initialize(Camera& cam) {
 	world_.add(rect_mesh_right_);
 	world_.add(rect_mesh_back_);
 
+	rt_meshes_.push_back(rect_prism_mesh_);
+    rt_meshes_.push_back(cube_mesh_);
+    rt_meshes_.push_back(rect_mesh_top_);
+    rt_meshes_.push_back(rect_mesh_bottom_);
+    rt_meshes_.push_back(rect_mesh_left_);
+    rt_meshes_.push_back(rect_mesh_right_);
+    rt_meshes_.push_back(rect_mesh_back_);
+
 	initShader();
 }
 
@@ -93,6 +98,11 @@ std::vector<unsigned char> SceneCornellBox::update(int display_w, int display_h,
 		world_.clear();
 		initialize(cam);
 	}
+
+	// Update RTMesh vertices/indices/uvs/normals once per frame
+    for (int i = 0; i < rt_meshes_.size(); i++) {
+        rt_meshes_[i]->update();
+    }
 
 	std::vector<unsigned char> image_data;
 	image_data = cam.render(world_, image_data_acc_, *(context.settings));

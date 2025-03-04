@@ -9,6 +9,10 @@
 #include <glad/gl.h>
 #undef GLAD_GL_IMPLEMENTATION //must stay here because of multiple gl.h includes
 
+// Not using anymore, was using for writing image to a file
+//#define STB_IMAGE_WRITE_IMPLEMENTATION
+//#include "stb_image/stb_image_write.h"
+
 // Includes for my code
 #include <vector>
 #include "types.h"

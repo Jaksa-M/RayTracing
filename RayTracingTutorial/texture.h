@@ -8,15 +8,15 @@
 
 class Texture {
    public:
-    Texture(const color& solid_color): image_width_(1), image_height_(1), bytes_per_scanline_(3), bytes_per_pixel_(3) {
+    Texture(const color& solid_color): image_width_(1), image_height_(1) {
+        bytes_per_scanline_ = 3;
         data_ = {static_cast<unsigned char>(solid_color.x() * 255), 
                  static_cast<unsigned char>(solid_color.y() * 255),
                  static_cast<unsigned char>(solid_color.z() * 255)};
     }
 
-    Texture(std::vector<unsigned char> data, int image_width, int image_height, int bytes_per_scanline, int bytes_per_pixel) : 
-        data_(data), image_width_(image_width), image_height_(image_height), bytes_per_scanline_(bytes_per_scanline),
-        bytes_per_pixel_(bytes_per_pixel) {}
+    Texture(std::vector<unsigned char> data, int image_width, int image_height) : 
+        data_(data), image_width_(image_width), image_height_(image_height), bytes_per_scanline_(3 * image_width_) {}
 
     ~Texture() { 
         data_.clear();
@@ -32,17 +32,8 @@ class Texture {
 
         int i = int(u * image_width_);
         int j = int(v * image_height_);
-        const unsigned char* pixel = pixelData(i, j);
 
-        float color_scale = 1.0f / 255.0f;
-        return color(color_scale * pixel[0], color_scale * pixel[1], color_scale * pixel[2]);
-    }
-
-    void setBytesPerScanline(int bytes_per_scanline) {
-        bytes_per_scanline_ = bytes_per_scanline;
-    }
-    void setBytesPerPixel(int bytes_per_pixel) { 
-        bytes_per_pixel_ = bytes_per_pixel;
+        return pixelData(i, j);
     }
 
    private:
@@ -50,7 +41,7 @@ class Texture {
     int image_width_ = 0;
     int image_height_ = 0;
     int bytes_per_scanline_ = 0;
-    int bytes_per_pixel_ = 0;
+    int bytes_per_pixel_ = 3;
 
     int clamp(int x, int low, int high) const{
         // Return the value clamped to the range [low, high).
@@ -59,15 +50,17 @@ class Texture {
         return high - 1;
     }
 
-    const unsigned char* pixelData(int x, int y) const {
+    const vec3 pixelData(int x, int y) const {
         // Return the address of the three RGB bytes of the pixel at x,y. If there is no image data, returns magenta.
-        static unsigned char magenta[] = {255, 0, 255};
-        if (data_.empty()) return magenta;
+        if (data_.empty()) return vec3(255, 0, 255); // magenta
 
         x = clamp(x, 0, image_width_);
         y = clamp(y, 0, image_height_);
-    
-        return &data_[y * bytes_per_scanline_ + x * bytes_per_pixel_];
+        
+        const unsigned char* pixel = &data_[y * bytes_per_scanline_ + x * bytes_per_pixel_];
+        float color_scale = 1.0f / 255.0f;
+
+        return vec3(color_scale * pixel[0], color_scale * pixel[1], color_scale * pixel[2]);
     }
 };
 

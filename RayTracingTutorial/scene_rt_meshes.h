@@ -24,6 +24,7 @@ private:
     std::unique_ptr<MeshBufferManager> mesh_buf_manager_;
     std::unique_ptr<BVHManager> bvh_manager_;
 
+    std::shared_ptr<Mesh> line_cube_;
     std::shared_ptr<RTMesh> cube_mesh_;
     std::shared_ptr<RTMesh> cube_sphere_;
     std::shared_ptr<RTMesh> ico_sphere1_;
@@ -31,8 +32,9 @@ private:
     std::shared_ptr<RTMesh> rectangle_mesh_;
     std::shared_ptr<RTMesh> rect_prism_mesh1_;
     std::shared_ptr<RTMesh> rect_prism_mesh2_;
-    std::shared_ptr<Mesh> line_cube_;
     std::shared_ptr<RTMesh> test_mesh_;
+
+    std::vector<std::shared_ptr<RTMesh>> rt_meshes_;
 
     std::unique_ptr<Mesh> mesh_;
     std::unique_ptr<Shader> shader_prog_;

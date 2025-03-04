@@ -16,8 +16,6 @@ class TextureLoader {
     std::vector<unsigned char> getData() const;
     int getImageWidth() const;
     int getImageHeight() const;
-    int getBytesPerScanlline() const;
-    int getBytesPerPixel() const;
 
    private:
     std::string file_path;

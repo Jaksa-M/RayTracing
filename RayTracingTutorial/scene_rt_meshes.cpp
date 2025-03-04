@@ -25,8 +25,7 @@ void SceneRtMeshes::initialize(Camera& cam) {
     if (!tex_loader.load()) {
         std::cerr << "ERROR: Could not load background texture file.\n";
     }
-    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight(),
-                                                    tex_loader.getBytesPerScanlline(), tex_loader.getBytesPerPixel());
+    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight());
     cam.setBackgroundTexture(background_texture_);
 
     auto mat = std::make_shared<Lambertian>(color(0.8f, 0.8f, 0.0f));
@@ -69,6 +68,9 @@ void SceneRtMeshes::initialize(Camera& cam) {
     world_.add(test_mesh);
     test_mesh->buildBVH();*/
 
+    rt_meshes_.push_back(rect_prism_mesh1_);
+    rt_meshes_.push_back(rect_prism_mesh2_);
+
     initShader();
 }
 
@@ -76,6 +78,11 @@ std::vector<unsigned char> SceneRtMeshes::update(int display_w, int display_h, C
     if (prev_BVH_technique_ != context.settings->BVH_technique) {
         world_.clear();
         initialize(cam);
+    }
+
+    // Update RTMesh vertices/indices/uvs/normals/bvhNodes once per frame
+    for (int i = 0; i < rt_meshes_.size(); i++) {
+        rt_meshes_[i]->update();
     }
 
     std::vector<unsigned char> image_data;

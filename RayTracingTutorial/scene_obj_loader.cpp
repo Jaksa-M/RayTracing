@@ -25,8 +25,7 @@ void SceneObjLoader::initialize(Camera& cam) {
     if (!tex_loader.load()) {
         std::cerr << "ERROR: Could not load background texture file.\n";
     }
-    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight(),
-                                                    tex_loader.getBytesPerScanlline(), tex_loader.getBytesPerPixel());
+    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight());
     cam.setBackgroundTexture(background_texture_);
 
     //erato_texture_ = std::make_shared<Texture>("Resources/erato/erato.jpg");
@@ -70,6 +69,11 @@ std::vector<unsigned char> SceneObjLoader::update(int display_w, int display_h, 
     if (prev_BVH_technique_ != context.settings->BVH_technique) {
         world_.clear();
         initialize(cam);
+    }
+
+    // Update RTMesh vertices/indices/uvs/normals once per frame
+    for (int i = 0; i < rt_meshes_.size(); i++) {
+        rt_meshes_[i]->update();
     }
 
     std::vector<unsigned char> image_data;

@@ -79,14 +79,3 @@ std::span<const float> MeshBufferManager::getAttribute(MeshHandle mesh, Attribut
     }
     return {};
 }
-
-
-//unsigned int MeshBufferManager::addToBuffer(std::span<float> vertices, std::span<unsigned int> indices) {
-//    unsigned int starting_pos = buffer.size();
-//    buffer.insert(this->buffer.end(), vertices.begin(), vertices.end());
-//    //buffer.insert(this->buffer.end(), indices.begin(), indices.end());
-//    std::size_t offs = buffer.size();
-//    buffer.resize(offs + indices.size());
-//    std::memcpy(buffer.data() + offs, indices.data(), indices.size() * sizeof(std::uint32_t));
-//    return starting_pos;
-//}

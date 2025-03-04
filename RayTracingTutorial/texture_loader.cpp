@@ -53,14 +53,6 @@ int TextureLoader::getImageHeight() const {
     return image_height_;
 }
 
-int TextureLoader::getBytesPerScanlline() const {
-    return bytes_per_scanline_;
-}
-
-int TextureLoader::getBytesPerPixel() const {
-    return bytes_per_pixel_;
-}
-
 int TextureLoader::clamp(int x, int low, int high) {
     // Return the value clamped to the range [low, high).
     if (x < low) return low;

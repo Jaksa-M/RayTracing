@@ -4,6 +4,7 @@
 #include <cstdint> // std::size_t
 #include "vec3.h"
 #include <span>
+#include <filesystem>
 
 using MeshHandle = std::size_t;
 
@@ -41,9 +42,11 @@ enum class AttributeType {
 };
 
 struct Attribute {
-    Attribute(AttributeType type, std::span<float> data) : type(type), data(data) {}
+    Attribute(AttributeType type, std::span<const float> data) : type(type), data(data) {}
     const AttributeType type;
-    const std::span<float> data;
+    const std::span<const float> data;
 };
+
+namespace fs = std::filesystem;
 
 #endif

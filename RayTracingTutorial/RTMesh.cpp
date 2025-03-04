@@ -14,11 +14,61 @@
 #include "utility.h"
 #include "vec3.h"
 
+// Inline functions
+inline void getTriangleVertices(const ResolvedMeshInfo& res_mesh, std::uint32_t triangle_index, vec3& v0, vec3& v1, vec3& v2) {
+    std::uint32_t i0 = res_mesh.indices[triangle_index];
+    std::uint32_t i1 = res_mesh.indices[triangle_index + 1];
+    std::uint32_t i2 = res_mesh.indices[triangle_index + 2];
+
+    v0.setX(res_mesh.vertices[i0 * 3]);
+    v0.setY(res_mesh.vertices[i0 * 3 + 1]);
+    v0.setZ(res_mesh.vertices[i0 * 3 + 2]);
+
+    v1.setX(res_mesh.vertices[i1 * 3]);
+    v1.setY(res_mesh.vertices[i1 * 3 + 1]);
+    v1.setZ(res_mesh.vertices[i1 * 3 + 2]);
+
+    v2.setX(res_mesh.vertices[i2 * 3]);
+    v2.setY(res_mesh.vertices[i2 * 3 + 1]);
+    v2.setZ(res_mesh.vertices[i2 * 3 + 2]);
+}
+
+inline void getTriangleNormals(const ResolvedMeshInfo& res_mesh, std::uint32_t triangle_index, vec3& n0, vec3& n1, vec3& n2) {
+    std::uint32_t i0 = res_mesh.indices[triangle_index];
+    std::uint32_t i1 = res_mesh.indices[triangle_index + 1];
+    std::uint32_t i2 = res_mesh.indices[triangle_index + 2];
+
+    n0.setX(res_mesh.vertex_normals[i0 * 3]);
+    n0.setY(res_mesh.vertex_normals[i0 * 3 + 1]);
+    n0.setZ(res_mesh.vertex_normals[i0 * 3 + 2]);
+
+    n1.setX(res_mesh.vertex_normals[i1 * 3]);
+    n1.setY(res_mesh.vertex_normals[i1 * 3 + 1]);
+    n1.setZ(res_mesh.vertex_normals[i1 * 3 + 2]);
+
+    n2.setX(res_mesh.vertex_normals[i2 * 3]);
+    n2.setY(res_mesh.vertex_normals[i2 * 3 + 1]);
+    n2.setZ(res_mesh.vertex_normals[i2 * 3 + 2]);
+}
+
+inline void getTriangleUVs(const ResolvedMeshInfo& res_mesh, std::uint32_t triangle_index, vec2& uv0, vec2& uv1, vec2& uv2) {
+    std::uint32_t i0 = res_mesh.indices[triangle_index];
+    std::uint32_t i1 = res_mesh.indices[triangle_index + 1];
+    std::uint32_t i2 = res_mesh.indices[triangle_index + 2];
+
+    uv0 = {res_mesh.uv[i0 * 2], res_mesh.uv[i0 * 2 + 1]};
+    uv1 = {res_mesh.uv[i1 * 2], res_mesh.uv[i1 * 2 + 1]};
+    uv2 = {res_mesh.uv[i2 * 2], res_mesh.uv[i2 * 2 + 1]};
+}
+
+
 RTMesh::RTMesh(Context& context, MeshHandle mesh_handle, std::shared_ptr<Material> mat)
     : context_(context), mesh_handle_(mesh_handle), mat_(mat) {
-    bvh_nodes_ = context_.bvh_manager->getBVHNodes(mesh_handle_);
-    vertices_ = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::Position);
-    indices_ = context_.mesh_buf_manager->getIndices(mesh_handle_);
+    res_mesh_info_.bvh_nodes = context_.bvh_manager->getBVHNodes(mesh_handle_);
+    res_mesh_info_.vertices = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::Position);
+    res_mesh_info_.indices = context_.mesh_buf_manager->getIndices(mesh_handle_);
+    res_mesh_info_.vertex_normals = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::Normal);
+    res_mesh_info_.uv = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::UV);
 }
 
 bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
@@ -44,7 +94,7 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
         rec.mat = mat_;
 
         vec3 v0, v1, v2;
-        getTriangleVertices(intersect_result.closest_tri_index, v0, v1, v2);
+        getTriangleVertices(res_mesh_info_, intersect_result.closest_tri_index, v0, v1, v2);
         v0 = local_to_world_mat_ * v0;
         v1 = local_to_world_mat_ * v1;
         v2 = local_to_world_mat_ * v2;
@@ -57,7 +107,7 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
         rec.t = (r.origin() - rec.p).length();
 
         vec3 n0, n1, n2;
-        getTriangleNormals(intersect_result.closest_tri_index, n0, n1, n2);
+        getTriangleNormals(res_mesh_info_, intersect_result.closest_tri_index, n0, n1, n2);
 
         vec3 shading_normal = unit_vector(barycentricInterpolate(n0, n1, n2, intersect_result.buv));
 
@@ -67,7 +117,7 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
 
         // Caclulating the UV coords
         vec2 uv0, uv1, uv2;
-        getTriangleUVs(intersect_result.closest_tri_index, uv0, uv1, uv2);
+        getTriangleUVs(res_mesh_info_, intersect_result.closest_tri_index, uv0, uv1, uv2);
 
         vec3 uv;
         barycentricInterpolate(uv0, uv1, uv2, uv);
@@ -105,10 +155,13 @@ bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
         IntersectResult closest_intersection;
 
         // Iterate over every triangle inside the mesh
-        for (int i = 0; i < indices_.size(); i += 3) {
-            point3 p1 = point3(vertices_[indices_[i] * 3], vertices_[indices_[i] * 3 + 1], vertices_[indices_[i] * 3 + 2]);
-            point3 p2 = point3(vertices_[indices_[i + 1] * 3], vertices_[indices_[i + 1] * 3 + 1], vertices_[indices_[i + 1] * 3 + 2]);
-            point3 p3 = point3(vertices_[indices_[i + 2] * 3], vertices_[indices_[i + 2] * 3 + 1], vertices_[indices_[i + 2] * 3 + 2]);
+        for (int i = 0; i < res_mesh_info_.indices.size(); i += 3) {
+            point3 p1 = point3(res_mesh_info_.vertices[res_mesh_info_.indices[i] * 3], res_mesh_info_.vertices[res_mesh_info_.indices[i] * 3 + 1],
+                               res_mesh_info_.vertices[res_mesh_info_.indices[i] * 3 + 2]);
+            point3 p2 = point3(res_mesh_info_.vertices[res_mesh_info_.indices[i + 1] * 3], res_mesh_info_.vertices[res_mesh_info_.indices[i + 1] * 3 + 1],
+                       res_mesh_info_.vertices[res_mesh_info_.indices[i + 1] * 3 + 2]);
+            point3 p3 = point3(res_mesh_info_.vertices[res_mesh_info_.indices[i + 2] * 3], res_mesh_info_.vertices[res_mesh_info_.indices[i + 2] * 3 + 1],
+                       res_mesh_info_.vertices[res_mesh_info_.indices[i + 2] * 3 + 2]);
 
             IntersectResult intersect_res = intersectTriangle(changed_ray, ray_t, p1, p2, p3);
             if (intersect_res.t < closest_intersection.t) {  // Update only if this hit is closer
@@ -122,7 +175,7 @@ bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
             rec.mat = mat_;
 
             vec3 v0, v1, v2;
-            getTriangleVertices(closest_intersection.closest_tri_index, v0, v1, v2);
+            getTriangleVertices(res_mesh_info_, closest_intersection.closest_tri_index, v0, v1, v2);
             v0 = local_to_world_mat_ * v0;
             v1 = local_to_world_mat_ * v1;
             v2 = local_to_world_mat_ * v2;
@@ -135,7 +188,7 @@ bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
             rec.t = (r.origin() - rec.p).length();
 
             vec3 n0, n1, n2;
-            getTriangleNormals(closest_intersection.closest_tri_index, n0, n1, n2);
+            getTriangleNormals(res_mesh_info_, closest_intersection.closest_tri_index, n0, n1, n2);
 
             vec3 shading_normal = unit_vector(barycentricInterpolate(n0, n1, n2, closest_intersection.buv));
 
@@ -169,7 +222,7 @@ void RTMesh::drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32
         int level = front.second;
         queue.pop();
 
-        const BVHNode& node = bvh_nodes_[node_index];
+        const BVHNode& node = res_mesh_info_.bvh_nodes[node_index];
 
         // Draw the bounding box for the current node
         vec3 center = (node.aabbMin + node.aabbMax) * 0.5f;
@@ -203,10 +256,10 @@ void RTMesh::drawBVHLeaves(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint
     shader_prog->setMat4("projection", cam.getProjectionMatrix().asPointer());
     bounding_boxes[index] = MeshUtils::GenerateLineCube(7);
 
-    for (int i = 0; i < bvh_nodes_.size(); i++) {
-        if (bvh_nodes_[i].isLeaf() == true) {
-            vec3 center = (bvh_nodes_[i].aabbMin + bvh_nodes_[i].aabbMax) * 0.5f;
-            vec3 scale = bvh_nodes_[i].aabbMax - bvh_nodes_[i].aabbMin;
+    for (int i = 0; i < res_mesh_info_.bvh_nodes.size(); i++) {
+        if (res_mesh_info_.bvh_nodes[i].isLeaf() == true) {
+            vec3 center = (res_mesh_info_.bvh_nodes[i].aabbMin + res_mesh_info_.bvh_nodes[i].aabbMax) * 0.5f;
+            vec3 scale = res_mesh_info_.bvh_nodes[i].aabbMax - res_mesh_info_.bvh_nodes[i].aabbMin;
 
             matrix4x4 translation_matrix = transformation::create_translation_matrix(center);
             matrix4x4 scaling_matrix = transformation::create_scaling_matrix(scale.x(), scale.y(), scale.z());
@@ -227,15 +280,22 @@ MeshHandle RTMesh::getMeshHandle() const {
 void RTMesh::setTransformationMatrix(const matrix4x4& mat) {
     hittable::setTransformationMatrix(mat);  // Call base class function
 
-    const BVHNode& node = bvh_nodes_[0];
+    const BVHNode& node = res_mesh_info_.bvh_nodes[0];
 
     aabb_min_ = node.aabbMin;
     aabb_max_ = node.aabbMax;
     transformAABB(aabb_min_, aabb_max_, local_to_world_mat_); // transforms aabb from local to world space
 }
 
+void RTMesh::update() {
+    res_mesh_info_.vertices = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::Position);
+    res_mesh_info_.indices = context_.mesh_buf_manager->getIndices(mesh_handle_);
+    res_mesh_info_.vertex_normals = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::Normal);
+    res_mesh_info_.uv = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::UV);
+}
+
 void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, float& closest_hit_t) const {
-    const BVHNode& node = bvh_nodes_[nodeIdx];
+    const BVHNode& node = res_mesh_info_.bvh_nodes[nodeIdx];
 
     if (node.isLeaf() == true) {
         for (std::uint32_t i = 0; i < node.triangle_cnt; i++) {
@@ -244,7 +304,7 @@ void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& interse
             vec3 v0;
             vec3 v1;
             vec3 v2;
-            getTriangleVertices(triangle_index, v0, v1, v2);
+            getTriangleVertices(res_mesh_info_, triangle_index, v0, v1, v2);
 
             IntersectResult intersect_res = intersectTriangle(r, ray_t, v0, v1, v2);
             if (intersect_res.t < ray_t.max) {
@@ -260,8 +320,8 @@ void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& interse
 
     float closest_side_left;
     float closest_side_right;
-    const BVHNode* node_left = &bvh_nodes_[node.left_child];
-    const BVHNode* node_right = &bvh_nodes_[node.right_child];
+    const BVHNode* node_left = &res_mesh_info_.bvh_nodes[node.left_child];
+    const BVHNode* node_right = &res_mesh_info_.bvh_nodes[node.right_child];
     bool left_check =
         intersectAABB(r, intersect_result.t, node_left->aabbMin, node_left->aabbMax, closest_side_left);
     bool right_check =
@@ -283,60 +343,4 @@ void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& interse
     if (right_check == true && closest_side_right < closest_hit_t) {
         intersectBVH(r, ray_t, intersect_result, right_child, closest_hit_t);
     }
-
-}
-
-void RTMesh::getTriangleVertices(std::uint32_t triangle_index, vec3& v0, vec3& v1, vec3& v2) const {
-    std::span<const std::uint32_t> indices = context_.mesh_buf_manager->getIndices(mesh_handle_);
-    std::span<const float> vertices = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::Position);
-
-    std::uint32_t i0 = indices[triangle_index];
-    std::uint32_t i1 = indices[triangle_index + 1];
-    std::uint32_t i2 = indices[triangle_index + 2];
-
-    v0.setX(vertices[i0 * 3]);
-    v0.setY(vertices[i0 * 3 + 1]);
-    v0.setZ(vertices[i0 * 3 + 2]);
-
-    v1.setX(vertices[i1 * 3]);
-    v1.setY(vertices[i1 * 3 + 1]);
-    v1.setZ(vertices[i1 * 3 + 2]);
-
-    v2.setX(vertices[i2 * 3]);
-    v2.setY(vertices[i2 * 3 + 1]);
-    v2.setZ(vertices[i2 * 3 + 2]);
-}
-
-void RTMesh::getTriangleNormals(std::uint32_t triangle_index, vec3& n0, vec3& n1, vec3& n2) const {
-    std::span<const std::uint32_t> indices = context_.mesh_buf_manager->getIndices(mesh_handle_);
-    std::span<const float> vertex_normals = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::Normal);
-
-    std::uint32_t i0 = indices[triangle_index];
-    std::uint32_t i1 = indices[triangle_index + 1];
-    std::uint32_t i2 = indices[triangle_index + 2];
-
-    n0.setX(vertex_normals[i0 * 3]);
-    n0.setY(vertex_normals[i0 * 3 + 1]);
-    n0.setZ(vertex_normals[i0 * 3 + 2]);
-
-    n1.setX(vertex_normals[i1 * 3]);
-    n1.setY(vertex_normals[i1 * 3 + 1]);
-    n1.setZ(vertex_normals[i1 * 3 + 2]);
-
-    n2.setX(vertex_normals[i2 * 3]);
-    n2.setY(vertex_normals[i2 * 3 + 1]);
-    n2.setZ(vertex_normals[i2 * 3 + 2]);
-}
-
-void RTMesh::getTriangleUVs(std::uint32_t triangle_index, vec2& uv0, vec2& uv1, vec2& uv2) const {
-    std::span<const std::uint32_t> indices = context_.mesh_buf_manager->getIndices(mesh_handle_);
-    std::span<const float> uv = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::UV);
-
-    std::uint32_t i0 = indices[triangle_index];
-    std::uint32_t i1 = indices[triangle_index + 1];
-    std::uint32_t i2 = indices[triangle_index + 2];
-
-    uv0 = {uv[i0 * 2], uv[i0 * 2 + 1]};
-    uv1 = {uv[i1 * 2], uv[i1 * 2 + 1]};
-    uv2 = {uv[i2 * 2], uv[i2 * 2 + 1]};
 }

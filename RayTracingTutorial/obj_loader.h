@@ -3,11 +3,8 @@
 
 #include <memory>
 #include <vector>
-#include <filesystem>
 #include "material.h"
 #include "types.h"
-
-namespace fs = std::filesystem;
 
 struct Context;
 

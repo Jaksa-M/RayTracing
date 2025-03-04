@@ -71,13 +71,8 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(Context& context, const 
     }
 
     // Convert vertex_normals from vec3 to float
-    std::vector<float> float_vertex_normals;
-    float_vertex_normals.reserve(vertex_normals.size() * 3);
-    for (const vec3& normal : vertex_normals) {
-        float_vertex_normals.push_back(normal.x());
-        float_vertex_normals.push_back(normal.y());
-        float_vertex_normals.push_back(normal.z());
-    }
+    std::span<const float> float_vertex_normals =
+        std::span<const float>(reinterpret_cast<const float*>(vertex_normals.data()), vertex_normals.size() * 3);
 
     attributes.push_back(Attribute(AttributeType::Position, vertices));
     attributes.push_back(Attribute(AttributeType::Normal, float_vertex_normals));
@@ -147,13 +142,8 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(Context& context, cons
     generateTriangleVertexNormals(vertex_normals, vertices, indices, 6);
 
     // Convert vertex_normals from vec3 to float
-    std::vector<float> float_vertex_normals;
-    float_vertex_normals.reserve(vertex_normals.size() * 3);
-    for (const vec3& normal : vertex_normals) {
-        float_vertex_normals.push_back(normal.x());
-        float_vertex_normals.push_back(normal.y());
-        float_vertex_normals.push_back(normal.z());
-    }
+    std::span<const float> float_vertex_normals =
+        std::span<const float>(reinterpret_cast<const float*>(vertex_normals.data()), vertex_normals.size() * 3);
     
     attributes.push_back(Attribute(AttributeType::Position, vertices));
     attributes.push_back(Attribute(AttributeType::Normal, float_vertex_normals));
@@ -244,13 +234,8 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateIcosphere(Context& context, const std
     generateTriangleVertexNormals(vertex_normals, vertices, indices, 3);
 
     // Convert vertex_normals from vec3 to float
-    std::vector<float> float_vertex_normals;
-    float_vertex_normals.reserve(vertex_normals.size() * 3);
-    for (const vec3& normal : vertex_normals) {
-        float_vertex_normals.push_back(normal.x());
-        float_vertex_normals.push_back(normal.y());
-        float_vertex_normals.push_back(normal.z());
-    }
+    std::span<const float> float_vertex_normals =
+        std::span<const float>(reinterpret_cast<const float*>(vertex_normals.data()), vertex_normals.size() * 3);
 
     attributes.push_back(Attribute(AttributeType::Position, vertices));
     attributes.push_back(Attribute(AttributeType::Normal, float_vertex_normals));
@@ -317,13 +302,8 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(Context& context, c
     }
 
     // Convert vertex_normals from vec3 to float
-    std::vector<float> float_vertex_normals;
-    float_vertex_normals.reserve(vertex_normals.size() * 3);
-    for (const vec3& normal : vertex_normals) {
-        float_vertex_normals.push_back(normal.x());
-        float_vertex_normals.push_back(normal.y());
-        float_vertex_normals.push_back(normal.z());
-    }
+    std::span<const float> float_vertex_normals =
+        std::span<const float>(reinterpret_cast<const float*>(vertex_normals.data()), vertex_normals.size() * 3);
 
     attributes.push_back(Attribute(AttributeType::Position, vertices));
     attributes.push_back(Attribute(AttributeType::Normal, float_vertex_normals));
@@ -387,13 +367,8 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTestMesh(Context& context, const std:
     }
 
     // Convert vertex_normals from vec3 to float
-    std::vector<float> float_vertex_normals;
-    float_vertex_normals.reserve(normals.size() * 3);
-    for (const vec3& normal : normals) {
-        float_vertex_normals.push_back(normal.x());
-        float_vertex_normals.push_back(normal.y());
-        float_vertex_normals.push_back(normal.z());
-    }
+    std::span<const float> float_vertex_normals =
+        std::span<const float>(reinterpret_cast<const float*>(normals.data()), normals.size() * 3);
 
     attributes.push_back(Attribute(AttributeType::Position, vertices));
     attributes.push_back(Attribute(AttributeType::Normal, float_vertex_normals));

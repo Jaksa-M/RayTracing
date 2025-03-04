@@ -56,8 +56,7 @@ bool ObjLoader::load(Context& context) {
                 if (!tex_loader.load()) {
                     std::cerr << "ERROR: Could not load texture file '" << texture_path << "'.\n";
                 }
-                std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight(), 
-                    tex_loader.getBytesPerScanlline(), tex_loader.getBytesPerPixel());
+                std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight());
                 mat = std::make_shared<Lambertian>(tex);
                 materials_.push_back(mat);
             } else {
@@ -91,13 +90,8 @@ bool ObjLoader::load(Context& context) {
         // Calculate normals for each vertex
         std::vector<vec3> vertex_normals(vertices.size() / 3, vec3(0, 0, 0));
         // Convert vertex_normals from vec3 to float
-        std::vector<float> float_vertex_normals;
-        float_vertex_normals.reserve(vertex_normals.size() * 3);
-        for (const vec3& normal : vertex_normals) {
-            float_vertex_normals.push_back(normal.x());
-            float_vertex_normals.push_back(normal.y());
-            float_vertex_normals.push_back(normal.z());
-        }
+        std::span<const float> float_vertex_normals =
+            std::span<const float>(reinterpret_cast<const float*>(vertex_normals.data()), vertex_normals.size() * 3);
 
         std::vector<Attribute> attributes;
         attributes.push_back(Attribute(AttributeType::Position, vertices));
