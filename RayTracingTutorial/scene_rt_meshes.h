@@ -33,6 +33,7 @@ private:
     std::shared_ptr<RTMesh> rect_prism_mesh1_;
     std::shared_ptr<RTMesh> rect_prism_mesh2_;
     std::shared_ptr<RTMesh> test_mesh_;
+    std::shared_ptr<RTMesh> rect_mesh_back_;
 
     std::vector<std::shared_ptr<RTMesh>> rt_meshes_;
 

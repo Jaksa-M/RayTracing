@@ -50,7 +50,7 @@ class Texture {
         return high - 1;
     }
 
-    const vec3 pixelData(int x, int y) const {
+    vec3 pixelData(int x, int y) const {
         // Return the address of the three RGB bytes of the pixel at x,y. If there is no image data, returns magenta.
         if (data_.empty()) return vec3(255, 0, 255); // magenta
 

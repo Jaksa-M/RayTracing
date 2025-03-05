@@ -38,7 +38,7 @@ bool ObjLoader::load(Context& context) {
 
     // Loop over shapes
     for (size_t s = 0; s < shapes.size(); s++) {
-        if (s % 3 == 0) continue;
+        //if (s % 3 == 0) continue;
         std::vector<float> vertices;
         std::vector<std::uint32_t> indices;
         std::vector<vec3> face_normals;

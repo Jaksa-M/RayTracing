@@ -119,8 +119,7 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
         vec2 uv0, uv1, uv2;
         getTriangleUVs(res_mesh_info_, intersect_result.closest_tri_index, uv0, uv1, uv2);
 
-        vec3 uv;
-        barycentricInterpolate(uv0, uv1, uv2, uv);
+        vec2 uv = barycentricInterpolate(uv0, uv1, uv2, intersect_result.buv);
         rec.u = uv[0];
         rec.v = uv[1];
         /*if (rec.u != 0.0f || rec.v != 0.0f) {

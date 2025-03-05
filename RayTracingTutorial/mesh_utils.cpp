@@ -260,6 +260,16 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(Context& context, c
     // center and normalize variables are not used here, since we are drawing rectangle
     createFaceVertices(false, center, vertices, num_of_vert_row, num_of_vert_col, -0.5f, 0.0f, -0.5f, d.x(), 0.0f, d.z()); // bottom
 
+    std::vector<vec2> uvs;
+    for (std::uint32_t i = 0; i < num_of_vert_row; i++) {
+        for (std::uint32_t j = 0; j < num_of_vert_col; j++) {
+            float u = static_cast<float>(j) / (num_of_vert_col - 1);
+            float v = static_cast<float>(i) / (num_of_vert_row - 1);
+            uvs.emplace_back(vec2(u, v));
+        }
+    }
+    std::span<const float> float_uvs = std::span<const float>(reinterpret_cast<const float*>(uvs.data()), uvs.size() * 2);
+
     std::vector<std::uint32_t> indices;
 
     for (std::uint32_t i = 0; i < num_of_vert_row - 1; i++) {
@@ -307,6 +317,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(Context& context, c
 
     attributes.push_back(Attribute(AttributeType::Position, vertices));
     attributes.push_back(Attribute(AttributeType::Normal, float_vertex_normals));
+    attributes.push_back(Attribute(AttributeType::UV, float_uvs));
 
     std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
     context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);

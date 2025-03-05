@@ -35,17 +35,17 @@ void SceneRtMeshes::initialize(Camera& cam) {
     //ico_sphere_ = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2);
     //rectangle_mesh_ = MeshUtils::GenerateTriangleRectangle(mat, mesh_buf_manager.get(), 6, 3);
 
-    rect_prism_mesh1_ = MeshUtils::GenerateTriangleCube(context, mat, 4);
-    matrix4x4 m = transformation::create_rotation_matrix(0.0f, 30.0f * (3.14159f / 180.0f), 0.0f) *
-                  transformation::create_translation_matrix(vec3(-2.0f, 0.0f, 0.0f)); // 30 degree rotation on y-axis + translation on x-axis
-    rect_prism_mesh1_->setTransformationMatrix(m);
-    world_.add(rect_prism_mesh1_);
+    //rect_prism_mesh1_ = MeshUtils::GenerateTriangleCube(context, mat, 4);
+    //matrix4x4 m = transformation::create_rotation_matrix(0.0f, 30.0f * (3.14159f / 180.0f), 0.0f) *
+    //              transformation::create_translation_matrix(vec3(-2.0f, 0.0f, 0.0f)); // 30 degree rotation on y-axis + translation on x-axis
+    //rect_prism_mesh1_->setTransformationMatrix(m);
+    //world_.add(rect_prism_mesh1_);
 
-    rect_prism_mesh2_ = std::make_shared<RTMesh>(context, rect_prism_mesh1_->getMeshHandle(), mat);
-    m = transformation::create_rotation_matrix(0.0f, 70.0f * (3.14159f / 180.0f), 0.0f) *
-        transformation::create_translation_matrix(vec3(2.0f, 0.0f, 0.0f)); // 70 degree rotation on y-axis + translation on x-axis
-    rect_prism_mesh2_->setTransformationMatrix(m);
-    world_.add(rect_prism_mesh2_);
+    //rect_prism_mesh2_ = std::make_shared<RTMesh>(context, rect_prism_mesh1_->getMeshHandle(), mat);
+    //m = transformation::create_rotation_matrix(0.0f, 70.0f * (3.14159f / 180.0f), 0.0f) *
+    //    transformation::create_translation_matrix(vec3(2.0f, 0.0f, 0.0f)); // 70 degree rotation on y-axis + translation on x-axis
+    //rect_prism_mesh2_->setTransformationMatrix(m);
+    //world_.add(rect_prism_mesh2_);
 
     /*ico_sphere1 = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2, settings);
     matrix4x4 m = transformation::create_translation_matrix(vec3(1.0f, 0.0f, 0.0f));
@@ -68,8 +68,14 @@ void SceneRtMeshes::initialize(Camera& cam) {
     world_.add(test_mesh);
     test_mesh->buildBVH();*/
 
-    rt_meshes_.push_back(rect_prism_mesh1_);
-    rt_meshes_.push_back(rect_prism_mesh2_);
+    rect_mesh_back_ = MeshUtils::GenerateTriangleRectangle(context, mat, 2, 2);
+    //m = transformation::create_translation_matrix(vec3(0.0f, 1.0f, -0.99f));
+        //transformation::create_rotation_matrix(90.0f * (3.14159f / 180.0f), 0.0f, 0.0f) * transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
+    rect_mesh_back_->setTransformationMatrix(matrix4x4::identity());
+    world_.add(rect_mesh_back_);
+    //rt_meshes_.push_back(rect_prism_mesh1_);
+    //rt_meshes_.push_back(rect_prism_mesh2_);
+    rt_meshes_.push_back(rect_mesh_back_);
 
     initShader();
 }
