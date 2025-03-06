@@ -8,8 +8,11 @@
 #include "gui_settings.h"
 #include "bvh_manager.h"
 #include "RTMesh.h"
+#include "texture.h"
+#include "texture_loader.h"
+#include <cassert>  // assert
 
-ObjLoader::ObjLoader(std::string file) : file_(file) {}
+ObjLoader::ObjLoader(std::string file) : file_(fs::path(file)) {}
 
 bool ObjLoader::load(Context& context) {
     tinyobj::ObjReaderConfig reader_config;
@@ -18,7 +21,7 @@ bool ObjLoader::load(Context& context) {
 
     tinyobj::ObjReader reader;
 
-    if (!reader.ParseFromFile(file_, reader_config)) {
+    if (!reader.ParseFromFile(file_.string(), reader_config)) {
         if (!reader.Error().empty()) {
             std::cerr << "TinyObjReader: " << reader.Error();
         }
@@ -35,20 +38,36 @@ bool ObjLoader::load(Context& context) {
     auto& materials = reader.GetMaterials();
 
     // Loop over shapes
-    for (size_t s = shapes.size()-2; s < shapes.size(); s++) {
-        //if (s % 3 == 0) continue;
+    for (size_t s = 0; s < shapes.size(); s++) {
+
         std::vector<float> vertices;
         std::vector<std::uint32_t> indices;
         std::vector<vec3> face_normals;
+        std::vector<float> uv;
 
         // Assigning materials to mesh the belong
-        /*if (materials.empty() == false) {
+        if (materials.empty() == false) {
             int material_id = shapes[s].mesh.material_ids[0];
-            color col(materials[material_id].diffuse[0], materials[material_id].diffuse[1], materials[material_id].diffuse[2]);
-            auto mat = std::make_shared<lambertian>(col);
+            std::shared_ptr<Material> mat;
+
+            // Check if diffuse is specified with image texture
+            if (materials[material_id].diffuse_texname.empty() == false) {
+                fs::path texture_path = file_.parent_path() / "textures" / materials[material_id].diffuse_texname;
+                TextureLoader tex_loader(texture_path.string());
+                if (!tex_loader.load()) {
+                    std::cerr << "ERROR: Could not load texture file '" << texture_path << "'.\n";
+                }
+                std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight());
+                mat = std::make_shared<Lambertian>(tex);
+                materials_.push_back(mat);
+            } else {
+                color col(materials[material_id].diffuse[0], materials[material_id].diffuse[1], materials[material_id].diffuse[2]);
+                mat = std::make_shared<Lambertian>(col);
+                
+            }
             materials_.push_back(mat);
             materials_indices_.push_back(material_id);
-        }*/
+        }
 
         for (std::uint32_t i = 0; i < shapes[s].mesh.indices.size(); i++) {
             indices.push_back(shapes[s].mesh.indices[i].vertex_index);
@@ -64,17 +83,31 @@ bool ObjLoader::load(Context& context) {
             face_normals.push_back(vec3(attrib.normals[i], attrib.normals[i + 1], attrib.normals[i + 2]));
         }
 
-        // Calculate normals for each vertex
-        std::vector<vec3> vertex_normals(vertices.size() / 3, vec3(0, 0, 0));
+        for (size_t i = 0; i < attrib.texcoords.size(); i += 2) {
+            uv.push_back(attrib.texcoords[i]);
+            uv.push_back(attrib.texcoords[i + 1]);
+        }
 
-        std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(vertices, 1, indices, vertex_normals);
+        // Calculate normals for each vertex
+        std::vector<float> vertex_normals(vertices.size(), 0.0f);
+        /*if (uv.size() / 2 < vertices.size() / 3) {
+            for (int i = uv.size(); i < (vertices.size() / 3) * 2; i++) {
+                uv.push_back(0.0f);
+            }
+        }*/
+        std::vector<Attribute> attributes;
+        attributes.push_back(Attribute(AttributeType::Position, vertices));
+        attributes.push_back(Attribute(AttributeType::Normal, vertex_normals));
+        attributes.push_back(Attribute(AttributeType::UV, uv));
+
+        std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
         context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
         meshes_.push_back(mesh_handle);
     }
     return true;
 }
 
-std::span<const std::shared_ptr<material>> ObjLoader::getMaterials() const {
+std::span<const std::shared_ptr<Material>> ObjLoader::getMaterials() const {
     return materials_;
 }
 

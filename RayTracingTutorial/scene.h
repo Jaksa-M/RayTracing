@@ -12,7 +12,7 @@ class Scene {
 public:
 	Context context;
 
-	virtual void initialize() = 0;
+	virtual void initialize(Camera& cam) = 0;
 
 	virtual std::vector<unsigned char> update(int display_w, int display_h, Camera& cam) = 0;
 

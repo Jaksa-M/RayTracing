@@ -11,7 +11,7 @@ class SceneRtMeshes: public Scene {
 public:
     SceneRtMeshes();
 
-    void initialize() override;
+    void initialize(Camera& cam) override;
 
     std::vector<unsigned char> update(int display_w, int display_h, Camera& cam) override;
 
@@ -24,18 +24,21 @@ private:
     std::unique_ptr<MeshBufferManager> mesh_buf_manager_;
     std::unique_ptr<BVHManager> bvh_manager_;
 
+    std::shared_ptr<Mesh> line_cube_;
     std::shared_ptr<RTMesh> cube_mesh_;
     std::shared_ptr<RTMesh> cube_sphere_;
-    std::shared_ptr<RTMesh> ico_sphere1_;
-    std::shared_ptr<RTMesh> ico_sphere2_;
+    std::shared_ptr<RTMesh> ico_sphere_;
+    std::shared_ptr<RTMesh> triangle_sphere_;
     std::shared_ptr<RTMesh> rectangle_mesh_;
     std::shared_ptr<RTMesh> rect_prism_mesh1_;
     std::shared_ptr<RTMesh> rect_prism_mesh2_;
-    std::shared_ptr<Mesh> line_cube_;
     std::shared_ptr<RTMesh> test_mesh_;
+    std::shared_ptr<RTMesh> rect_mesh_back_;
 
     std::unique_ptr<Mesh> mesh_;
     std::unique_ptr<Shader> shader_prog_;
+
+    std::shared_ptr<Texture> background_texture_;
 
     std::vector<std::unique_ptr<Mesh>> bounding_boxes_; // 1 bounding box for each object that will get translated while drawing
 

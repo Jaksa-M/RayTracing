@@ -22,9 +22,9 @@ Mesh::Mesh(std::span<float> vertices, int size, int stride, int offset_pos, int 
     // Position attribute
     glVertexAttribPointer(0, size, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(offset_pos * sizeof(float)));
     glEnableVertexAttribArray(0);
-    // Color attribute
-    glVertexAttribPointer(1, size, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(offset_col * sizeof(float)));
-    glEnableVertexAttribArray(1);
+    //// Color attribute
+    //glVertexAttribPointer(1, size, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(offset_col * sizeof(float)));
+    //glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);

@@ -9,7 +9,7 @@ class SceneMeshes: public Scene {
 public:
     SceneMeshes();
 
-    void initialize() override;
+    void initialize(Camera& cam) override;
 
     void initShader();
 

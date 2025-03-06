@@ -6,6 +6,8 @@
 #include <array>
 #include <list>
 
+Camera::Camera() {}
+
 void Camera::setInitalValues() {
     vec3 cameraTarget = vec3(0.0f, 0.0f, -3.0f);
     camera_direction_ = unit_vector(center_ - cameraTarget);
@@ -178,7 +180,7 @@ color Camera::ray_color(const ray& r, int depth, const hittable_list& world) {
     // Variables can't be declared inside switch case
     vec3 unit_direction;
     float a;
-
+    float u, v;
     switch (settings_.mesh_color) {
         case MeshColor::MATERIAL:
             // If we've exceeded the ray bounce limit, no more light is gathered.
@@ -198,6 +200,15 @@ color Camera::ray_color(const ray& r, int depth, const hittable_list& world) {
                 }
                 return color(0.0f, 0.0f, 0.0f);
             }
+            // No object hit -> Use texture as background
+            unit_direction = unit_vector(r.direction());
+
+            // Convert unit_direction (x, y, z) to spherical coordinates (u, v)
+            u = (std::atan2(-unit_direction.z(), unit_direction.x()) + pi) / (2 * pi);
+            v = std::acos(-unit_direction.y()) / pi;
+
+            return background_texture_->value(u, v, point3(0, 0, 0));
+
 
             // Background gradient if no object is hit
             unit_direction = unit_vector(r.direction());
@@ -229,7 +240,21 @@ color Camera::ray_color(const ray& r, int depth, const hittable_list& world) {
                 return vec3(tt, tt, tt);
             }
             return vec3(0.0f, 0.0f, 0.0f);
+
+        case MeshColor::UV:
+            if (world.hit(r, interval(0.001f, float_max), rec)) {
+                // Ensure UV coordinates are in range [0, 1]
+                float u = std::fmod(std::abs(rec.u), 1.0f);
+                float v = std::fmod(std::abs(rec.v), 1.0f);
+
+                // Map UV to colors (U -> Red, V -> Green)
+                return color(u, v, 0.0f);
+            }
+            return color(0.0f, 0.0f, 0.0f);
     }
+
+    // Won't happen but here to surpass warning
+    return color(0.0f, 0.0f, 0.0f);
 }
 
 void Camera::drawRays() {
@@ -327,3 +352,7 @@ void Camera::setRightVector(vec3 direction) { camera_right_ = direction; }
 matrix4x4 Camera::getViewMatrix() { return view_matrix_; }
 
 matrix4x4 Camera::getProjectionMatrix() { return projection_matrix_; }
+
+void Camera::setBackgroundTexture(std::shared_ptr<Texture> tex) {
+    background_texture_ = tex;
+}

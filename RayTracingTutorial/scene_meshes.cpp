@@ -17,7 +17,7 @@ SceneMeshes::SceneMeshes() {
 
 }
 
-void SceneMeshes::initialize() {
+void SceneMeshes::initialize(Camera& cam) {
     initShader();
 }
 

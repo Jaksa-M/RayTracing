@@ -31,6 +31,9 @@
     <Filter Include="External Libraries\tinyobjloader">
       <UniqueIdentifier>{47b63211-c4bb-4849-a5fc-1fdd092ab972}</UniqueIdentifier>
     </Filter>
+    <Filter Include="External Libraries\stb_image">
+      <UniqueIdentifier>{465f1a90-b903-4dc5-a4db-077b085e24da}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RayTracingTutorial.cpp">
@@ -111,11 +114,14 @@
     <ClCompile Include="scene_obj_loader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="texture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="texture_loader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="stb_image_write.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="vec3.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -235,6 +241,18 @@
     </ClInclude>
     <ClInclude Include="scene_obj_loader.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="texture_loader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalLibraries\stb image\stb_image.h">
+      <Filter>External Libraries\stb_image</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalLibraries\stb image\stb_image_write.h">
+      <Filter>External Libraries\stb_image</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -121,6 +121,10 @@ inline vec3 barycentricInterpolate(const vec3& v0, const vec3& v1, const vec3& v
     return v0 * buv.x() + v1 * buv.y() + v2 * buv.z();
 }
 
+inline vec2 barycentricInterpolate(const vec2& v0, const vec2& v1, const vec2& v2, const vec3& buv) {
+    return v0 * buv.x() + v1 * buv.y() + v2 * buv.z();
+}
+
 //-----------------------Other objects intersections that are currently not being used-----------------------
 
 // Plane intersection

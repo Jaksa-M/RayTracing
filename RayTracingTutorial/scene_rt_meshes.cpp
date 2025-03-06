@@ -12,53 +12,66 @@
 #include "mesh_utils.h"
 #include "imgui/imgui.h"
 #include <GLFW/glfw3.h>
+#include "texture_loader.h"
 
 SceneRtMeshes::SceneRtMeshes() {
 
 }
 
-void SceneRtMeshes::initialize() {
+void SceneRtMeshes::initialize(Camera& cam) {
     prev_BVH_technique_ = context.settings->BVH_technique;
 
-    auto mat = std::make_shared<lambertian>(color(0.8f, 0.8f, 0.0f));
+    TextureLoader tex_loader("Resources/textures/san_giuseppe_bridge.hdr");
+    if (!tex_loader.load()) {
+        std::cerr << "ERROR: Could not load background texture file.\n";
+    }
+    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight());
+    cam.setBackgroundTexture(background_texture_);
+
+    // Loading texture from an image
+    TextureLoader tex_loader2("Resources/textures/default_texture.jpg");
+    if (!tex_loader2.load()) {
+        std::cerr << "ERROR: Could not load texture file" << "\n ";
+    }
+    std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader2.getData(), tex_loader2.getImageWidth(), tex_loader2.getImageHeight());
+    std::shared_ptr<Material> texture_mat = std::make_shared<Lambertian>(tex);
+
+    auto mat = std::make_shared<Lambertian>(color(0.8f, 0.8f, 0.0f));
     //cube_mesh_ = MeshUtils::GenerateTriangleCube(mat, mesh_buf_manager.get(), 2);
     //cube_sphere_ = MeshUtils::GenerateTriangleSphere(mat, mesh_buf_manager.get(), 4);
     //ico_sphere_ = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2, vec3(2.0f,0.0f,0.0f));
     //ico_sphere_ = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2);
     //rectangle_mesh_ = MeshUtils::GenerateTriangleRectangle(mat, mesh_buf_manager.get(), 6, 3);
 
-    rect_prism_mesh1_ = MeshUtils::GenerateTriangleCube(context, mat, 4);
+    rect_prism_mesh1_ = MeshUtils::GenerateTriangleCube(context, texture_mat, 4);
     matrix4x4 m = transformation::create_rotation_matrix(0.0f, 30.0f * (3.14159f / 180.0f), 0.0f) *
                   transformation::create_translation_matrix(vec3(-2.0f, 0.0f, 0.0f)); // 30 degree rotation on y-axis + translation on x-axis
     rect_prism_mesh1_->setTransformationMatrix(m);
     world_.add(rect_prism_mesh1_);
 
-    rect_prism_mesh2_ = std::make_shared<RTMesh>(context, rect_prism_mesh1_->getMeshHandle(), mat);
+    rect_prism_mesh2_ = std::make_shared<RTMesh>(context, rect_prism_mesh1_->getMeshHandle(), texture_mat);
     m = transformation::create_rotation_matrix(0.0f, 70.0f * (3.14159f / 180.0f), 0.0f) *
         transformation::create_translation_matrix(vec3(2.0f, 0.0f, 0.0f)); // 70 degree rotation on y-axis + translation on x-axis
     rect_prism_mesh2_->setTransformationMatrix(m);
     world_.add(rect_prism_mesh2_);
 
-    /*ico_sphere1 = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2, settings);
+    /*ico_sphere_ = MeshUtils::GenerateIcosphere(context, texture_mat, 2);
     matrix4x4 m = transformation::create_translation_matrix(vec3(1.0f, 0.0f, 0.0f));
-    ico_sphere1->setTransformationMatrix(m);
-    world_.add(ico_sphere1);
-    ico_sphere1->buildBVH();
+    ico_sphere_->setTransformationMatrix(m);
+    world_.add(ico_sphere_);
+    */
 
-    ico_sphere2 = std::make_shared<RTMesh>(mesh_buf_manager.get(), ico_sphere1->getMeshHandle(), mat, settings);
-    m = transformation::create_translation_matrix(vec3(-1.0f, 0.0f, 0.0f));
-    ico_sphere2->setTransformationMatrix(m);
-    world_.add(ico_sphere2);
-    ico_sphere2->buildBVH();*/
-    
+    /*triangle_sphere_ = MeshUtils::GenerateTriangleSphere(context, texture_mat, 6);
+    matrix4x4 m = matrix4x4::identity();
+    triangle_sphere_->setTransformationMatrix(m);
+    world_.add(triangle_sphere_);
+    */
 
-    /*cube_sphere = MeshUtils::GenerateTriangleSphere(mat, mesh_buf_manager.get(), 4);
-    world_.add(cube_sphere);
-    cube_sphere->buildBVH();*/
-
-    /*test_mesh = MeshUtils::GenerateTestMesh(mat, mesh_buf_manager.get(), settings);
-    world_.add(test_mesh);
-    test_mesh->buildBVH();*/
+    //rect_mesh_back_ = MeshUtils::GenerateTriangleRectangle(context, texture_mat, 2, 2);
+    ////m = transformation::create_translation_matrix(vec3(0.0f, 1.0f, -0.99f));
+    //    //transformation::create_rotation_matrix(90.0f * (3.14159f / 180.0f), 0.0f, 0.0f) * transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
+    //rect_mesh_back_->setTransformationMatrix(matrix4x4::identity());
+    //world_.add(rect_mesh_back_);
 
     initShader();
 }
@@ -66,8 +79,11 @@ void SceneRtMeshes::initialize() {
 std::vector<unsigned char> SceneRtMeshes::update(int display_w, int display_h, Camera& cam) {
     if (prev_BVH_technique_ != context.settings->BVH_technique) {
         world_.clear();
-        initialize();
+        initialize(cam);
     }
+
+    // Update RTMesh vertices/indices/uvs/normals/bvhNodes once per frame
+    world_.update();
 
     std::vector<unsigned char> image_data;
     image_data = cam.render(world_, image_data_acc_, *(context.settings));

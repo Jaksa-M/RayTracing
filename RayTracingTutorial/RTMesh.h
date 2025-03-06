@@ -9,11 +9,19 @@
 #include "camera.h"
 #include "types.h"
 
+struct ResolvedMeshInfo {
+    std::span<const float> vertices;
+    std::span<const float> vertex_normals;
+    std::span<const float> uv;
+    std::span<const std::uint32_t> indices;
+    std::span<const BVHNode> bvh_nodes;
+};
+
 struct Context;
 
 class RTMesh: public hittable {
 public:
-    RTMesh(Context& context, MeshHandle mesh_handle, std::shared_ptr<material> mat);
+    RTMesh(Context& context, MeshHandle mesh_handle, std::shared_ptr<Material> mat);
 
     std::string object_type() const override { return "cube triangle mesh"; }
 
@@ -28,23 +36,20 @@ public:
 
     void setTransformationMatrix(const matrix4x4& mat) override;
 
+    void update() override;
+
 private:
     Context& context_;
 
     MeshHandle mesh_handle_;
-    std::shared_ptr<material> mat_;
-
-    std::span<const BVHNode> bvh_nodes_;
+    std::shared_ptr<Material> mat_;
 
     // AABB bounds in world space
     vec3 aabb_min_;
     vec3 aabb_max_;
-    std::span<const float> vertices_;
-    std::span<const std::uint32_t> indices_;
+    
+    ResolvedMeshInfo res_mesh_info_;
     
     void intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, float& closest_hit_t) const;
-
-    void getTriangleVertices(std::uint32_t triangle_index, vec3& v0, vec3& v1, vec3& v2) const;
-    void getTriangleNormals(std::uint32_t triangle_index, vec3& n0, vec3& n1, vec3& n2) const;
 };
 #endif

@@ -13,18 +13,24 @@
 #include "imgui/imgui.h"
 #include <GLFW/glfw3.h>
 #include "context.h"
+#include "texture_loader.h"
 
-SceneCornellBox::SceneCornellBox() {
+SceneCornellBox::SceneCornellBox() {}
 
-}
-
-void SceneCornellBox::initialize() {
+void SceneCornellBox::initialize(Camera& cam) {
 	prev_BVH_technique_ = context.settings->BVH_technique;
 
-	auto mat_yellow = std::make_shared<lambertian>(color(0.8f, 0.8f, 0.0f));
-	auto mat_green = std::make_shared<lambertian>(color(0.0f, 1.0f, 0.0f));
-	auto mat_red = std::make_shared<lambertian>(color(1.0f, 0.0f, 0.0f));
-	auto mat_white = std::make_shared<lambertian>(color(0.8f, 0.8f, 0.8f));
+	TextureLoader tex_loader("Resources/textures/san_giuseppe_bridge.hdr");
+    if (!tex_loader.load()) {
+        std::cerr << "ERROR: Could not load background texture file.\n";
+    }
+    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight());
+    cam.setBackgroundTexture(background_texture_);
+
+	auto mat_yellow = std::make_shared<Lambertian>(color(0.8f, 0.8f, 0.0f));
+    auto mat_green = std::make_shared<Lambertian>(color(0.0f, 1.0f, 0.0f));
+    auto mat_red = std::make_shared<Lambertian>(color(1.0f, 0.0f, 0.0f));
+    auto mat_white = std::make_shared<Lambertian>(color(0.8f, 0.8f, 0.8f));
 
 	// Creating meshes and their transformation matrices
 	rect_prism_mesh_ = MeshUtils::GenerateTriangleCube(context, mat_yellow, 2);
@@ -82,8 +88,11 @@ void SceneCornellBox::initialize() {
 std::vector<unsigned char> SceneCornellBox::update(int display_w, int display_h, Camera& cam) {
 	if (prev_BVH_technique_ != context.settings->BVH_technique) {
 		world_.clear();
-		initialize();
+		initialize(cam);
 	}
+
+	// Update RTMesh vertices/indices/uvs/normals once per frame
+    world_.update();
 
 	std::vector<unsigned char> image_data;
 	image_data = cam.render(world_, image_data_acc_, *(context.settings));

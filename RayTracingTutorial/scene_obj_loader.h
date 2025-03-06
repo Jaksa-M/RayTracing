@@ -13,7 +13,7 @@ class SceneObjLoader : public Scene {
    public:
     SceneObjLoader();
 
-    void initialize() override;
+    void initialize(Camera& cam) override;
 
     std::vector<unsigned char> update(int display_w, int display_h, Camera& cam) override;
 
@@ -28,8 +28,9 @@ class SceneObjLoader : public Scene {
 
     std::vector<std::shared_ptr<RTMesh>> rt_meshes_;
     std::unique_ptr<ObjLoader> obj_loader_;
+    std::shared_ptr<Texture> background_texture_;
+    std::shared_ptr<Texture> erato_texture_;
 
-    std::unique_ptr<Mesh> mesh_;
     std::unique_ptr<Shader> shader_prog_;
     std::vector<std::unique_ptr<Mesh>> bounding_boxes_;  // 1 bounding box for each object that will get translated while drawing
 

@@ -14,22 +14,31 @@
 #include <GLFW/glfw3.h>
 #include "context.h"
 #include <chrono> // Time
+#include "texture_loader.h"
 
 SceneObjLoader::SceneObjLoader() {}
 
-void SceneObjLoader::initialize() {
+void SceneObjLoader::initialize(Camera& cam) {
     prev_BVH_technique_ = context.settings->BVH_technique;
 
-    auto mat_green = std::make_shared<lambertian>(color(0.0f, 1.0f, 0.0f));
+    TextureLoader tex_loader("Resources/textures/san_giuseppe_bridge.hdr");
+    if (!tex_loader.load()) {
+        std::cerr << "ERROR: Could not load background texture file.\n";
+    }
+    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight());
+    cam.setBackgroundTexture(background_texture_);
 
-    auto start_time = std::chrono::high_resolution_clock::now();  // Start timing
+    auto mat_green = std::make_shared<Lambertian>(color(0.0f, 1.0f, 0.0f));
 
-    obj_loader_ = std::make_unique<ObjLoader>("Resources/sponza/sponza.obj");
-    if (!obj_loader_->load(context))
-        std::cout << "custom mesh failed to load" << std::endl;
+    auto start_time = std::chrono::high_resolution_clock::now(); // Start timing
+
+    obj_loader_ = std::make_unique<ObjLoader>("Resources/teapot/teapot.obj");
+    if (!obj_loader_->load(context)) {
+        std::cout << "ERROR: custom mesh failed to load" << std::endl;
+    }
 
     std::span<MeshHandle> meshes = obj_loader_->getMeshes();
-    std::span<const std::shared_ptr<material>> materials = obj_loader_->getMaterials();
+    std::span<const std::shared_ptr<Material>> materials = obj_loader_->getMaterials();
     std::span<const int> materials_indices = obj_loader_->getMaterialsIndices();
     for (std::uint32_t i = 0; i < meshes.size(); i++) {
         if (materials.empty() == false) {
@@ -38,8 +47,10 @@ void SceneObjLoader::initialize() {
             rt_meshes_.push_back(std::make_shared<RTMesh>(context, meshes[i], mat_green));
         }
     }
-    //matrix4x4 m = transformation::create_scaling_matrix(0.02f, 0.02f, 0.02f);
-    matrix4x4 m = transformation::create_scaling_matrix(1.0f, 1.0f, 1.0f);
+    matrix4x4 m = transformation::create_scaling_matrix(0.02f, 0.02f, 0.02f); // teapot
+    //matrix4x4 m = transformation::create_scaling_matrix(1.0f, 1.0f, 1.0f); // sponza
+    //matrix4x4 m = transformation::create_scaling_matrix(0.3f, 0.3f, 0.3f); // erato
+    //matrix4x4 m = transformation::create_scaling_matrix(0.01f, 0.01f, 0.01f);  // crytek_sponza
     for (std::uint32_t i = 0; i < rt_meshes_.size(); i++) {
         rt_meshes_[i]->setTransformationMatrix(m);
         world_.add(rt_meshes_[i]);
@@ -54,8 +65,11 @@ void SceneObjLoader::initialize() {
 std::vector<unsigned char> SceneObjLoader::update(int display_w, int display_h, Camera& cam) {
     if (prev_BVH_technique_ != context.settings->BVH_technique) {
         world_.clear();
-        initialize();
+        initialize(cam);
     }
+
+    // Update RTMesh vertices/indices/uvs/normals once per frame
+    world_.update();
 
     std::vector<unsigned char> image_data;
     image_data = cam.render(world_, image_data_acc_, *(context.settings));

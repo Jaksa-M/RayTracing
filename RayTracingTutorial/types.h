@@ -3,6 +3,8 @@
 
 #include <cstdint> // std::size_t
 #include "vec3.h"
+#include <span>
+#include <filesystem>
 
 using MeshHandle = std::size_t;
 
@@ -21,7 +23,8 @@ enum class BVHTechnique {
 enum class MeshColor {
     MATERIAL,
     NORMAL,
-    DEPTH
+    DEPTH,
+    UV
 };
 
 // Code types
@@ -30,5 +33,20 @@ struct IntersectResult {
     vec3 buv = vec3();   // short for barycentrics uv, vec3(alpha, beta, gamma)
     std::uint32_t closest_tri_index = ~0u;
 };
+
+enum class AttributeType {
+    Position,
+    Normal,
+    Color,
+    UV
+};
+
+struct Attribute {
+    Attribute(AttributeType type, std::span<const float> data) : type(type), data(data) {}
+    const AttributeType type;
+    const std::span<const float> data;
+};
+
+namespace fs = std::filesystem;
 
 #endif

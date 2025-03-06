@@ -10,8 +10,8 @@
 #undef GLAD_GL_IMPLEMENTATION //must stay here because of multiple gl.h includes
 
 // Not using anymore, was using for writing image to a file
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
+//#define STB_IMAGE_WRITE_IMPLEMENTATION
+//#include "stb_image/stb_image_write.h"
 
 // Includes for my code
 #include <vector>
@@ -108,7 +108,7 @@ int main(int, char**) {
     std::unique_ptr<MeshBufferManager> mesh_buf_manager = std::make_unique<MeshBufferManager>();
     std::unique_ptr<BVHManager> bvh_manager = std::make_unique<BVHManager>(gui_settings.get());
 
-    SceneType selected_scene_index = SceneType::OBJ_LOADER;
+    SceneType selected_scene_index = SceneType::RT_MESHES;
     BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
     MeshColor chosen_mesh_color = MeshColor::MATERIAL;
 
@@ -160,7 +160,7 @@ int main(int, char**) {
             static float f = 0.0f;
             const char* scenes[] = { "scene_rt_meshes", "scene_cornell_box", "scene_obj_loader" }; // Dropdown list (combo) items for scene selection
             const char* techniques[] = { "midpoint split", "SAH" }; // Dropdown list (combo) items for technique selection
-            const char* mesh_colors[] = { "material", "normal", "depth"}; // Dropdown list (combo) items for color representation selection
+            const char* mesh_colors[] = {"material", "normal", "depth", "uv"};  // Dropdown list (combo) items for color representation selection
             const char* block_sizes[] = {"8x8", "16x16", "64x64"}; // Dropdown list (combo) items for block size selection
             
             ImGui::Begin("Ray Tracer");                          // Create a window called "Hello, world!" and append into it.
@@ -189,7 +189,7 @@ int main(int, char**) {
             if (debug_rays == false) ImGui::EndDisabled();  // Re-enable UI interactions
             ImGui::Separator();
 
-            int scene_index = static_cast<int>(selected_scene_index); // Convert enum class to int
+            int scene_index = static_cast<int>(selected_scene_index); // Convert enum class to int (bceause ImGui is C library)
             bool scene_changed = ImGui::Combo("Scene", &scene_index, scenes, IM_ARRAYSIZE(scenes)); // Ret value is true when combo has changed
             selected_scene_index = static_cast<SceneType>(scene_index); // Convert int back to enum class
 
@@ -218,17 +218,17 @@ int main(int, char**) {
                     case SceneType::RT_MESHES:  // scene_rt_meshes
                         active_scene = std::make_unique<SceneRtMeshes>();
                         active_scene->context = context;
-                        active_scene->initialize();
+                        active_scene->initialize(cam);
                         break;
                     case SceneType::CORNELL_BOX:  // scene_cornell_box
                         active_scene = std::make_unique<SceneCornellBox>();
                         active_scene->context = context;
-                        active_scene->initialize();
+                        active_scene->initialize(cam);
                         break;
                     case SceneType::OBJ_LOADER:  // scene_custom_meshes
                         active_scene = std::make_unique<SceneObjLoader>();
                         active_scene->context = context;
-                        active_scene->initialize();
+                        active_scene->initialize(cam);
                         break;
                 }
             }
