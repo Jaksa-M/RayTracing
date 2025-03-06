@@ -27,8 +27,8 @@ private:
     std::shared_ptr<Mesh> line_cube_;
     std::shared_ptr<RTMesh> cube_mesh_;
     std::shared_ptr<RTMesh> cube_sphere_;
-    std::shared_ptr<RTMesh> ico_sphere1_;
-    std::shared_ptr<RTMesh> ico_sphere2_;
+    std::shared_ptr<RTMesh> ico_sphere_;
+    std::shared_ptr<RTMesh> triangle_sphere_;
     std::shared_ptr<RTMesh> rectangle_mesh_;
     std::shared_ptr<RTMesh> rect_prism_mesh1_;
     std::shared_ptr<RTMesh> rect_prism_mesh2_;

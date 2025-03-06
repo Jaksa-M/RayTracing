@@ -1,5 +1,5 @@
 #include "mesh_buffer_manager.h"
-#include <cassert>  // C++
+#include <cassert>  // assert
 
 inline std::uint32_t getComponentCount(AttributeType type) {
     switch (type) {

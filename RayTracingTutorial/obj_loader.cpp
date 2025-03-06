@@ -10,6 +10,7 @@
 #include "RTMesh.h"
 #include "texture.h"
 #include "texture_loader.h"
+#include <cassert>  // assert
 
 ObjLoader::ObjLoader(std::string file) : file_(fs::path(file)) {}
 
@@ -67,9 +68,18 @@ bool ObjLoader::load(Context& context) {
             materials_.push_back(mat);
             materials_indices_.push_back(material_id);
         }
-
+        std::vector<std::uint32_t> indices_uv;
         for (std::uint32_t i = 0; i < shapes[s].mesh.indices.size(); i++) {
             indices.push_back(shapes[s].mesh.indices[i].vertex_index);
+            indices_uv.push_back(shapes[s].mesh.indices[i].texcoord_index);
+            //assert(shapes[s].mesh.indices[i].vertex_index == shapes[s].mesh.indices[i].texcoord_index);
+            //assert(shapes[s].mesh.indices[i].texcoord_index == -1);
+        }
+
+        for (std::uint32_t i = 0; i < indices_uv.size(); i++)
+        {
+            if (indices_uv[i] == -1)
+                std::cout << "i: " << i << std::endl;
         }
 
         for (size_t i = 0; i < attrib.vertices.size(); i += 3) {
@@ -92,7 +102,11 @@ bool ObjLoader::load(Context& context) {
         // Convert vertex_normals from vec3 to float
         std::span<const float> float_vertex_normals =
             std::span<const float>(reinterpret_cast<const float*>(vertex_normals.data()), vertex_normals.size() * 3);
-
+        /*if (uv.size() / 2 < vertices.size() / 3) {
+            for (int i = uv.size(); i < (vertices.size() / 3) * 2; i++) {
+                uv.push_back(0.0f);
+            }
+        }*/
         std::vector<Attribute> attributes;
         attributes.push_back(Attribute(AttributeType::Position, vertices));
         attributes.push_back(Attribute(AttributeType::Normal, float_vertex_normals));

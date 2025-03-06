@@ -9,6 +9,7 @@
 #include "gui_settings.h"
 #include "bvh_manager.h"
 #include "types.h"
+#include "texture_loader.h"
 
 std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(Context& context, const std::shared_ptr<Material>& mat,
         unsigned int num_of_vert, vec3 center , vec3 size)  // creating an unit cube
@@ -19,14 +20,15 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(Context& context, const 
     vec3 min = center - (size * 0.5);
     vec3 max = center + (size * 0.5);
     vec3 d = (max - min) / static_cast<float>(num_of_vert - 1);
-
+    std::vector<float> tex_coords;
     // center and normalize variables are not used here, since we are drawing cube
-    createFaceVertices(false, center, vertices, num_of_vert, num_of_vert, min.x(), max.y(), max.z(), d.x(), -d.y(), 0.0f); // front
-    createFaceVertices(false, center, vertices, num_of_vert, num_of_vert, min.x(), max.y(), min.z(), d.x(), -d.y(), 0.0f); // back
-    createFaceVertices(false, center, vertices, num_of_vert, num_of_vert, min.x(), max.y(), max.z(), 0.0f, -d.y(), -d.z()); // left
-    createFaceVertices(false, center, vertices, num_of_vert, num_of_vert, max.x(), max.y(), max.z(), 0.0f, -d.y(), -d.z()); // right
-    createFaceVertices(false, center, vertices, num_of_vert, num_of_vert, max.x(), max.y(), max.z(), -d.x(), 0.0f, -d.z()); // top
-    createFaceVertices(false, center, vertices, num_of_vert, num_of_vert, max.x(), min.y(), max.z(), -d.x(), 0.0f, -d.z()); // bottom
+    createFaceVertices(false, center, vertices, num_of_vert, num_of_vert, min.x(), max.y(), max.z(), d.x(), -d.y(), 0.0f, tex_coords);  // front
+    createFaceVertices(false, center, vertices, num_of_vert, num_of_vert, min.x(), max.y(), min.z(), d.x(), -d.y(), 0.0f, tex_coords);  // back
+    createFaceVertices(false, center, vertices, num_of_vert, num_of_vert, min.x(), max.y(), max.z(), 0.0f, -d.y(), -d.z(), tex_coords);  // left
+    createFaceVertices(false, center, vertices, num_of_vert, num_of_vert, max.x(), max.y(), max.z(), 0.0f, -d.y(), -d.z(), tex_coords);  // right
+    createFaceVertices(false, center, vertices, num_of_vert, num_of_vert, max.x(), max.y(), max.z(), -d.x(), 0.0f, -d.z(), tex_coords);  // top
+    createFaceVertices(false, center, vertices, num_of_vert, num_of_vert, max.x(), min.y(), max.z(), -d.x(), 0.0f, -d.z(), tex_coords);  // bottom
+    std::span<const float> float_uvs = std::span<const float>(reinterpret_cast<const float*>(tex_coords.data()), tex_coords.size());
     
     std::vector<unsigned int> indices = createFaceIndices(num_of_vert);
 
@@ -76,6 +78,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(Context& context, const 
 
     attributes.push_back(Attribute(AttributeType::Position, vertices));
     attributes.push_back(Attribute(AttributeType::Normal, float_vertex_normals));
+    attributes.push_back(Attribute(AttributeType::UV, float_uvs));
 
     std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
     context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
@@ -128,13 +131,14 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(Context& context, cons
     vec3 min = center - (size * 0.5);
     vec3 max = center + (size * 0.5);
     vec3 d = (max - min) / static_cast<float>(num_of_vert - 1);
-
-    createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, min.x(), max.y(), max.z(), d.x(), -d.y(), 0.0f); // front
-    createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, min.x(), max.y(), min.z(), d.x(), -d.y(), 0.0f); // back
-    createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, min.x(), max.y(), max.z(), 0.0f, -d.y(), -d.z()); // left
-    createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, max.x(), max.y(), max.z(), 0.0f, -d.y(), -d.z()); // right
-    createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, max.x(), max.y(), max.z(), -d.x(), 0.0f, -d.z()); // top
-    createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, max.x(), min.y(), max.z(), -d.x(), 0.0f, -d.z()); // bottom
+    std::vector<float> tex_coords;
+    createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, min.x(), max.y(), max.z(), d.x(), -d.y(), 0.0f, tex_coords);  // front
+    createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, min.x(), max.y(), min.z(), d.x(), -d.y(), 0.0f, tex_coords);  // back
+    createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, min.x(), max.y(), max.z(), 0.0f, -d.y(), -d.z(), tex_coords);  // left
+    createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, max.x(), max.y(), max.z(), 0.0f, -d.y(), -d.z(), tex_coords);  // right
+    createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, max.x(), max.y(), max.z(), -d.x(), 0.0f, -d.z(), tex_coords);  // top
+    createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, max.x(), min.y(), max.z(), -d.x(), 0.0f, -d.z(), tex_coords);  // bottom
+    std::span<const float> float_uvs = std::span<const float>(reinterpret_cast<const float*>(tex_coords.data()), tex_coords.size());
 
     std::vector<unsigned int> indices = createFaceIndices(num_of_vert);
 
@@ -147,6 +151,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(Context& context, cons
     
     attributes.push_back(Attribute(AttributeType::Position, vertices));
     attributes.push_back(Attribute(AttributeType::Normal, float_vertex_normals));
+    attributes.push_back(Attribute(AttributeType::UV, float_uvs));
 
     std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
     context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
@@ -230,6 +235,20 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateIcosphere(Context& context, const std
     // Apply transformations
     translateAndScale(vertices, center, size);
 
+    std::vector<float> tex_coords;
+    for (size_t i = 0; i < vertices.size(); i += 3) {
+        float x = vertices[i];
+        float y = vertices[i + 1];
+        float z = vertices[i + 2];
+
+        float u = (std::atan2(-z, x) + pi) / (2.0f * pi);
+        float v = std::acos(-y) / pi;
+
+        tex_coords.emplace_back(u);
+        tex_coords.emplace_back(v);
+    }
+    std::span<const float> float_uvs = std::span<const float>(reinterpret_cast<const float*>(tex_coords.data()), tex_coords.size());
+
     std::vector<vec3> vertex_normals(vertices.size() / 3, vec3(0, 0, 0));
     generateTriangleVertexNormals(vertex_normals, vertices, indices, 3);
 
@@ -239,6 +258,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateIcosphere(Context& context, const std
 
     attributes.push_back(Attribute(AttributeType::Position, vertices));
     attributes.push_back(Attribute(AttributeType::Normal, float_vertex_normals));
+    attributes.push_back(Attribute(AttributeType::UV, float_uvs));
 
     std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
     context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
@@ -256,19 +276,11 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(Context& context, c
     vec3 d;
     d.setX((0.5f - (-0.5f)) / (num_of_vert_col - 1));
     d.setZ((0.5f - (-0.5f)) / (num_of_vert_row - 1));
-
+    std::vector<float> tex_coords;
     // center and normalize variables are not used here, since we are drawing rectangle
-    createFaceVertices(false, center, vertices, num_of_vert_row, num_of_vert_col, -0.5f, 0.0f, -0.5f, d.x(), 0.0f, d.z()); // bottom
+    createFaceVertices(false, center, vertices, num_of_vert_row, num_of_vert_col, -0.5f, 0.0f, -0.5f, d.x(), 0.0f, d.z(), tex_coords);  // bottom
 
-    std::vector<vec2> uvs;
-    for (std::uint32_t i = 0; i < num_of_vert_row; i++) {
-        for (std::uint32_t j = 0; j < num_of_vert_col; j++) {
-            float u = static_cast<float>(j) / (num_of_vert_col - 1);
-            float v = static_cast<float>(i) / (num_of_vert_row - 1);
-            uvs.emplace_back(vec2(u, v));
-        }
-    }
-    std::span<const float> float_uvs = std::span<const float>(reinterpret_cast<const float*>(uvs.data()), uvs.size() * 2);
+    std::span<const float> float_uvs = std::span<const float>(reinterpret_cast<const float*>(tex_coords.data()), tex_coords.size());
 
     std::vector<std::uint32_t> indices;
 
@@ -392,7 +404,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTestMesh(Context& context, const std:
 }
 
 void MeshUtils::createFaceVertices(bool normalize, const vec3& center, std::vector<float>& vertices, int num_of_vert_row, int num_of_vert_col, float start_x,
-    float start_y, float start_z, float step_x, float step_y, float step_z)
+    float start_y, float start_z, float step_x, float step_y, float step_z, std::vector<float>& tex_coords)
 {
     for (int i = 0; i < num_of_vert_row; i++) {
         for (int j = 0; j < num_of_vert_col; j++) {
@@ -414,6 +426,12 @@ void MeshUtils::createFaceVertices(bool normalize, const vec3& center, std::vect
                 vertices.emplace_back(val_y);
                 vertices.emplace_back(val_z);
             }
+
+            // Generate texture coordinates (u, v)
+            float u = static_cast<float>(j) / (num_of_vert_col - 1);  // Maps x-axis to [0,1]
+            float v = static_cast<float>(i) / (num_of_vert_row - 1);  // Maps y-axis to [0,1]
+            tex_coords.emplace_back(u);
+            tex_coords.emplace_back(v);
         }
     }
 }

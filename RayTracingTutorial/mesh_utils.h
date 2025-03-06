@@ -34,7 +34,7 @@ public:
 
 private: // helper functions
 	static void createFaceVertices(bool normalize, const vec3& center, std::vector<float>& vertices, int num_of_vert_col, int num_of_vert_row,
-		float start_x, float start_y, float start_z, float step_x, float step_y, float step_z);
+		float start_x, float start_y, float start_z, float step_x, float step_y, float step_z, std::vector<float>& tex_coords);
 	static std::vector<unsigned int> createFaceIndices(int num_of_vert);
 	static void PrintVertices(const std::vector<float>& vertices);
 	static void addVertex(bool normalize, const vec3& center, std::vector<float>& vertices, const vec3& position);
