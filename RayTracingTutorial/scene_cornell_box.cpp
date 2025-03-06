@@ -82,14 +82,6 @@ void SceneCornellBox::initialize(Camera& cam) {
 	world_.add(rect_mesh_right_);
 	world_.add(rect_mesh_back_);
 
-	rt_meshes_.push_back(rect_prism_mesh_);
-    rt_meshes_.push_back(cube_mesh_);
-    rt_meshes_.push_back(rect_mesh_top_);
-    rt_meshes_.push_back(rect_mesh_bottom_);
-    rt_meshes_.push_back(rect_mesh_left_);
-    rt_meshes_.push_back(rect_mesh_right_);
-    rt_meshes_.push_back(rect_mesh_back_);
-
 	initShader();
 }
 
@@ -100,9 +92,7 @@ std::vector<unsigned char> SceneCornellBox::update(int display_w, int display_h,
 	}
 
 	// Update RTMesh vertices/indices/uvs/normals once per frame
-    for (int i = 0; i < rt_meshes_.size(); i++) {
-        rt_meshes_[i]->update();
-    }
+    world_.update();
 
 	std::vector<unsigned char> image_data;
 	image_data = cam.render(world_, image_data_acc_, *(context.settings));

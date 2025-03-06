@@ -28,7 +28,6 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(Context& context, const 
     createFaceVertices(false, center, vertices, num_of_vert, num_of_vert, max.x(), max.y(), max.z(), 0.0f, -d.y(), -d.z(), tex_coords);  // right
     createFaceVertices(false, center, vertices, num_of_vert, num_of_vert, max.x(), max.y(), max.z(), -d.x(), 0.0f, -d.z(), tex_coords);  // top
     createFaceVertices(false, center, vertices, num_of_vert, num_of_vert, max.x(), min.y(), max.z(), -d.x(), 0.0f, -d.z(), tex_coords);  // bottom
-    std::span<const float> float_uvs = std::span<const float>(reinterpret_cast<const float*>(tex_coords.data()), tex_coords.size());
     
     std::vector<unsigned int> indices = createFaceIndices(num_of_vert);
 
@@ -78,7 +77,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(Context& context, const 
 
     attributes.push_back(Attribute(AttributeType::Position, vertices));
     attributes.push_back(Attribute(AttributeType::Normal, float_vertex_normals));
-    attributes.push_back(Attribute(AttributeType::UV, float_uvs));
+    attributes.push_back(Attribute(AttributeType::UV, tex_coords));
 
     std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
     context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
@@ -138,7 +137,6 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(Context& context, cons
     createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, max.x(), max.y(), max.z(), 0.0f, -d.y(), -d.z(), tex_coords);  // right
     createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, max.x(), max.y(), max.z(), -d.x(), 0.0f, -d.z(), tex_coords);  // top
     createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, max.x(), min.y(), max.z(), -d.x(), 0.0f, -d.z(), tex_coords);  // bottom
-    std::span<const float> float_uvs = std::span<const float>(reinterpret_cast<const float*>(tex_coords.data()), tex_coords.size());
 
     std::vector<unsigned int> indices = createFaceIndices(num_of_vert);
 
@@ -151,7 +149,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(Context& context, cons
     
     attributes.push_back(Attribute(AttributeType::Position, vertices));
     attributes.push_back(Attribute(AttributeType::Normal, float_vertex_normals));
-    attributes.push_back(Attribute(AttributeType::UV, float_uvs));
+    attributes.push_back(Attribute(AttributeType::UV, tex_coords));
 
     std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
     context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
@@ -247,7 +245,6 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateIcosphere(Context& context, const std
         tex_coords.emplace_back(u);
         tex_coords.emplace_back(v);
     }
-    std::span<const float> float_uvs = std::span<const float>(reinterpret_cast<const float*>(tex_coords.data()), tex_coords.size());
 
     std::vector<vec3> vertex_normals(vertices.size() / 3, vec3(0, 0, 0));
     generateTriangleVertexNormals(vertex_normals, vertices, indices, 3);
@@ -258,7 +255,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateIcosphere(Context& context, const std
 
     attributes.push_back(Attribute(AttributeType::Position, vertices));
     attributes.push_back(Attribute(AttributeType::Normal, float_vertex_normals));
-    attributes.push_back(Attribute(AttributeType::UV, float_uvs));
+    attributes.push_back(Attribute(AttributeType::UV, tex_coords));
 
     std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
     context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
@@ -279,8 +276,6 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(Context& context, c
     std::vector<float> tex_coords;
     // center and normalize variables are not used here, since we are drawing rectangle
     createFaceVertices(false, center, vertices, num_of_vert_row, num_of_vert_col, -0.5f, 0.0f, -0.5f, d.x(), 0.0f, d.z(), tex_coords);  // bottom
-
-    std::span<const float> float_uvs = std::span<const float>(reinterpret_cast<const float*>(tex_coords.data()), tex_coords.size());
 
     std::vector<std::uint32_t> indices;
 
@@ -329,7 +324,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(Context& context, c
 
     attributes.push_back(Attribute(AttributeType::Position, vertices));
     attributes.push_back(Attribute(AttributeType::Normal, float_vertex_normals));
-    attributes.push_back(Attribute(AttributeType::UV, float_uvs));
+    attributes.push_back(Attribute(AttributeType::UV, tex_coords));
 
     std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
     context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);

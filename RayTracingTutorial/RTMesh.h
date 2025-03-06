@@ -36,7 +36,7 @@ public:
 
     void setTransformationMatrix(const matrix4x4& mat) override;
 
-    void update();
+    void update() override;
 
 private:
     Context& context_;

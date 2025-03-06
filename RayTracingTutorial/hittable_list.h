@@ -16,6 +16,12 @@ public:
 
     bool hit(const ray& r, interval ray_t, HitRecord& rec) const override;
 
+    void update() {
+        for (int i = 0; i < objects_.size(); i++) {
+            objects_[i]->update();
+        }
+    }
+
 };
 
 #endif

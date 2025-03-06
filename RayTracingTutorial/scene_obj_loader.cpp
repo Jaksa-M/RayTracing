@@ -28,12 +28,9 @@ void SceneObjLoader::initialize(Camera& cam) {
     background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight());
     cam.setBackgroundTexture(background_texture_);
 
-    //erato_texture_ = std::make_shared<Texture>("Resources/erato/erato.jpg");
-    //std::shared_ptr<Lambertian> mat_erato_ = std::make_shared<Lambertian>(erato_texture_);
-
     auto mat_green = std::make_shared<Lambertian>(color(0.0f, 1.0f, 0.0f));
 
-    auto start_time = std::chrono::high_resolution_clock::now();  // Start timing
+    auto start_time = std::chrono::high_resolution_clock::now(); // Start timing
 
     obj_loader_ = std::make_unique<ObjLoader>("Resources/teapot/teapot.obj");
     if (!obj_loader_->load(context)) {
@@ -49,7 +46,6 @@ void SceneObjLoader::initialize(Camera& cam) {
         } else { // if there are no materials specified in obj file
             rt_meshes_.push_back(std::make_shared<RTMesh>(context, meshes[i], mat_green));
         }
-        //rt_meshes_.push_back(std::make_shared<RTMesh>(context, meshes[i], mat_erato_));
     }
     matrix4x4 m = transformation::create_scaling_matrix(0.02f, 0.02f, 0.02f); // teapot
     //matrix4x4 m = transformation::create_scaling_matrix(1.0f, 1.0f, 1.0f); // sponza
@@ -73,9 +69,7 @@ std::vector<unsigned char> SceneObjLoader::update(int display_w, int display_h, 
     }
 
     // Update RTMesh vertices/indices/uvs/normals once per frame
-    for (int i = 0; i < rt_meshes_.size(); i++) {
-        rt_meshes_[i]->update();
-    }
+    world_.update();
 
     std::vector<unsigned char> image_data;
     image_data = cam.render(world_, image_data_acc_, *(context.settings));

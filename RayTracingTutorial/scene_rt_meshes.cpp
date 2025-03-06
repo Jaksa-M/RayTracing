@@ -48,33 +48,30 @@ void SceneRtMeshes::initialize(Camera& cam) {
                   transformation::create_translation_matrix(vec3(-2.0f, 0.0f, 0.0f)); // 30 degree rotation on y-axis + translation on x-axis
     rect_prism_mesh1_->setTransformationMatrix(m);
     world_.add(rect_prism_mesh1_);
-    rt_meshes_.push_back(rect_prism_mesh1_);
 
     rect_prism_mesh2_ = std::make_shared<RTMesh>(context, rect_prism_mesh1_->getMeshHandle(), texture_mat);
     m = transformation::create_rotation_matrix(0.0f, 70.0f * (3.14159f / 180.0f), 0.0f) *
         transformation::create_translation_matrix(vec3(2.0f, 0.0f, 0.0f)); // 70 degree rotation on y-axis + translation on x-axis
     rect_prism_mesh2_->setTransformationMatrix(m);
     world_.add(rect_prism_mesh2_);
-    rt_meshes_.push_back(rect_prism_mesh2_);
 
     /*ico_sphere_ = MeshUtils::GenerateIcosphere(context, texture_mat, 2);
     matrix4x4 m = transformation::create_translation_matrix(vec3(1.0f, 0.0f, 0.0f));
     ico_sphere_->setTransformationMatrix(m);
     world_.add(ico_sphere_);
-    rt_meshes_.push_back(ico_sphere_);*/
+    */
 
     /*triangle_sphere_ = MeshUtils::GenerateTriangleSphere(context, texture_mat, 6);
     matrix4x4 m = matrix4x4::identity();
     triangle_sphere_->setTransformationMatrix(m);
     world_.add(triangle_sphere_);
-    rt_meshes_.push_back(triangle_sphere_);*/
+    */
 
     //rect_mesh_back_ = MeshUtils::GenerateTriangleRectangle(context, texture_mat, 2, 2);
     ////m = transformation::create_translation_matrix(vec3(0.0f, 1.0f, -0.99f));
     //    //transformation::create_rotation_matrix(90.0f * (3.14159f / 180.0f), 0.0f, 0.0f) * transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
     //rect_mesh_back_->setTransformationMatrix(matrix4x4::identity());
     //world_.add(rect_mesh_back_);
-    //rt_meshes_.push_back(rect_mesh_back_);
 
     initShader();
 }
@@ -86,9 +83,7 @@ std::vector<unsigned char> SceneRtMeshes::update(int display_w, int display_h, C
     }
 
     // Update RTMesh vertices/indices/uvs/normals/bvhNodes once per frame
-    for (int i = 0; i < rt_meshes_.size(); i++) {
-        rt_meshes_[i]->update();
-    }
+    world_.update();
 
     std::vector<unsigned char> image_data;
     image_data = cam.render(world_, image_data_acc_, *(context.settings));

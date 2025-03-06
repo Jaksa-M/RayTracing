@@ -24,15 +24,19 @@ bool TextureLoader::load() {
     // Pixels are contiguous, going left to right for the width of the image, followed by the next row
     // below, for the full height of the image.
 
-    auto n = bytes_per_pixel_;
-    float* raw_fdata = stbi_loadf(file_path.c_str(), &image_width_, &image_height_, &n, bytes_per_pixel_);
-    if (raw_fdata == nullptr) return false;
+    int n = bytes_per_pixel_;
+    int w, h;
+    float* raw_fdata = stbi_loadf(file_path.c_str(), &w, &h, &n, bytes_per_pixel_);
+    if (raw_fdata == nullptr || w < 0 || h < 0) return false;
 
-    int total_bytes = image_width_ * image_height_ * bytes_per_pixel_;
+    image_width_ = static_cast<uint32_t>(w);
+    image_height_ = static_cast<uint32_t>(h);
+
+    std::uint32_t total_bytes = image_width_ * image_height_ * bytes_per_pixel_;
 
     bdata_.resize(total_bytes);
 
-    for (int i = 0; i < total_bytes; i++) {
+    for (std::uint32_t i = 0; i < total_bytes; i++) {
         bdata_[i] = floatToByte(raw_fdata[i]);
     }
 
@@ -45,19 +49,12 @@ std::vector<unsigned char> TextureLoader::getData() const {
     return bdata_;
 }
 
-int TextureLoader::getImageWidth() const {
+std::uint32_t TextureLoader::getImageWidth() const {
     return image_width_;
 }
 
-int TextureLoader::getImageHeight() const {
+std::uint32_t TextureLoader::getImageHeight() const {
     return image_height_;
-}
-
-int TextureLoader::clamp(int x, int low, int high) {
-    // Return the value clamped to the range [low, high).
-    if (x < low) return low;
-    if (x < high) return x;
-    return high - 1;
 }
 
 unsigned char TextureLoader::floatToByte(float value) {
