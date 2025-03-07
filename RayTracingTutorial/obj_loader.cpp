@@ -37,13 +37,30 @@ bool ObjLoader::load(Context& context) {
     auto& shapes = reader.GetShapes();
     auto& materials = reader.GetMaterials();
 
+    std::vector<float> all_vertices;
+    std::vector<vec3> face_normals;
+    std::vector<float> uv;
+
+    for (size_t i = 0; i < attrib.vertices.size(); i += 3) {
+        all_vertices.push_back(attrib.vertices[i]);  // x
+        all_vertices.push_back(attrib.vertices[i + 1]);  // y
+        all_vertices.push_back(attrib.vertices[i + 2]);  // z
+    }
+
+    for (size_t i = 0; i < attrib.normals.size(); i += 3) {
+        face_normals.push_back(vec3(attrib.normals[i], attrib.normals[i + 1], attrib.normals[i + 2]));
+    }
+
+    for (size_t i = 0; i < attrib.texcoords.size(); i += 2) {
+        uv.push_back(attrib.texcoords[i]);
+        uv.push_back(attrib.texcoords[i + 1]);
+    }
+
     // Loop over shapes
     for (size_t s = 0; s < shapes.size(); s++) {
-
-        std::vector<float> vertices;
+        //if (s % 3 == 0) continue;
         std::vector<std::uint32_t> indices;
-        std::vector<vec3> face_normals;
-        std::vector<float> uv;
+        std::vector<float> vertices;
 
         // Assigning materials to mesh the belong
         if (materials.empty() == false) {
@@ -69,27 +86,34 @@ bool ObjLoader::load(Context& context) {
             materials_indices_.push_back(material_id);
         }
 
-        for (std::uint32_t i = 0; i < shapes[s].mesh.indices.size(); i++) {
+        std::unordered_map<std::uint32_t, std::uint32_t> vertex_map;
+        std::uint32_t new_index = 0;
+
+        for (const auto& index : shapes[s].mesh.indices) {
+            std::uint32_t old_index = index.vertex_index;
+
+            // If vertex is already mapped, reuse the mapped index
+            if (vertex_map.count(old_index)) {
+                indices.push_back(vertex_map[old_index]);
+            } else {
+                // Map old index to new index
+                vertex_map[old_index] = new_index++;
+                indices.push_back(vertex_map[old_index]);
+
+                // Push the new vertex position
+                std::size_t v_offset = old_index * 3;
+                vertices.push_back(attrib.vertices[v_offset]);
+                vertices.push_back(attrib.vertices[v_offset + 1]);
+                vertices.push_back(attrib.vertices[v_offset + 2]);
+            }
+        }
+
+        /*for (std::uint32_t i = 0; i < shapes[s].mesh.indices.size(); i++) {
             indices.push_back(shapes[s].mesh.indices[i].vertex_index);
-        }
-
-        for (size_t i = 0; i < attrib.vertices.size(); i += 3) {
-            vertices.push_back(attrib.vertices[i]);      // x
-            vertices.push_back(attrib.vertices[i + 1]);  // y
-            vertices.push_back(attrib.vertices[i + 2]);  // z
-        }
-
-        for (size_t i = 0; i < attrib.normals.size(); i += 3) {
-            face_normals.push_back(vec3(attrib.normals[i], attrib.normals[i + 1], attrib.normals[i + 2]));
-        }
-
-        for (size_t i = 0; i < attrib.texcoords.size(); i += 2) {
-            uv.push_back(attrib.texcoords[i]);
-            uv.push_back(attrib.texcoords[i + 1]);
-        }
+        }*/
 
         // Calculate normals for each vertex
-        std::vector<float> vertex_normals(vertices.size(), 0.0f);
+        std::vector<float> vertex_normals(all_vertices.size(), 0.0f);
         /*if (uv.size() / 2 < vertices.size() / 3) {
             for (int i = uv.size(); i < (vertices.size() / 3) * 2; i++) {
                 uv.push_back(0.0f);
