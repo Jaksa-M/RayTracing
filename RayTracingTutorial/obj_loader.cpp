@@ -37,30 +37,32 @@ bool ObjLoader::load(Context& context) {
     auto& shapes = reader.GetShapes();
     auto& materials = reader.GetMaterials();
 
-    std::vector<float> all_vertices;
-    std::vector<vec3> face_normals;
-    std::vector<float> uv;
+    //std::vector<float> all_vertices;
+    //std::vector<vec3> face_normals;
+    //
 
-    for (size_t i = 0; i < attrib.vertices.size(); i += 3) {
-        all_vertices.push_back(attrib.vertices[i]);  // x
-        all_vertices.push_back(attrib.vertices[i + 1]);  // y
-        all_vertices.push_back(attrib.vertices[i + 2]);  // z
-    }
+    //for (size_t i = 0; i < attrib.vertices.size(); i += 3) {
+    //    all_vertices.push_back(attrib.vertices[i]);  // x
+    //    all_vertices.push_back(attrib.vertices[i + 1]);  // y
+    //    all_vertices.push_back(attrib.vertices[i + 2]);  // z
+    //}
 
-    for (size_t i = 0; i < attrib.normals.size(); i += 3) {
-        face_normals.push_back(vec3(attrib.normals[i], attrib.normals[i + 1], attrib.normals[i + 2]));
-    }
+    //for (size_t i = 0; i < attrib.normals.size(); i += 3) {
+    //    face_normals.push_back(vec3(attrib.normals[i], attrib.normals[i + 1], attrib.normals[i + 2]));
+    //}
 
-    for (size_t i = 0; i < attrib.texcoords.size(); i += 2) {
+    /*for (size_t i = 0; i < attrib.texcoords.size(); i += 2) {
         uv.push_back(attrib.texcoords[i]);
         uv.push_back(attrib.texcoords[i + 1]);
-    }
+    }*/
 
     // Loop over shapes
     for (size_t s = 0; s < shapes.size(); s++) {
         //if (s % 3 == 0) continue;
         std::vector<std::uint32_t> indices;
         std::vector<float> vertices;
+        std::vector<float> vertex_normals;
+        std::vector<float> uv;
 
         // Assigning materials to mesh the belong
         if (materials.empty() == false) {
@@ -89,31 +91,52 @@ bool ObjLoader::load(Context& context) {
         std::unordered_map<std::uint32_t, std::uint32_t> vertex_map;
         std::uint32_t new_index = 0;
 
+
         for (const auto& index : shapes[s].mesh.indices) {
-            std::uint32_t old_index = index.vertex_index;
+            // Create a unique key using 21 bits for each index
+            std::uint64_t key = (static_cast<std::uint64_t>(index.vertex_index) & 0x1FFFFF) |
+                                ((static_cast<std::uint64_t>(index.normal_index) & 0x1FFFFF) << 21) |
+                                ((static_cast<std::uint64_t>(index.texcoord_index) & 0x1FFFFF) << 42);
 
             // If vertex is already mapped, reuse the mapped index
-            if (vertex_map.count(old_index)) {
-                indices.push_back(vertex_map[old_index]);
+            if (vertex_map.count(key)) {
+                indices.push_back(vertex_map[key]);
             } else {
-                // Map old index to new index
-                vertex_map[old_index] = new_index++;
-                indices.push_back(vertex_map[old_index]);
+                // Map old key to new index
+                vertex_map[key] = new_index++;
+                indices.push_back(vertex_map[key]);
 
-                // Push the new vertex position
-                std::size_t v_offset = old_index * 3;
+                std::size_t v_offset = index.vertex_index * 3;
                 vertices.push_back(attrib.vertices[v_offset]);
                 vertices.push_back(attrib.vertices[v_offset + 1]);
                 vertices.push_back(attrib.vertices[v_offset + 2]);
+
+                std::size_t n_offset;
+                if (index.normal_index >= 0) {
+                    n_offset = index.normal_index * 3;
+                    vertex_normals.push_back(attrib.normals[n_offset]);
+                    vertex_normals.push_back(attrib.normals[n_offset + 1]);
+                    vertex_normals.push_back(attrib.normals[n_offset + 2]);
+                } else {
+                    //std::cout << "normals is -1" << std::endl;
+                    vertex_normals.push_back(0.0f);
+                    vertex_normals.push_back(0.0f);
+                    vertex_normals.push_back(0.0f);
+                }
+
+                std::size_t t_offset; 
+                if (index.texcoord_index >= 0) {
+                    t_offset = index.texcoord_index * 2;
+                    uv.push_back(attrib.texcoords[t_offset]);
+                    uv.push_back(attrib.texcoords[t_offset + 1]);
+                } else {
+                    //std::cout << "tex is -1" << std::endl;
+                    uv.push_back(0.0f);
+                    uv.push_back(0.0f);
+                }
             }
         }
 
-        /*for (std::uint32_t i = 0; i < shapes[s].mesh.indices.size(); i++) {
-            indices.push_back(shapes[s].mesh.indices[i].vertex_index);
-        }*/
-
-        // Calculate normals for each vertex
-        std::vector<float> vertex_normals(all_vertices.size(), 0.0f);
         /*if (uv.size() / 2 < vertices.size() / 3) {
             for (int i = uv.size(); i < (vertices.size() / 3) * 2; i++) {
                 uv.push_back(0.0f);
