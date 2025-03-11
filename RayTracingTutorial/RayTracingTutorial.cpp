@@ -160,7 +160,7 @@ int main(int, char**) {
             static float f = 0.0f;
             const char* scenes[] = { "scene_rt_meshes", "scene_cornell_box", "scene_obj_loader" }; // Dropdown list (combo) items for scene selection
             const char* techniques[] = { "midpoint split", "SAH" }; // Dropdown list (combo) items for technique selection
-            const char* mesh_colors[] = {"material", "normal", "depth", "uv"};  // Dropdown list (combo) items for color representation selection
+            const char* mesh_colors[] = {"material", "geometric normal", "shading normal", "depth", "uv"};  // Dropdown list (combo) items for color representation selection
             const char* block_sizes[] = {"8x8", "16x16", "64x64"}; // Dropdown list (combo) items for block size selection
             
             ImGui::Begin("Ray Tracer");                          // Create a window called "Hello, world!" and append into it.

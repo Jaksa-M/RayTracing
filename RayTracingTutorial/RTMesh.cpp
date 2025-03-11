@@ -110,9 +110,6 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
         vec2 uv = barycentricInterpolate(uv0, uv1, uv2, intersect_result.buv);
         rec.u = uv[0];
         rec.v = uv[1];
-        /*if (rec.u != 0.0f || rec.v != 0.0f) {
-            std::cout << "u: " << rec.u << ", v: " << rec.v << std::endl;
-        }*/
     }
 
     return closest_hit_t != std::numeric_limits<float>::max();

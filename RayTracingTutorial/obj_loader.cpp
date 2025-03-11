@@ -37,25 +37,6 @@ bool ObjLoader::load(Context& context) {
     auto& shapes = reader.GetShapes();
     auto& materials = reader.GetMaterials();
 
-    //std::vector<float> all_vertices;
-    //std::vector<vec3> face_normals;
-    //
-
-    //for (size_t i = 0; i < attrib.vertices.size(); i += 3) {
-    //    all_vertices.push_back(attrib.vertices[i]);  // x
-    //    all_vertices.push_back(attrib.vertices[i + 1]);  // y
-    //    all_vertices.push_back(attrib.vertices[i + 2]);  // z
-    //}
-
-    //for (size_t i = 0; i < attrib.normals.size(); i += 3) {
-    //    face_normals.push_back(vec3(attrib.normals[i], attrib.normals[i + 1], attrib.normals[i + 2]));
-    //}
-
-    /*for (size_t i = 0; i < attrib.texcoords.size(); i += 2) {
-        uv.push_back(attrib.texcoords[i]);
-        uv.push_back(attrib.texcoords[i + 1]);
-    }*/
-
     // Loop over shapes
     for (size_t s = 0; s < shapes.size(); s++) {
         //if (s % 3 == 0) continue;
@@ -76,13 +57,13 @@ bool ObjLoader::load(Context& context) {
                 if (!tex_loader.load()) {
                     std::cerr << "ERROR: Could not load texture file '" << texture_path << "'.\n";
                 }
-                std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight());
+                std::shared_ptr<Texture> tex =
+                    std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight());
                 mat = std::make_shared<Lambertian>(tex);
                 materials_.push_back(mat);
             } else {
                 color col(materials[material_id].diffuse[0], materials[material_id].diffuse[1], materials[material_id].diffuse[2]);
                 mat = std::make_shared<Lambertian>(col);
-                
             }
             materials_.push_back(mat);
             materials_indices_.push_back(material_id);
@@ -90,7 +71,6 @@ bool ObjLoader::load(Context& context) {
 
         std::unordered_map<std::uint32_t, std::uint32_t> vertex_map;
         std::uint32_t new_index = 0;
-
 
         for (const auto& index : shapes[s].mesh.indices) {
             // Create a unique key using 21 bits for each index
@@ -114,17 +94,12 @@ bool ObjLoader::load(Context& context) {
                 std::size_t n_offset;
                 if (index.normal_index >= 0) {
                     n_offset = index.normal_index * 3;
-                    vertex_normals.push_back(attrib.normals[n_offset]);
-                    vertex_normals.push_back(attrib.normals[n_offset + 1]);
                     vertex_normals.push_back(attrib.normals[n_offset + 2]);
-                } else {
-                    //std::cout << "normals is -1" << std::endl;
-                    vertex_normals.push_back(0.0f);
-                    vertex_normals.push_back(0.0f);
-                    vertex_normals.push_back(0.0f);
+                    vertex_normals.push_back(attrib.normals[n_offset + 1]);
+                    vertex_normals.push_back(attrib.normals[n_offset]);
                 }
 
-                std::size_t t_offset; 
+                std::size_t t_offset;
                 if (index.texcoord_index >= 0) {
                     t_offset = index.texcoord_index * 2;
                     uv.push_back(attrib.texcoords[t_offset]);
@@ -136,12 +111,37 @@ bool ObjLoader::load(Context& context) {
                 }
             }
         }
+        if (vertex_normals.empty()) { // Case when index.normal_index = -1, we have to calculate vertex normals manually
+            std::vector<vec3> temp_normals(vertices.size() / 3, vec3(0.0f));
 
-        /*if (uv.size() / 2 < vertices.size() / 3) {
-            for (int i = uv.size(); i < (vertices.size() / 3) * 2; i++) {
-                uv.push_back(0.0f);
+            // Loop through each face and accumulate normals
+            for (size_t i = 0; i < indices.size(); i += 3) {
+                uint32_t i0 = indices[i];
+                uint32_t i1 = indices[i + 1];
+                uint32_t i2 = indices[i + 2];
+
+                vec3 v0(vertices[i0 * 3], vertices[i0 * 3 + 1], vertices[i0 * 3 + 2]);
+                vec3 v1(vertices[i1 * 3], vertices[i1 * 3 + 1], vertices[i1 * 3 + 2]);
+                vec3 v2(vertices[i2 * 3], vertices[i2 * 3 + 1], vertices[i2 * 3 + 2]);
+
+                // Compute the face normal
+                vec3 normal = unit_vector(cross(v1 - v0, v2 - v0));
+
+                // Accumulate normals
+                temp_normals[i0] += normal;
+                temp_normals[i1] += normal;
+                temp_normals[i2] += normal;
             }
-        }*/
+
+            // Normalize accumulated normals
+            for (const auto& n : temp_normals) {
+                vec3 normalized_n = unit_vector(n);
+                vertex_normals.push_back(normalized_n.x());
+                vertex_normals.push_back(normalized_n.y());
+                vertex_normals.push_back(normalized_n.z());
+            }
+        }
+        
         std::vector<Attribute> attributes;
         attributes.push_back(Attribute(AttributeType::Position, vertices));
         attributes.push_back(Attribute(AttributeType::Normal, vertex_normals));
