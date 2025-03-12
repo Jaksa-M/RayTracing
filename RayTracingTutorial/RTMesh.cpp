@@ -73,7 +73,7 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
     intersectBVH(changed_ray, ray_t, intersect_result, 0, closest_hit_t);
 
     if (closest_hit_t != std::numeric_limits<float>::max()) {
-        rec.type_of_normal = true;
+        rec.type_of_normal = false;
         rec.object_type = "triangle";
         rec.mat = mat_;
 

@@ -45,11 +45,14 @@ bool ObjLoader::load(Context& context) {
         std::vector<float> vertex_normals;
         std::vector<float> uv;
 
-        // Assigning materials to mesh the belong
+        // Assigning materials to mesh they belong
         if (materials.empty() == false) {
             int material_id = shapes[s].mesh.material_ids[0];
             std::shared_ptr<Material> mat;
-
+            /*assert([&]() {
+                const auto& ids = shapes[s].mesh.material_ids;
+                return std::all_of(ids.begin(), ids.end(), [&](int id) { return id == ids[0]; });
+            }());*/
             // Check if diffuse is specified with image texture
             if (materials[material_id].diffuse_texname.empty() == false) {
                 fs::path texture_path = file_.parent_path() / "textures" / materials[material_id].diffuse_texname;
@@ -60,16 +63,18 @@ bool ObjLoader::load(Context& context) {
                 std::shared_ptr<Texture> tex =
                     std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight());
                 mat = std::make_shared<Lambertian>(tex);
-                materials_.push_back(mat);
             } else {
                 color col(materials[material_id].diffuse[0], materials[material_id].diffuse[1], materials[material_id].diffuse[2]);
                 mat = std::make_shared<Lambertian>(col);
             }
-            materials_.push_back(mat);
+            if (static_cast<int>(materials_.size() - 1) < material_id) {
+                materials_.resize(material_id + 1);
+                materials_[material_id] = mat;
+            }
             materials_indices_.push_back(material_id);
         }
 
-        std::unordered_map<std::uint32_t, std::uint32_t> vertex_map;
+        std::unordered_map<std::uint64_t, std::uint32_t> vertex_map;
         std::uint32_t new_index = 0;
 
         for (const auto& index : shapes[s].mesh.indices) {
@@ -94,9 +99,11 @@ bool ObjLoader::load(Context& context) {
                 std::size_t n_offset;
                 if (index.normal_index >= 0) {
                     n_offset = index.normal_index * 3;
-                    vertex_normals.push_back(attrib.normals[n_offset + 2]);
-                    vertex_normals.push_back(attrib.normals[n_offset + 1]);
                     vertex_normals.push_back(attrib.normals[n_offset]);
+                    vertex_normals.push_back(attrib.normals[n_offset + 1]);
+                    vertex_normals.push_back(attrib.normals[n_offset + 2]);
+                } else {
+                    //std::cout << "USAO" << std::endl;
                 }
 
                 std::size_t t_offset;

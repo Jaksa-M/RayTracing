@@ -29,8 +29,7 @@ public:
         if (scatter_direction.near_zero())
             (rec.type_of_normal == false) ? scatter_direction = rec.face_normal : scatter_direction = rec.shading_normal;
 
-        scattered = ray(rec.p + rec.shading_normal * 0.00001f, scatter_direction);
-        //scattered = ray(rec.p + rec.face_normal * 0.00001f, scatter_direction);
+        scattered = ray(rec.p + rec.face_normal * 0.00001f, scatter_direction);
         attenuation = tex_->value(rec.u, rec.v, rec.p);
         return true;
     }
