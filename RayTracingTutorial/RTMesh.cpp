@@ -154,7 +154,7 @@ bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
             }
         }
         if (closest_intersection.t != float_max) {
-            rec.type_of_normal = false;
+            rec.type_of_normal = true;
             rec.object_type = "triangle";
             rec.mat = mat_;
 
