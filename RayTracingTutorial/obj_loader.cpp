@@ -1,6 +1,9 @@
 #include "obj_loader.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
+#define TINYOBJLOADER_DONOT_INCLUDE_MAPBOX_EARCUT
+#define TINYOBJLOADER_USE_MAPBOX_EARCUT
+#include "tinyobjloader/earcut.hpp" // used for better triangulation of polygons
 #include "tinyobjloader/tiny_obj_loader.h"
 
 #include "context.h"
@@ -42,9 +45,20 @@ bool ObjLoader::load(Context& context) {
     auto& shapes = reader.GetShapes();
     auto& materials = reader.GetMaterials();
 
+    // Adding dummy material in case when material index is -1
+    std::shared_ptr<Material> mat = std::make_shared<Lambertian>(color(0, 1, 0));
+    //materials->push_back(mat);
+
     std::vector<Subshape> all_shapes;
     for (size_t s = 0; s < shapes.size(); s++) {
         std::vector<int> unique_mat_ids = shapes[s].mesh.material_ids;
+
+        for (int& id : unique_mat_ids) {
+            if (id == -1) {
+                id = 0; // Assign default material ID (0 in our case)
+            }
+        }
+
         std::sort(unique_mat_ids.begin(), unique_mat_ids.end());
         unique_mat_ids.erase(std::unique(unique_mat_ids.begin(), unique_mat_ids.end()), unique_mat_ids.end());
 
@@ -164,14 +178,15 @@ bool ObjLoader::load(Context& context) {
                 }
             }
         }
+        //vertex_normals.resize(vertices.size(), 0.0f);
         if (vertex_normals.empty()) { // Case when index.normal_index = -1, we have to calculate vertex normals manually
             std::vector<vec3> temp_normals(vertices.size() / 3, vec3(0.0f));
             
             // Loop through each face and accumulate normals
             for (size_t i = 0; i < indices.size(); i += 3) {
-                uint32_t i0 = indices[i];
-                uint32_t i1 = indices[i + 1];
-                uint32_t i2 = indices[i + 2];
+                std::uint32_t i0 = indices[i];
+                std::uint32_t i1 = indices[i + 1];
+                std::uint32_t i2 = indices[i + 2];
             
                 vec3 v0(vertices[i0 * 3], vertices[i0 * 3 + 1], vertices[i0 * 3 + 2]);
                 vec3 v1(vertices[i1 * 3], vertices[i1 * 3 + 1], vertices[i1 * 3 + 2]);
@@ -187,7 +202,7 @@ bool ObjLoader::load(Context& context) {
             }
             
             // Normalize accumulated normals
-            for (const auto& n : temp_normals) {
+            for (const vec3& n : temp_normals) {
                 vec3 normalized_n = unit_vector(n);
                 vertex_normals.push_back(normalized_n.x());
                 vertex_normals.push_back(normalized_n.y());

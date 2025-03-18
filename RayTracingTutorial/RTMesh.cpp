@@ -291,6 +291,10 @@ void RTMesh::update() {
     res_mesh_info_.uv = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::UV);
 }
 
+int RTMesh::getTriangleCount() const {
+    return res_mesh_info_.indices.size() / 3;
+}
+
 void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, float& closest_hit_t) const {
     const BVHNode& node = res_mesh_info_.bvh_nodes[nodeIdx];
 

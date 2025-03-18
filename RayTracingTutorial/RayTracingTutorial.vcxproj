@@ -195,6 +195,7 @@
     <ClInclude Include="ExternalLibraries\imgui\imstb_truetype.h" />
     <ClInclude Include="ExternalLibraries\stb image\stb_image.h" />
     <ClInclude Include="ExternalLibraries\stb image\stb_image_write.h" />
+    <ClInclude Include="ExternalLibraries\tinyobjloader\earcut.hpp" />
     <ClInclude Include="ExternalLibraries\tinyobjloader\tiny_obj_loader.h" />
     <ClInclude Include="gui_settings.h" />
     <ClInclude Include="hittable.h" />
@@ -208,6 +209,7 @@
     <ClInclude Include="mesh_utils.h" />
     <ClInclude Include="obj_loader.h" />
     <ClInclude Include="ray.h" />
+    <ClInclude Include="statistics.h" />
     <ClInclude Include="texture_loader.h" />
     <ClInclude Include="RTMesh.h" />
     <ClInclude Include="scene.h" />
