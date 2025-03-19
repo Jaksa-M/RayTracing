@@ -48,7 +48,7 @@ bool ObjLoader::load(Context& context) {
     for (auto& mat : reader.GetMaterials()) {
         std::shared_ptr<Material> material;
         if (mat.diffuse_texname.empty() == false) {
-            fs::path texture_path = file_.parent_path() / "textures" / mat.diffuse_texname;
+            fs::path texture_path = file_.parent_path() / mat.diffuse_texname;
             TextureLoader tex_loader(texture_path.string());
             if (!tex_loader.load()) {
                 std::cerr << "ERROR: Could not load texture file '" << texture_path << "'.\n";
