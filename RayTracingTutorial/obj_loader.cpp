@@ -1,9 +1,10 @@
 #include "obj_loader.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
-#define TINYOBJLOADER_DONOT_INCLUDE_MAPBOX_EARCUT
-#define TINYOBJLOADER_USE_MAPBOX_EARCUT
-#include "tinyobjloader/earcut.hpp" // used for better triangulation of polygons
+//#define TINYOBJLOADER_DONOT_INCLUDE_MAPBOX_EARCUT
+//#define TINYOBJLOADER_USE_MAPBOX_EARCUT
+//#include <array> // when we use donot_include macro, we need to include this
+//#include "tinyobjloader/earcut.hpp" // used for better triangulation of polygons
 #include "tinyobjloader/tiny_obj_loader.h"
 
 #include "context.h"
@@ -62,22 +63,22 @@ bool ObjLoader::load(Context& context) {
     }
 
     // Adding dummy material in case when material index is -1
-    std::shared_ptr<Material> mat = std::make_shared<Lambertian>(color(0, 1, 0));
+    std::shared_ptr<Material> mat = std::make_shared<Lambertian>(color(1, 0, 1)); // magenta
     materials_.push_back(mat);
     int dummy_index = materials_.size() - 1;
 
     std::vector<Subshape> all_shapes;
     for (size_t s = 0; s < shapes.size(); s++) {
         std::vector<int> unique_mat_ids = shapes[s].mesh.material_ids;
+        std::sort(unique_mat_ids.begin(), unique_mat_ids.end());
+        unique_mat_ids.erase(std::unique(unique_mat_ids.begin(), unique_mat_ids.end()), unique_mat_ids.end());
 
         for (int& id : unique_mat_ids) {
             if (id == -1) {
                 id = dummy_index;  // Assign default material ID (0 in our case)
-            }
+            } 
+            else break;
         }
-
-        std::sort(unique_mat_ids.begin(), unique_mat_ids.end());
-        unique_mat_ids.erase(std::unique(unique_mat_ids.begin(), unique_mat_ids.end()), unique_mat_ids.end());
 
         // Take the highest material_id to set the vector size properly
         int max_material_id = unique_mat_ids.empty() ? 0 : unique_mat_ids.back();
@@ -105,16 +106,26 @@ bool ObjLoader::load(Context& context) {
         materials_indices_.push_back(all_shapes[s].material_id);
     }
 
+    std::vector<std::uint32_t> indices;
+    std::vector<float> vertices;
+    std::vector<float> vertex_normals;
+    std::vector<float> uv;
+    std::unordered_map<std::uint64_t, std::uint32_t> vertex_map;
     for (size_t s = 0; s < all_shapes.size(); s++) {
-        std::vector<std::uint32_t> indices;
-        std::vector<float> vertices;
-        std::vector<float> vertex_normals;
-        std::vector<float> uv;
-        std::unordered_map<std::uint64_t, std::uint32_t> vertex_map;
+        indices.clear();
+        vertices.clear();
+        vertex_normals.clear();
+        uv.clear();
+        vertex_map.clear();
         std::uint32_t new_index = 0;
 
         for (int i = 0; i < all_shapes[s].tri_indices.size(); i++) {
             const auto& index = all_shapes[s].tri_indices[i];
+
+            // Ensure indices fit within 21 bits
+            assert(index.vertex_index <= 0x1FFFFF);
+            assert(index.normal_index <= 0x1FFFFF);
+            assert(index.texcoord_index <= 0x1FFFFF);
 
             // Create a unique key using 21 bits for each index
             std::uint64_t key = (static_cast<std::uint64_t>(index.vertex_index) & 0x1FFFFF) |
