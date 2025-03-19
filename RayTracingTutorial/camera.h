@@ -46,7 +46,7 @@ public:
 
 private:
     GUISettings settings_;
-    point3 center_ = point3(0.0f, 0.0f, 1.0f);  // Camera center
+    point3 center_ = point3(0.0f, 25.0f, 1.0f);  // Camera center
     float focal_length_;
     point3 pixel00_loc_;    // Location of pixel 0, 0
     vec3   pixel_delta_u_;  // Offset to pixel to the right

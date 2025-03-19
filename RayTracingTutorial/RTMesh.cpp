@@ -110,9 +110,6 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
         vec2 uv = barycentricInterpolate(uv0, uv1, uv2, intersect_result.buv);
         rec.u = uv[0];
         rec.v = uv[1];
-        /*if (rec.u != 0.0f || rec.v != 0.0f) {
-            std::cout << "u: " << rec.u << ", v: " << rec.v << std::endl;
-        }*/
     }
 
     return closest_hit_t != std::numeric_limits<float>::max();
@@ -157,7 +154,7 @@ bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
             }
         }
         if (closest_intersection.t != float_max) {
-            rec.type_of_normal = false;
+            rec.type_of_normal = true;
             rec.object_type = "triangle";
             rec.mat = mat_;
 
@@ -292,6 +289,10 @@ void RTMesh::update() {
     res_mesh_info_.indices = context_.mesh_buf_manager->getIndices(mesh_handle_);
     res_mesh_info_.vertex_normals = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::Normal);
     res_mesh_info_.uv = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::UV);
+}
+
+int RTMesh::getTriangleCount() const {
+    return res_mesh_info_.indices.size() / 3;
 }
 
 void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, float& closest_hit_t) const {

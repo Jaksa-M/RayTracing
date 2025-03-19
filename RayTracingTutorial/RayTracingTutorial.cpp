@@ -20,6 +20,7 @@
 #include "mesh_buffer_manager.h"
 #include "bvh_manager.h"
 #include "context.h"
+#include "statistics.h"
 #include "camera.h"
 #include "camera_controller.h"
 //#include "scene_transformations.h"
@@ -107,8 +108,9 @@ int main(int, char**) {
     std::unique_ptr<GUISettings> gui_settings = std::make_unique<GUISettings>();
     std::unique_ptr<MeshBufferManager> mesh_buf_manager = std::make_unique<MeshBufferManager>();
     std::unique_ptr<BVHManager> bvh_manager = std::make_unique<BVHManager>(gui_settings.get());
+    std::unique_ptr<Statistics> statistics = std::make_unique<Statistics>();
 
-    SceneType selected_scene_index = SceneType::RT_MESHES;
+    SceneType selected_scene_index = SceneType::OBJ_LOADER;
     BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
     MeshColor chosen_mesh_color = MeshColor::MATERIAL;
 
@@ -117,6 +119,7 @@ int main(int, char**) {
     context.settings->BVH_technique = chosen_technique_index;
     context.mesh_buf_manager = mesh_buf_manager.get();
     context.bvh_manager = bvh_manager.get();
+    context.statistics = statistics.get();
 
     std::unique_ptr<Scene> active_scene;
 
@@ -126,6 +129,7 @@ int main(int, char**) {
     // Decides how much pixels will be traced
     float trace_percentage = 0.1f;
     int reflection_depth = 2;
+    float environment_light = 1.0f;
     bool reset_accumulated = false;
     bool freeze_camera = false;
     int selected_option = -1;
@@ -160,7 +164,7 @@ int main(int, char**) {
             static float f = 0.0f;
             const char* scenes[] = { "scene_rt_meshes", "scene_cornell_box", "scene_obj_loader" }; // Dropdown list (combo) items for scene selection
             const char* techniques[] = { "midpoint split", "SAH" }; // Dropdown list (combo) items for technique selection
-            const char* mesh_colors[] = {"material", "normal", "depth", "uv"};  // Dropdown list (combo) items for color representation selection
+            const char* mesh_colors[] = {"material", "geometric normal", "shading normal", "depth", "uv"};  // Dropdown list (combo) items for color representation selection
             const char* block_sizes[] = {"8x8", "16x16", "64x64"}; // Dropdown list (combo) items for block size selection
             
             ImGui::Begin("Ray Tracer");                          // Create a window called "Hello, world!" and append into it.
@@ -170,6 +174,7 @@ int main(int, char**) {
             // Slider for percentage of pixels that should be traced
             ImGui::SliderFloat("pixel traced", &trace_percentage, 0.0f, 1.0f);
             ImGui::SliderInt("reflection bounces", &reflection_depth, 0, 15);
+            ImGui::SliderFloat("environment light", &environment_light, 0.0f, 10.0f);
             ImGui::Checkbox("Reset accumulated", &reset_accumulated);
 
             if (ImGui::Button("Fast Mode")) {
@@ -241,7 +246,12 @@ int main(int, char**) {
 
             ImGui::Checkbox("Multithreading", &active_scene->context.settings->multithreading);
 
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+            ImGui::Separator();
+            ImGui::Text("------------------Statistics------------------");
+            ImGui::Text("FPS: %.1f", io.Framerate);
+            ImGui::Text("Triangle count: %d", statistics->triangle_cnt);
+            ImGui::Text("RTMeshes count: %d", statistics->rt_mesh_cnt);
+
             ImGui::End();
         }
         
@@ -263,6 +273,7 @@ int main(int, char**) {
         
         active_scene->context.settings->trace_percentage = trace_percentage;
         active_scene->context.settings->reflection_depth = reflection_depth;
+        active_scene->context.settings->environment_light = environment_light;
         active_scene->context.settings->debug_rays = debug_rays;
         active_scene->context.settings->freeze_camera = freeze_camera;
         active_scene->context.settings->block_size = block_size;

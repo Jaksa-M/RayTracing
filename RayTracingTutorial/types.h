@@ -22,7 +22,8 @@ enum class BVHTechnique {
 
 enum class MeshColor {
     MATERIAL,
-    NORMAL,
+    GEOMETRIC_NORMAL,
+    SHADING_NORMAL,
     DEPTH,
     UV
 };

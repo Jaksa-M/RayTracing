@@ -254,6 +254,12 @@
     <ClInclude Include="ExternalLibraries\stb image\stb_image_write.h">
       <Filter>External Libraries\stb_image</Filter>
     </ClInclude>
+    <ClInclude Include="statistics.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalLibraries\tinyobjloader\earcut.hpp">
+      <Filter>External Libraries\tinyobjloader</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ShaderFiles\shader.fs.txt">

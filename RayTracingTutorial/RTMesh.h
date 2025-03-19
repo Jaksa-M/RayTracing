@@ -37,6 +37,7 @@ public:
     void setTransformationMatrix(const matrix4x4& mat) override;
 
     void update() override;
+    int getTriangleCount() const override;
 
 private:
     Context& context_;

@@ -47,6 +47,8 @@ public:
 
     virtual void update() {}
 
+    virtual int getTriangleCount() const { return 0; };
+
     virtual void setTransformationMatrix(const matrix4x4& mat) {
         local_to_world_mat_ = mat;
         world_to_local_mat_ = mat.invert();

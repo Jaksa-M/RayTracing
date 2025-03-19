@@ -23,9 +23,8 @@ class Texture {
     }
 
     color value(float u, float v, const point3& p) const {
-        // Clamp input texture coordinates to [0,1] x [1,0]
-        u = interval(0, 1).clamp(u);
-        v = 1.0f - interval(0, 1).clamp(v);  // Flip V to image coordinates
+        u = std::fmod(std::abs(u), 1.0f);
+        v = 1.0f - std::fmod(std::abs(v), 1.0f);
 
         std::uint32_t i = std::uint32_t(u * image_width_);
         std::uint32_t j = std::uint32_t(v * image_height_);

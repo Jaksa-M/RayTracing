@@ -6,6 +6,7 @@
 #include "context.h"
 #include "mesh_buffer_manager.h"
 #include "gui_settings.h"
+#include "statistics.h"
 #include "bvh_manager.h"
 
 class Scene {
