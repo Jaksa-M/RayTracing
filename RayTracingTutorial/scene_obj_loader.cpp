@@ -5,6 +5,7 @@
 #include "hittable.h"
 #include "hittable_list.h"
 #include "camera.h"
+#include "camera_controller.h"
 #include "material.h"
 #include "matrix.h"
 #include "transformations.h"
@@ -18,7 +19,15 @@
 
 SceneObjLoader::SceneObjLoader() {}
 
-void SceneObjLoader::initialize(Camera& cam) {
+void SceneObjLoader::initialize() {
+    // Initialization of cameras
+    std::unique_ptr<Camera> cam1 = std::make_unique<Camera>("initial cam");
+    std::unique_ptr<Camera> cam2 = std::make_unique<Camera>("side cam", vec3(0.0f, 3.0f, 0.0f));
+    cam1->setInitalValues();
+    cam2->setInitalValues();
+    cameras_.push_back(std::move(cam1));
+    cameras_.push_back(std::move(cam2));
+    
     prev_BVH_technique_ = context.settings->BVH_technique;
 
     TextureLoader tex_loader("Resources/textures/san_giuseppe_bridge.hdr");
@@ -26,13 +35,15 @@ void SceneObjLoader::initialize(Camera& cam) {
         std::cerr << "ERROR: Could not load background texture file.\n";
     }
     background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight());
-    cam.setBackgroundTexture(background_texture_);
+    for (int i = 0; i < cameras_.size(); i++) {
+        cameras_[i]->setBackgroundTexture(background_texture_);
+    }
 
     auto mat_green = std::make_shared<Lambertian>(color(0.0f, 1.0f, 0.0f));
 
     auto start_time = std::chrono::high_resolution_clock::now(); // Start timing
 
-    obj_loader_ = std::make_unique<ObjLoader>("Resources/crytek_sponza2/sponza.obj");
+    obj_loader_ = std::make_unique<ObjLoader>("Resources/teapot/teapot.obj");
     if (!obj_loader_->load(context)) {
         std::cout << "ERROR: custom mesh failed to load" << std::endl;
     }
@@ -69,17 +80,18 @@ void SceneObjLoader::initialize(Camera& cam) {
     initShader();
 }
 
-std::vector<unsigned char> SceneObjLoader::update(int display_w, int display_h, Camera& cam) {
+std::vector<unsigned char> SceneObjLoader::update(int display_w, int display_h) {
     if (prev_BVH_technique_ != context.settings->BVH_technique) {
         world_.clear();
-        initialize(cam);
+        initialize();
     }
-
+    cameras_[active_camera_]->image_width = display_w;
+    cameras_[active_camera_]->image_height = display_h;
     // Update RTMesh vertices/indices/uvs/normals once per frame
     world_.update();
 
     std::vector<unsigned char> image_data;
-    image_data = cam.render(world_, image_data_acc_, *(context.settings));
+    image_data = cameras_[active_camera_]->render(world_, image_data_acc_, *(context.settings));
     return image_data;
 }
 
@@ -104,6 +116,17 @@ void SceneObjLoader::drawBVH(Camera& cam) {
             }
         }
     }
+}
+
+Camera& SceneObjLoader::getActiveCamera() {
+    Camera& camera = Scene::getActiveCamera();
+
+    //// Assign the background to new camera (if not already assigned)
+    //if (camera.getBackgroundTexture() != nullptr) {
+    //    camera.setBackgroundTexture(background_texture_);
+    //}
+
+    return camera;  // Return the result
 }
 
 SceneObjLoader::~SceneObjLoader() {

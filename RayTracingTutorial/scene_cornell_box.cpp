@@ -17,7 +17,12 @@
 
 SceneCornellBox::SceneCornellBox() {}
 
-void SceneCornellBox::initialize(Camera& cam) {
+void SceneCornellBox::initialize() {
+    // Initialization of cameras
+    std::unique_ptr<Camera> cam1 = std::make_unique<Camera>("initial cam");
+    cam1->setInitalValues();
+    cameras_.push_back(std::move(cam1));
+
 	prev_BVH_technique_ = context.settings->BVH_technique;
 
 	TextureLoader tex_loader("Resources/textures/san_giuseppe_bridge.hdr");
@@ -25,7 +30,9 @@ void SceneCornellBox::initialize(Camera& cam) {
         std::cerr << "ERROR: Could not load background texture file.\n";
     }
     background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight());
-    cam.setBackgroundTexture(background_texture_);
+    for (int i = 0; i < cameras_.size(); i++) {
+        cameras_[i]->setBackgroundTexture(background_texture_);
+    }
 
 	auto mat_yellow = std::make_shared<Lambertian>(color(0.8f, 0.8f, 0.0f));
     auto mat_green = std::make_shared<Lambertian>(color(0.0f, 1.0f, 0.0f));
@@ -85,17 +92,18 @@ void SceneCornellBox::initialize(Camera& cam) {
 	initShader();
 }
 
-std::vector<unsigned char> SceneCornellBox::update(int display_w, int display_h, Camera& cam) {
+std::vector<unsigned char> SceneCornellBox::update(int display_w, int display_h) {
 	if (prev_BVH_technique_ != context.settings->BVH_technique) {
 		world_.clear();
-		initialize(cam);
+		initialize();
 	}
-
+    cameras_[active_camera_]->image_width = display_w;
+    cameras_[active_camera_]->image_height = display_h;
 	// Update RTMesh vertices/indices/uvs/normals once per frame
     world_.update();
 
 	std::vector<unsigned char> image_data;
-	image_data = cam.render(world_, image_data_acc_, *(context.settings));
+    image_data = cameras_[active_camera_]->render(world_, image_data_acc_, *(context.settings));
 	return image_data;
 }
 
@@ -103,7 +111,7 @@ void SceneCornellBox::initShader() {
 	shader_prog_ = std::make_unique<Shader>("ShaderFiles/shader_bounding_box.vs.txt", "ShaderFiles/shader_bounding_box.fs.txt");
 }
 
-void SceneCornellBox::drawBVH(Camera& cam) {
+void SceneCornellBox::drawBVH() {
 	if (context.settings->selected_option != -1) {
 		bounding_boxes_.resize(world_.objects_.size());
 
@@ -113,10 +121,10 @@ void SceneCornellBox::drawBVH(Camera& cam) {
 
 			if (rtMesh) { // If the cast succeeds, the object is of type RTMesh
 				if (context.settings->selected_option == 0) { // Drawing whole tree
-					rtMesh->drawBVHTree(bounding_boxes_, i, shader_prog_, cam);
+                    rtMesh->drawBVHTree(bounding_boxes_, i, shader_prog_, *cameras_[0]);
 				}
 				else if (context.settings->selected_option == 1) { // Drawing only leaves
-					rtMesh->drawBVHLeaves(bounding_boxes_, i, shader_prog_, cam);
+                    rtMesh->drawBVHLeaves(bounding_boxes_, i, shader_prog_, *cameras_[0]);
 				}
 			}
 		}

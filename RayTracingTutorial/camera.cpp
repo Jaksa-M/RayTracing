@@ -6,7 +6,9 @@
 #include <array>
 #include <list>
 
-Camera::Camera() {}
+Camera::Camera(std::string name) : name_(name) {}
+
+Camera::Camera(std::string name, vec3 center) : name_(name), center_(center) {}
 
 void Camera::setInitalValues() {
     vec3 cameraTarget = vec3(0.0f, 0.0f, -3.0f);
@@ -317,6 +319,8 @@ void Camera::drawRays() {
     }    
 }
 
+std::string_view Camera::getName() const { return name_; }
+
 void Camera::setCenterX(float val) { center_.setX(val); }
 
 void Camera::setCenterY(float val) { center_.setY(val); }
@@ -353,8 +357,22 @@ void Camera::setRightVector(vec3 direction) { camera_right_ = direction; }
 
 matrix4x4 Camera::getViewMatrix() { return view_matrix_; }
 
-matrix4x4 Camera::getProjectionMatrix() { return projection_matrix_; }
+matrix4x4 Camera::getProjectionMatrix() {
+    return projection_matrix_;
+}
+
+std::shared_ptr<Texture> Camera::getBackgroundTexture() const {
+    return background_texture_;
+}
 
 void Camera::setBackgroundTexture(std::shared_ptr<Texture> tex) {
     background_texture_ = tex;
+}
+
+void Camera::recalculateYawPitch(float& yaw, float& pitch) {
+    vec3 direction = getDirection();
+
+    yaw = radians_to_degrees(atan2(direction.z(), direction.x()));
+
+    pitch = radians_to_degrees(asin(direction.y()));
 }

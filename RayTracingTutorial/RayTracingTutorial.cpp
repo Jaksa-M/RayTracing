@@ -123,9 +123,6 @@ int main(int, char**) {
 
     std::unique_ptr<Scene> active_scene;
 
-    Camera cam;
-    cam.setInitalValues();
-
     // Decides how much pixels will be traced
     float trace_percentage = 0.1f;
     int reflection_depth = 2;
@@ -138,9 +135,11 @@ int main(int, char**) {
     int block_size = 8;
     int block_size_values[] = {8, 16, 64};
     int block_size_index = 0;
+    int selected_camera_index = 0;
 
-    CameraController cam_controller(cam, 2.0f);
     std::vector<unsigned char> image_data;
+
+    std::unique_ptr<CameraController> cam_controller;
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -192,6 +191,30 @@ int main(int, char**) {
             if (debug_rays == false) ImGui::BeginDisabled();  // Disable next widget(s) if Debug Rays is off
             ImGui::Checkbox("Freeze camera", &freeze_camera);
             if (debug_rays == false) ImGui::EndDisabled();  // Re-enable UI interactions
+
+            ImGui::Text("Select Camera:");
+            if (active_scene) {
+                const std::vector<std::unique_ptr<Camera>>& cameras = active_scene->getCameras();
+
+                std::vector<const char*> camera_names_cstrings;
+                for (size_t i = 0; i < cameras.size(); i++) {
+                    camera_names_cstrings.push_back(cameras[i]->getName().data());
+                }
+
+                if (ImGui::Combo("Cameras", &selected_camera_index, camera_names_cstrings.data(), camera_names_cstrings.size())) {
+                    active_scene->setActiveCamera(selected_camera_index);
+                    cam_controller = std::make_unique<CameraController>(*cameras[selected_camera_index], 2.0f);
+
+                    float yaw, pitch;
+                    cameras[selected_camera_index]->recalculateYawPitch(yaw, pitch);
+                    cam_controller->setYawPitch(yaw, pitch);
+                    active_scene->getActiveCamera().setCameraMoved(true);
+                }
+            }
+
+            if (ImGui::Button("Capture camera")) {
+                
+            }
             ImGui::Separator();
 
             int scene_index = static_cast<int>(selected_scene_index); // Convert enum class to int (bceause ImGui is C library)
@@ -222,20 +245,31 @@ int main(int, char**) {
                 switch (selected_scene_index) {
                     case SceneType::RT_MESHES:  // scene_rt_meshes
                         active_scene = std::make_unique<SceneRtMeshes>();
-                        active_scene->context = context;
-                        active_scene->initialize(cam);
                         break;
                     case SceneType::CORNELL_BOX:  // scene_cornell_box
                         active_scene = std::make_unique<SceneCornellBox>();
-                        active_scene->context = context;
-                        active_scene->initialize(cam);
                         break;
                     case SceneType::OBJ_LOADER:  // scene_custom_meshes
                         active_scene = std::make_unique<SceneObjLoader>();
-                        active_scene->context = context;
-                        active_scene->initialize(cam);
                         break;
                 }
+                active_scene->context = context;
+                active_scene->initialize();
+
+                const std::vector<std::unique_ptr<Camera>>& cameras = active_scene->getCameras();
+                
+                std::vector<const char*> camera_names_cstrings;
+                for (size_t i = 0; i < cameras.size(); i++) {
+                    camera_names_cstrings.push_back(cameras[i]->getName().data());
+                }
+
+                selected_camera_index = 0;
+                ImGui::Combo("Cameras", &selected_camera_index, camera_names_cstrings.data(), camera_names_cstrings.size());
+                active_scene->setActiveCamera(selected_camera_index);
+                cam_controller = std::make_unique<CameraController>(*cameras[selected_camera_index], 2.0f);
+                float yaw, pitch;
+                cameras[selected_camera_index]->recalculateYawPitch(yaw, pitch);
+                cam_controller->setYawPitch(yaw, pitch);
             }
 
             // Enable/Disable BVH for active scene + assign the BVH technique
@@ -256,10 +290,10 @@ int main(int, char**) {
         }
         
         if (!io.WantCaptureKeyboard) {
-            cam_controller.handleKeyboardInput(io.DeltaTime);
+            cam_controller->handleKeyboardInput(io.DeltaTime);
         }
         if (!io.WantCaptureMouse) {
-            cam_controller.handleMouseInput(io);
+            cam_controller->handleMouseInput(io);
         }
 
 
@@ -268,8 +302,6 @@ int main(int, char**) {
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
-        cam.image_width = display_w;
-        cam.image_height = display_h;
         
         active_scene->context.settings->trace_percentage = trace_percentage;
         active_scene->context.settings->reflection_depth = reflection_depth;
@@ -277,20 +309,20 @@ int main(int, char**) {
         active_scene->context.settings->debug_rays = debug_rays;
         active_scene->context.settings->freeze_camera = freeze_camera;
         active_scene->context.settings->block_size = block_size;
-        image_data = active_scene->update(display_w, display_h, cam);
+        image_data = active_scene->update(display_w, display_h);
       
         glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
 
         
-        active_scene->drawBVH(cam); // Drawing of BVH tree/leaves
+        active_scene->drawBVH(); // Drawing of BVH tree/leaves
 
-        cam.drawRays();
-        
-        //scene_rt_meshes.draw_mesh_gizmos(cam);
+        active_scene->getActiveCamera().drawRays();
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
-        if (reset_accumulated == true) cam.setCameraMoved(true); // Reseting accumulating buffer every frame to better view rotation... etc
+
+        // Reseting accumulating buffer every frame to better view rotation... etc
+        if (reset_accumulated == true) active_scene->getActiveCamera().setCameraMoved(true);
     }
 
     // Cleanup

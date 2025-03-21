@@ -1,10 +1,10 @@
 #include "obj_loader.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
-//#define TINYOBJLOADER_DONOT_INCLUDE_MAPBOX_EARCUT
-//#define TINYOBJLOADER_USE_MAPBOX_EARCUT
-//#include <array> // when we use donot_include macro, we need to include this
-//#include "tinyobjloader/earcut.hpp" // used for better triangulation of polygons
+#define TINYOBJLOADER_DONOT_INCLUDE_MAPBOX_EARCUT
+#define TINYOBJLOADER_USE_MAPBOX_EARCUT
+#include <array> // when we use donot_include macro, we need to include this
+#include "tinyobjloader/earcut.hpp" // used for better triangulation of polygons
 #include "tinyobjloader/tiny_obj_loader.h"
 
 #include "context.h"

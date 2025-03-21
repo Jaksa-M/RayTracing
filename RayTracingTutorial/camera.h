@@ -17,12 +17,14 @@ public:
     int image_width = 100;  // Rendered image width in pixel count
     int image_height;   // Rendered image height
     
+    Camera(std::string name);
+    Camera(std::string name, vec3 center);
     void setInitalValues();
-    Camera();
     std::vector<unsigned char> render(const hittable_list& world, std::vector<float>& image_data_acc, GUISettings& settings);
 
     void drawRays();
 
+    std::string_view getName() const;
     void setCenterX(float val);
     void setCenterY(float val);
     void setCenterZ(float val);
@@ -42,11 +44,15 @@ public:
     void setRightVector(vec3 direction);
     matrix4x4 getViewMatrix();
     matrix4x4 getProjectionMatrix();
+    std::shared_ptr<Texture> getBackgroundTexture() const;
     void setBackgroundTexture(std::shared_ptr<Texture> tex);
 
+    void recalculateYawPitch(float& yaw, float& pitch);
+
 private:
+    std::string name_;
     GUISettings settings_;
-    point3 center_ = point3(0.0f, 25.0f, 1.0f);  // Camera center
+    point3 center_ = point3(0.0f, 0.0f, 1.0f);  // Camera center
     float focal_length_;
     point3 pixel00_loc_;    // Location of pixel 0, 0
     vec3   pixel_delta_u_;  // Offset to pixel to the right

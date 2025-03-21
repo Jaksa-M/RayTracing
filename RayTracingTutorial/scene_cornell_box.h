@@ -12,12 +12,12 @@ class SceneCornellBox: public Scene {
 public:
     SceneCornellBox();
 
-    void initialize(Camera& cam) override;
+    void initialize() override;
 
-    std::vector<unsigned char> update(int display_w, int display_h, Camera& cam) override;
+    std::vector<unsigned char> update(int display_w, int display_h) override;
 
     void initShader();
-    void drawBVH(Camera& cam);
+    void drawBVH();
 
 private:
     std::unique_ptr<MeshBufferManager> mesh_buf_manager_;

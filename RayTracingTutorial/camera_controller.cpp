@@ -99,6 +99,11 @@ void CameraController::handleMouseInput(ImGuiIO& io) {
     }
 }
 
+void CameraController::setYawPitch(float yaw, float pitch) {
+    yaw_ = yaw;
+    pitch_ = pitch;
+}
+
 void CameraController::moveUp() {
     point3 pos = cam_.getPosition();
     //pos -= cam_.getUpVector() * (speed_ * delta_time_seconds_);
