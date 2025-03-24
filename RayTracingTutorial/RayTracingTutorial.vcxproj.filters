@@ -260,6 +260,9 @@
     <ClInclude Include="ExternalLibraries\tinyobjloader\earcut.hpp">
       <Filter>External Libraries\tinyobjloader</Filter>
     </ClInclude>
+    <ClInclude Include="file_utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ShaderFiles\shader.fs.txt">

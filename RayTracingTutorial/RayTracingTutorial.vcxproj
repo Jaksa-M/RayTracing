@@ -138,6 +138,7 @@
     <ClInclude Include="ExternalLibraries\stb image\stb_image_write.h" />
     <ClInclude Include="ExternalLibraries\tinyobjloader\earcut.hpp" />
     <ClInclude Include="ExternalLibraries\tinyobjloader\tiny_obj_loader.h" />
+    <ClInclude Include="file_utility.h" />
     <ClInclude Include="gui_settings.h" />
     <ClInclude Include="hittable.h" />
     <ClInclude Include="hittable_list.h" />

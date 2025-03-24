@@ -15,6 +15,8 @@
 
 // Includes for my code
 #include <vector>
+#include <fstream>
+#include "file_utility.h"
 #include "types.h"
 #include "gui_settings.h"
 #include "mesh_buffer_manager.h"
@@ -23,9 +25,10 @@
 #include "statistics.h"
 #include "camera.h"
 #include "camera_controller.h"
-//#include "scene_transformations.h"
-//#include "scene_boxes.h"
-//#include "scene_meshes.h"
+#include "texture_loader.h"
+#include "texture.h"
+
+// Scemes
 #include "scene_rt_meshes.h"
 #include "scene_cornell_box.h"
 #include "scene_obj_loader.h"
@@ -101,8 +104,6 @@ int main(int, char**) {
 
     // Our state
     bool show_demo_window = true;
-    bool show_another_window = false;
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     // Setting up settings for each Scene (they are all using same settings)
     std::unique_ptr<GUISettings> gui_settings = std::make_unique<GUISettings>();
@@ -140,6 +141,17 @@ int main(int, char**) {
     std::vector<unsigned char> image_data;
 
     std::unique_ptr<CameraController> cam_controller;
+
+    std::string camera_file = "Cameras/saved_cameras.txt";
+
+    std::vector<std::unique_ptr<Camera>> starting_cameras;
+
+    TextureLoader tex_loader("Resources/textures/san_giuseppe_bridge.hdr");
+    if (!tex_loader.load()) {
+        std::cerr << "ERROR: Could not load background texture file.\n";
+    }
+    std::shared_ptr<Texture> background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight());
+    loadCamerasFromFile(camera_file, starting_cameras, background_texture_);
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -187,7 +199,7 @@ int main(int, char**) {
             }
 
             ImGui::Separator();
-            ImGui::Checkbox("Debug Rays", &debug_rays);  // New checkbox
+            ImGui::Checkbox("Debug Rays", &debug_rays);
             if (debug_rays == false) ImGui::BeginDisabled();  // Disable next widget(s) if Debug Rays is off
             ImGui::Checkbox("Freeze camera", &freeze_camera);
             if (debug_rays == false) ImGui::EndDisabled();  // Re-enable UI interactions
@@ -212,9 +224,42 @@ int main(int, char**) {
                 }
             }
 
+            static char camera_name_buffer[64] = ""; // Text input field for camera name
+            ImGui::InputText("Camera Name", camera_name_buffer, IM_ARRAYSIZE(camera_name_buffer));
+
+            // Disable "Capture Camera" button if text field is empty
+            bool enable_capture_button = (strlen(camera_name_buffer) > 0);
+
+            if (!enable_capture_button) ImGui::BeginDisabled();
+
             if (ImGui::Button("Capture camera")) {
-                
+                if (active_scene) {
+                    Camera& cam = active_scene->getActiveCamera();
+                    vec3 pos = cam.getPosition();
+                    vec3 dir = cam.getDirection();
+                    vec3 up = cam.getUpVector();
+                    vec3 right = cam.getRightVector();
+
+                    std::ofstream file(camera_file, std::ios::app);  // Append mode
+                    if (!file) {
+                        std::cerr << "Error: Could not open file " << camera_file << std::endl;
+                        exit(-1);
+                    }
+
+                    file << "Name " << camera_name_buffer << "\n";
+                    file << "Center " << pos.x() << " " << pos.y() << " " << pos.z() << "\n";
+                    file << "Direction " << dir.x() << " " << dir.y() << " " << dir.z() << "\n";
+                    file << "Up " << up.x() << " " << up.y() << " " << up.z() << "\n";
+                    file << "Right " << right.x() << " " << right.y() << " " << right.z() << "\n";
+                    file << "FocalLength " << cam.getFocalLength() << "\n\n";
+
+                    file.close();
+                    
+                    camera_name_buffer[0] = '\0'; // Clear the text input field after capturing
+                }
             }
+            if (!enable_capture_button) ImGui::EndDisabled();
+
             ImGui::Separator();
 
             int scene_index = static_cast<int>(selected_scene_index); // Convert enum class to int (bceause ImGui is C library)
@@ -256,6 +301,9 @@ int main(int, char**) {
                 active_scene->context = context;
                 active_scene->initialize();
 
+                for (size_t i = 0; i < starting_cameras.size(); i++) { // Add the loaded cameras
+                    active_scene->addCamera(starting_cameras[i]);
+                }
                 const std::vector<std::unique_ptr<Camera>>& cameras = active_scene->getCameras();
                 
                 std::vector<const char*> camera_names_cstrings;

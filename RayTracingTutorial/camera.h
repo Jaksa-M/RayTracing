@@ -19,6 +19,7 @@ public:
     
     Camera(std::string name);
     Camera(std::string name, vec3 center);
+    Camera(const Camera& other);
     void setInitalValues();
     std::vector<unsigned char> render(const hittable_list& world, std::vector<float>& image_data_acc, GUISettings& settings);
 
@@ -49,14 +50,16 @@ public:
 
     void recalculateYawPitch(float& yaw, float& pitch);
 
+    std::unique_ptr<Camera> clone() const;
+
 private:
     std::string name_;
     GUISettings settings_;
     point3 center_ = point3(0.0f, 0.0f, 1.0f);  // Camera center
     float focal_length_;
     point3 pixel00_loc_;    // Location of pixel 0, 0
-    vec3   pixel_delta_u_;  // Offset to pixel to the right
-    vec3   pixel_delta_v_;  // Offset to pixel below
+    vec3 pixel_delta_u_;  // Offset to pixel to the right
+    vec3 pixel_delta_v_;  // Offset to pixel below
     bool camera_moved_ = false;
     vec3 camera_direction_;
     vec3 camera_up_;

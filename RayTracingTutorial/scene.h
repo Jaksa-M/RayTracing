@@ -29,6 +29,9 @@ public:
 	virtual void setActiveCamera(int index) { active_camera_ = index; }
 	virtual Camera& getActiveCamera() { return *cameras_[active_camera_]; };
 	virtual const std::vector<std::unique_ptr<Camera>>& getCameras() const { return cameras_; };
+    virtual void addCamera(std::unique_ptr<Camera>& cam) {
+        cameras_.push_back(std::make_unique<Camera>(*cam));  // Deep copy }
+    }
 	
 protected:
 	hittable_list world_;
