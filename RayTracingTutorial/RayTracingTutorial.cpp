@@ -137,13 +137,11 @@ int main(int, char**) {
     int block_size_values[] = {8, 16, 64};
     int block_size_index = 0;
     int selected_camera_index = 0;
+    int remove_camera_index = 0;
 
     std::vector<unsigned char> image_data;
-
     std::unique_ptr<CameraController> cam_controller;
-
     std::string camera_file = "Cameras/saved_cameras.txt";
-
     std::vector<std::unique_ptr<Camera>> starting_cameras;
 
     TextureLoader tex_loader("Resources/textures/san_giuseppe_bridge.hdr");
@@ -151,13 +149,14 @@ int main(int, char**) {
         std::cerr << "ERROR: Could not load background texture file.\n";
     }
     std::shared_ptr<Texture> background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight());
+
     loadCamerasFromFile(camera_file, starting_cameras, background_texture_);
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
-        glfwPollEvents(); //any pending events like keyboard or mouse inputs, window resize...
+        glfwPollEvents(); // Any pending events like keyboard or mouse inputs, window resize...
         
-        //If the window is minimized (GLFW_ICONIFIED), the application waits (sleeps) for 10 milliseconds and skips the rest of the loop iteration. 
+        // If the window is minimized (GLFW_ICONIFIED), the application waits (sleeps) for 10 milliseconds and skips the rest of the loop iteration. 
         // This helps reduce CPU usage when the window is not actively visible.
         if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0) {
             ImGui_ImplGlfw_Sleep(10);
@@ -169,9 +168,7 @@ int main(int, char**) {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        if (show_demo_window)
-            //ImGui::ShowDemoWindow(&show_demo_window);
-        {
+        if (show_demo_window) {
             static float f = 0.0f;
             const char* scenes[] = { "scene_rt_meshes", "scene_cornell_box", "scene_obj_loader" }; // Dropdown list (combo) items for scene selection
             const char* techniques[] = { "midpoint split", "SAH" }; // Dropdown list (combo) items for technique selection
@@ -224,15 +221,21 @@ int main(int, char**) {
                 }
             }
 
+            ImGui::Separator();
+
+            ImGui::Text("Enter camera name to be added:");
+
             static char camera_name_buffer[64] = ""; // Text input field for camera name
-            ImGui::InputText("Camera Name", camera_name_buffer, IM_ARRAYSIZE(camera_name_buffer));
+            ImGui::PushItemWidth(200);
+            ImGui::InputText("##Camera Name", camera_name_buffer, IM_ARRAYSIZE(camera_name_buffer));
+            ImGui::PopItemWidth();
 
             // Disable "Capture Camera" button if text field is empty
-            bool enable_capture_button = (strlen(camera_name_buffer) > 0);
+            bool enable_add_button = (strlen(camera_name_buffer) > 0);
+            if (!enable_add_button) ImGui::BeginDisabled();
 
-            if (!enable_capture_button) ImGui::BeginDisabled();
-
-            if (ImGui::Button("Capture camera")) {
+            ImGui::SameLine();
+            if (ImGui::Button("Add")) {
                 if (active_scene) {
                     Camera& cam = active_scene->getActiveCamera();
                     vec3 pos = cam.getPosition();
@@ -254,11 +257,46 @@ int main(int, char**) {
                     file << "FocalLength " << cam.getFocalLength() << "\n\n";
 
                     file.close();
-                    
-                    camera_name_buffer[0] = '\0'; // Clear the text input field after capturing
+
+                    // Adding new camera to the scene
+                    //Camera* camera = new Camera(std::string(camera_name_buffer));
+                    std::unique_ptr<Camera> camera = std::make_unique<Camera>(std::string(camera_name_buffer));
+                    camera->setBackgroundTexture(background_texture_);
+                    camera->setDirection(dir);
+                    camera->setPosition(pos);
+                    camera->setUpVector(up);
+                    camera->setRightVector(right);
+                    camera->setFocalLength(cam.getFocalLength());
+                    active_scene->addCamera(camera);
+                    starting_cameras.push_back(std::move(camera));
+
+                    camera_name_buffer[0] = '\0';  // Clear the text input field after capturing
                 }
             }
-            if (!enable_capture_button) ImGui::EndDisabled();
+            if (!enable_add_button) ImGui::EndDisabled();
+
+            ImGui::Separator();
+
+            if (active_scene) {
+                std::vector<const char*> camera_names_cstrings;
+                for (size_t i = 0; i < starting_cameras.size(); i++) {
+                    camera_names_cstrings.push_back(starting_cameras[i]->getName().data());
+                }
+
+                ImGui::Text("Select Camera to Remove:");
+
+                ImGui::PushItemWidth(200); // Adjust width for Combo box
+                // ## is used to hide the label while keeping it unique internally
+                if (ImGui::Combo("##camera_combo", &remove_camera_index, camera_names_cstrings.data(), camera_names_cstrings.size())) {}
+                ImGui::PopItemWidth(); // With this the next widget won't inherit this width setting
+
+                ImGui::SameLine();
+                if (ImGui::Button("Remove") && remove_camera_index >= 0) {
+                    removeCameraFromFile(camera_file, starting_cameras[remove_camera_index]->getName());
+                    active_scene->removeCamera(starting_cameras[remove_camera_index]->getName());
+                    loadCamerasFromFile(camera_file, starting_cameras, background_texture_);
+                }
+            }
 
             ImGui::Separator();
 

@@ -30,7 +30,15 @@ public:
 	virtual Camera& getActiveCamera() { return *cameras_[active_camera_]; };
 	virtual const std::vector<std::unique_ptr<Camera>>& getCameras() const { return cameras_; };
     virtual void addCamera(std::unique_ptr<Camera>& cam) {
-        cameras_.push_back(std::make_unique<Camera>(*cam));  // Deep copy }
+        cameras_.push_back(std::make_unique<Camera>(*cam));
+    }
+	virtual void removeCamera(std::string_view name) { 
+		for (size_t i = 0; i < cameras_.size(); i++) {
+			if (cameras_[i]->getName() == name) {
+                cameras_.erase(cameras_.begin() + i);
+                break;
+			}
+		}
     }
 	
 protected:

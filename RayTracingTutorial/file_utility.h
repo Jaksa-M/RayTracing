@@ -84,4 +84,49 @@ void loadCamerasFromFile(const std::string& file, std::vector<std::unique_ptr<Ca
     file_stream.close();
 }
 
+void removeCameraFromFile(const std::string& file, std::string_view camera_name) {
+    std::ifstream file_stream(file);
+    if (!file_stream) {
+        std::cerr << "Error: Could not open camera file " << file << std::endl;
+        exit(-1);
+    }
+
+    std::ostringstream temp_buffer;
+    std::string line;
+    bool skip = false; // Flag to skip camera data
+
+    while (std::getline(file_stream, line)) {
+        if (line.find("Name") == 0) {
+            std::istringstream iss(line);
+            std::string keyword, name;
+            iss >> keyword;           // Read "Name"
+            std::getline(iss, name);  // Read the rest (camera name)
+            name = name.substr(1);    // Remove leading space
+
+            skip = (name == camera_name);  // If match, start skipping
+        }
+
+        if (!skip) {
+            temp_buffer << line << "\n";
+        }
+
+        if (line.empty()) {
+            skip = false;  // Stop skipping when an empty line is encountered
+        }
+    }
+
+    file_stream.close();
+
+    // Write the updated content back to the file
+    std::ofstream out_file(file, std::ios::trunc);
+    if (!out_file) {
+        std::cerr << "Error: Could not write to camera file " << file << std::endl;
+        return;
+    }
+
+    out_file << temp_buffer.str();
+    out_file.close();
+}
+
+
 #endif
