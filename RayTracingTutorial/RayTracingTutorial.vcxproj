@@ -99,6 +99,7 @@
     <ClCompile Include="ExternalLibraries\imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="ExternalLibraries\imgui\imgui_tables.cpp" />
     <ClCompile Include="ExternalLibraries\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="file_utility.cpp" />
     <ClCompile Include="hittable_list.cpp" />
     <ClCompile Include="interval.cpp" />
     <ClCompile Include="matrix.cpp" />

@@ -9,10 +9,6 @@
 #include <glad/gl.h>
 #undef GLAD_GL_IMPLEMENTATION //must stay here because of multiple gl.h includes
 
-// Not using anymore, was using for writing image to a file
-//#define STB_IMAGE_WRITE_IMPLEMENTATION
-//#include "stb_image/stb_image_write.h"
-
 // Includes for my code
 #include <vector>
 #include <fstream>
@@ -133,6 +129,7 @@ int main(int, char**) {
     int selected_option = -1;
     bool fast_mode = true;
     bool debug_rays = false;
+    bool hdr = false;
     int block_size = 8;
     int block_size_values[] = {8, 16, 64};
     int block_size_index = 0;
@@ -192,8 +189,16 @@ int main(int, char**) {
             ImGui::Separator();
             ImGui::Checkbox("Debug Rays", &debug_rays);
             if (debug_rays == false) ImGui::BeginDisabled();  // Disable next widget(s) if Debug Rays is off
+            ImGui::SameLine();
             ImGui::Checkbox("Freeze camera", &freeze_camera);
             if (debug_rays == false) ImGui::EndDisabled();  // Re-enable UI interactions
+            if (ImGui::Button("Screenshot")) {
+                int display_w, display_h;
+                glfwGetFramebufferSize(window, &display_w, &display_h);
+                saveScreenshot(display_w, display_h, hdr);
+            }
+            ImGui::SameLine();
+            ImGui::Checkbox("hdr", &hdr);
             ImGui::Separator();
 
             ImGui::Text("Select Camera:");
