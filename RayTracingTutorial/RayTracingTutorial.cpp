@@ -137,20 +137,14 @@ int main(int, char**) {
     int block_size_values[] = {8, 16, 64};
     int block_size_index = 0;
     int selected_camera_index = 0;
-    int remove_camera_index = 0;
+    int selected_preset_index = 0;
 
     std::vector<unsigned char> image_data;
     std::unique_ptr<CameraController> cam_controller;
-    std::string camera_file = "Cameras/saved_cameras.txt";
-    std::vector<std::unique_ptr<Camera>> starting_cameras;
+    std::string camera_file = "Cameras/saved_presets.txt";
+    std::vector<CameraPreset> camera_presets;
 
-    TextureLoader tex_loader("Resources/textures/san_giuseppe_bridge.hdr");
-    if (!tex_loader.load()) {
-        std::cerr << "ERROR: Could not load background texture file.\n";
-    }
-    std::shared_ptr<Texture> background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight());
-
-    loadCamerasFromFile(camera_file, starting_cameras, background_texture_);
+    loadPresetsFromFile(camera_file, camera_presets);
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -200,6 +194,7 @@ int main(int, char**) {
             if (debug_rays == false) ImGui::BeginDisabled();  // Disable next widget(s) if Debug Rays is off
             ImGui::Checkbox("Freeze camera", &freeze_camera);
             if (debug_rays == false) ImGui::EndDisabled();  // Re-enable UI interactions
+            ImGui::Separator();
 
             ImGui::Text("Select Camera:");
             if (active_scene) {
@@ -219,18 +214,50 @@ int main(int, char**) {
                     cam_controller->setYawPitch(yaw, pitch);
                     active_scene->getActiveCamera().setCameraMoved(true);
                 }
+
+                // Process camera presets
+                std::vector<const char*> camera_presets_cstrings;
+                for (size_t i = 0; i < camera_presets.size(); i++) {
+                    camera_presets_cstrings.push_back(camera_presets[i].name.c_str());
+                }
+                
+                ImGui::Text("Presets");
+                ImGui::PushItemWidth(200); // Adjust width for Combo box
+                if (ImGui::Combo("##camera presets", &selected_preset_index, camera_presets_cstrings.data(), camera_presets_cstrings.size())) {
+                    cameras[selected_camera_index]->applyPreset(camera_presets[selected_preset_index]);
+                    float yaw, pitch;
+                    cameras[selected_camera_index]->recalculateYawPitch(yaw, pitch);
+                    cam_controller->setYawPitch(yaw, pitch);
+                    active_scene->getActiveCamera().setCameraMoved(true);
+                }
+                ImGui::PopItemWidth(); // With this the next widget won't inherit this width setting
+
+                ImGui::SameLine();
+                if (ImGui::Button("Remove")) {
+                    removePresetFromFile(camera_file, camera_presets[selected_preset_index].name);
+                    loadPresetsFromFile(camera_file, camera_presets);
+                }
+
+                ImGui::SameLine();
+                if (ImGui::Button("Snap")) { // Places camera to the current preset again
+                    cameras[selected_camera_index]->applyPreset(camera_presets[selected_preset_index]);
+                    float yaw, pitch;
+                    cameras[selected_camera_index]->recalculateYawPitch(yaw, pitch);
+                    cam_controller->setYawPitch(yaw, pitch);
+                    active_scene->getActiveCamera().setCameraMoved(true);
+                }
             }
 
             ImGui::Separator();
 
-            ImGui::Text("Enter camera name to be added:");
+            ImGui::Text("Enter preset name to be added:");
 
             static char camera_name_buffer[64] = ""; // Text input field for camera name
             ImGui::PushItemWidth(200);
-            ImGui::InputText("##Camera Name", camera_name_buffer, IM_ARRAYSIZE(camera_name_buffer));
+            ImGui::InputText("##Preset Name", camera_name_buffer, IM_ARRAYSIZE(camera_name_buffer));
             ImGui::PopItemWidth();
 
-            // Disable "Capture Camera" button if text field is empty
+            // Disable "Add Camera" button if text field is empty
             bool enable_add_button = (strlen(camera_name_buffer) > 0);
             if (!enable_add_button) ImGui::BeginDisabled();
 
@@ -258,45 +285,13 @@ int main(int, char**) {
 
                     file.close();
 
-                    // Adding new camera to the scene
-                    //Camera* camera = new Camera(std::string(camera_name_buffer));
-                    std::unique_ptr<Camera> camera = std::make_unique<Camera>(std::string(camera_name_buffer));
-                    camera->setBackgroundTexture(background_texture_);
-                    camera->setDirection(dir);
-                    camera->setPosition(pos);
-                    camera->setUpVector(up);
-                    camera->setRightVector(right);
-                    camera->setFocalLength(cam.getFocalLength());
-                    active_scene->addCamera(camera);
-                    starting_cameras.push_back(std::move(camera));
+                    CameraPreset preset(std::string(camera_name_buffer), dir, pos, up, right, cam.getFocalLength());
+                    camera_presets.push_back(preset);
 
-                    camera_name_buffer[0] = '\0';  // Clear the text input field after capturing
+                    camera_name_buffer[0] = '\0'; // Clear the text input field after capturing
                 }
             }
             if (!enable_add_button) ImGui::EndDisabled();
-
-            ImGui::Separator();
-
-            if (active_scene) {
-                std::vector<const char*> camera_names_cstrings;
-                for (size_t i = 0; i < starting_cameras.size(); i++) {
-                    camera_names_cstrings.push_back(starting_cameras[i]->getName().data());
-                }
-
-                ImGui::Text("Select Camera to Remove:");
-
-                ImGui::PushItemWidth(200); // Adjust width for Combo box
-                // ## is used to hide the label while keeping it unique internally
-                if (ImGui::Combo("##camera_combo", &remove_camera_index, camera_names_cstrings.data(), camera_names_cstrings.size())) {}
-                ImGui::PopItemWidth(); // With this the next widget won't inherit this width setting
-
-                ImGui::SameLine();
-                if (ImGui::Button("Remove") && remove_camera_index >= 0) {
-                    removeCameraFromFile(camera_file, starting_cameras[remove_camera_index]->getName());
-                    active_scene->removeCamera(starting_cameras[remove_camera_index]->getName());
-                    loadCamerasFromFile(camera_file, starting_cameras, background_texture_);
-                }
-            }
 
             ImGui::Separator();
 
@@ -339,9 +334,6 @@ int main(int, char**) {
                 active_scene->context = context;
                 active_scene->initialize();
 
-                for (size_t i = 0; i < starting_cameras.size(); i++) { // Add the loaded cameras
-                    active_scene->addCamera(starting_cameras[i]);
-                }
                 const std::vector<std::unique_ptr<Camera>>& cameras = active_scene->getCameras();
                 
                 std::vector<const char*> camera_names_cstrings;

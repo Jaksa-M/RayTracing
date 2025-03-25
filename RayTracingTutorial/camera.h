@@ -11,6 +11,7 @@
 #include <utility> // for std::pair
 #include <mutex> // scope_lock
 #include "texture.h"
+#include "types.h"
 
 class Camera {
 public:
@@ -50,7 +51,7 @@ public:
 
     void recalculateYawPitch(float& yaw, float& pitch);
 
-    std::unique_ptr<Camera> clone() const;
+    void applyPreset(CameraPreset preset);
 
 private:
     std::string name_;

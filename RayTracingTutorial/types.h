@@ -48,6 +48,18 @@ struct Attribute {
     const std::span<const float> data;
 };
 
+struct CameraPreset {
+    CameraPreset() {}
+    CameraPreset(std::string name, vec3 dir, vec3 pos, vec3 up, vec3 right, float focal_len) : 
+        name(name), dir(dir), pos(pos), up(up), right(right), focal_len(focal_len) {}
+    std::string name;
+    vec3 dir;
+    vec3 pos;
+    vec3 up;
+    vec3 right;
+    float focal_len;
+};
+
 namespace fs = std::filesystem;
 
 #endif

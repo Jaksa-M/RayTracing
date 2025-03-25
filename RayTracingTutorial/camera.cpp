@@ -400,6 +400,10 @@ void Camera::recalculateYawPitch(float& yaw, float& pitch) {
     pitch = radians_to_degrees(asin(direction.y()));
 }
 
-std::unique_ptr<Camera> Camera::clone() const {
-    return std::make_unique<Camera>(*this);
+void Camera::applyPreset(CameraPreset preset) {
+    camera_direction_ = preset.dir;
+    camera_right_ = preset.right;
+    camera_up_ = preset.up;
+    center_ = preset.pos;
+    focal_length_ = preset.focal_len;
 }

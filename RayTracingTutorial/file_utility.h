@@ -8,31 +8,27 @@
 #include "camera.h"
 #include "scene.h"
 #include "vec3.h"
-#include "texture.h"
+#include "types.h"
 
-void loadCamerasFromFile(const std::string& file, std::vector<std::unique_ptr<Camera>>& starting_cameras, std::shared_ptr<Texture> background_tex) {
+void loadPresetsFromFile(const std::string& file, std::vector<CameraPreset>& camera_presets) {
     std::ifstream file_stream(file);
     if (!file_stream) {
         std::cerr << "Error: Could not open camera file " << file << std::endl;
         exit(-1);
     }
 
-    starting_cameras.clear();
-
+    camera_presets.clear();
     std::string line;
-    std::unique_ptr<Camera> camera;
+    CameraPreset preset;
     
     while (std::getline(file_stream, line)) {
         if (line.find("Name") == 0) {
             std::istringstream iss(line);
             std::string keyword;
-            std::getline(iss, keyword, ' ');  // Reads "Name" and stops when space is reached
-
-            std::string name;
-            std::getline(iss, name);  // Read the rest of the line (arbitrary length of name)
-            camera = std::make_unique<Camera>(name);
+            std::getline(iss, keyword, ' '); // Reads "Name" and stops when space is reached
+            std::getline(iss, preset.name); // Read the rest of the line (arbitrary length of name)
         }
-        if (line.find("Center") == 0) {
+        else if (line.find("Center") == 0) {
             vec3 pos;
             std::istringstream iss(line);
             std::string keyword;
@@ -40,7 +36,7 @@ void loadCamerasFromFile(const std::string& file, std::vector<std::unique_ptr<Ca
             float x, y, z;
             iss >> x >> y >> z;
             pos = vec3(x, y, z);
-            camera->setPosition(pos);
+            preset.pos = pos;
         } else if (line.find("Direction") == 0) {
             vec3 dir;
             std::istringstream iss(line);
@@ -49,7 +45,7 @@ void loadCamerasFromFile(const std::string& file, std::vector<std::unique_ptr<Ca
             float x, y, z;
             iss >> x >> y >> z;
             dir = vec3(x, y, z);
-            camera->setDirection(dir);
+            preset.dir = dir;
         } else if (line.find("Up") == 0) {
             vec3 up;
             std::istringstream iss(line);
@@ -58,7 +54,7 @@ void loadCamerasFromFile(const std::string& file, std::vector<std::unique_ptr<Ca
             float x, y, z;
             iss >> x >> y >> z;
             up = vec3(x, y, z);
-            camera->setUpVector(up);
+            preset.up = up;
         } else if (line.find("Right") == 0) {
             vec3 right;
             std::istringstream iss(line);
@@ -67,24 +63,23 @@ void loadCamerasFromFile(const std::string& file, std::vector<std::unique_ptr<Ca
             float x, y, z;
             iss >> x >> y >> z;
             right = vec3(x, y, z);
-            camera->setRightVector(right);
+            preset.right = right;
         } else if (line.find("FocalLength") == 0) {
             float focal_length;
             std::istringstream iss(line);
             std::string keyword;
             iss >> keyword >> focal_length;
-            camera->setFocalLength(focal_length);
+            preset.focal_len = focal_length;
         } else if (line.empty()) {
-            camera->setBackgroundTexture(background_tex);
-            // If the line is empty, we're expecting to start a new camera
-            starting_cameras.push_back(std::move(camera));
+            // If the line is empty, we're expecting to start a new preset
+            camera_presets.push_back(preset);
+            preset = CameraPreset();
         }
     }
-
     file_stream.close();
 }
 
-void removeCameraFromFile(const std::string& file, std::string_view camera_name) {
+void removePresetFromFile(const std::string& file, std::string_view preset_name) {
     std::ifstream file_stream(file);
     if (!file_stream) {
         std::cerr << "Error: Could not open camera file " << file << std::endl;
@@ -93,17 +88,17 @@ void removeCameraFromFile(const std::string& file, std::string_view camera_name)
 
     std::ostringstream temp_buffer;
     std::string line;
-    bool skip = false; // Flag to skip camera data
+    bool skip = false; // Flag to skip preset data
 
     while (std::getline(file_stream, line)) {
         if (line.find("Name") == 0) {
             std::istringstream iss(line);
             std::string keyword, name;
-            iss >> keyword;           // Read "Name"
-            std::getline(iss, name);  // Read the rest (camera name)
-            name = name.substr(1);    // Remove leading space
+            iss >> keyword;
+            std::getline(iss, name);
+            name = name.substr(1); // Remove leading space
 
-            skip = (name == camera_name);  // If match, start skipping
+            skip = (name == preset_name); // If match, start skipping
         }
 
         if (!skip) {
@@ -111,7 +106,7 @@ void removeCameraFromFile(const std::string& file, std::string_view camera_name)
         }
 
         if (line.empty()) {
-            skip = false;  // Stop skipping when an empty line is encountered
+            skip = false; // Stop skipping when an empty line is encountered
         }
     }
 
