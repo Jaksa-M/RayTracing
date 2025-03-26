@@ -16,6 +16,8 @@ public:
         this->speed_ = sp;
     }
 
+    void setYawPitch(float yaw, float pitch);
+
 private:
     Camera& cam_;
     float speed_;

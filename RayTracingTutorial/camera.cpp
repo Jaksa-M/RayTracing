@@ -6,7 +6,32 @@
 #include <array>
 #include <list>
 
-Camera::Camera() {}
+Camera::Camera(std::string name) : name_(name) {}
+
+Camera::Camera(std::string name, vec3 center) : name_(name), center_(center) {}
+
+Camera::Camera(const Camera& other): 
+      name_(other.name_),
+      image_width(other.image_width),
+      image_height(other.image_height),
+      center_(other.center_),
+      focal_length_(other.focal_length_),
+      pixel00_loc_(other.pixel00_loc_),
+      pixel_delta_u_(other.pixel_delta_u_),
+      pixel_delta_v_(other.pixel_delta_v_),
+      camera_moved_(other.camera_moved_),
+      camera_direction_(other.camera_direction_),
+      camera_up_(other.camera_up_),
+      camera_right_(other.camera_right_),
+      view_matrix_(other.view_matrix_),
+      projection_matrix_(other.projection_matrix_),
+      background_texture_(other.background_texture_)
+{
+    // Clone unique_ptr shader if it exists
+    if (other.shader_prog_) {
+        shader_prog_ = std::make_unique<Shader>(*other.shader_prog_);
+    }
+}
 
 void Camera::setInitalValues() {
     vec3 cameraTarget = vec3(0.0f, 0.0f, -3.0f);
@@ -317,6 +342,8 @@ void Camera::drawRays() {
     }    
 }
 
+std::string_view Camera::getName() const { return name_; }
+
 void Camera::setCenterX(float val) { center_.setX(val); }
 
 void Camera::setCenterY(float val) { center_.setY(val); }
@@ -351,10 +378,24 @@ vec3 Camera::getRightVector() { return camera_right_; }
 
 void Camera::setRightVector(vec3 direction) { camera_right_ = direction; }
 
-matrix4x4 Camera::getViewMatrix() { return view_matrix_; }
+matrix4x4 Camera::getViewMatrix() const { return view_matrix_; }
 
-matrix4x4 Camera::getProjectionMatrix() { return projection_matrix_; }
+matrix4x4 Camera::getProjectionMatrix() const { return projection_matrix_; }
 
-void Camera::setBackgroundTexture(std::shared_ptr<Texture> tex) {
-    background_texture_ = tex;
+std::shared_ptr<Texture> Camera::getBackgroundTexture() const { return background_texture_; }
+
+void Camera::setBackgroundTexture(std::shared_ptr<Texture> tex) { background_texture_ = tex; }
+
+void Camera::recalculateYawPitch(float& yaw, float& pitch) {
+    vec3 direction = getDirection();
+    yaw = radians_to_degrees(atan2(direction.z(), direction.x()));
+    pitch = radians_to_degrees(asin(direction.y()));
+}
+
+void Camera::applyPreset(CameraPreset preset) {
+    camera_direction_ = preset.dir;
+    camera_right_ = preset.right;
+    camera_up_ = preset.up;
+    center_ = preset.pos;
+    focal_length_ = preset.focal_len;
 }

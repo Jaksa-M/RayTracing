@@ -17,7 +17,7 @@ SceneMeshes::SceneMeshes() {
 
 }
 
-void SceneMeshes::initialize(Camera& cam) {
+void SceneMeshes::initialize() {
     initShader();
 }
 
@@ -51,10 +51,10 @@ void SceneMeshes::initShader() {
     //mesh_ = MeshUtils::GenerateSphereLines(60);
 }
 
-std::vector<unsigned char> SceneMeshes::update(int display_w, int display_h, Camera& cam) {
+std::vector<unsigned char> SceneMeshes::update(int display_w, int display_h) {
     std::vector<unsigned char> image_data(display_w * display_h * 3);
 
-    image_data = cam.render(world_, image_data_acc_, *(context.settings));
+    image_data = cameras_[active_camera_]->render(world_, image_data_acc_, *(context.settings));
 
     return image_data;
 }
@@ -99,10 +99,10 @@ std::vector<unsigned int> SceneMeshes::createIndicesArr(int num_of_vert) {
     return indices;
 }
 
-void SceneMeshes::draw_mesh_gizmos(Camera& cam) {
+void SceneMeshes::draw_mesh_gizmos() {
     shader_prog_->bind();
-    shader_prog_->setMat4("view", cam.getViewMatrix().asPointer());
-    shader_prog_->setMat4("projection", cam.getProjectionMatrix().asPointer());
+    shader_prog_->setMat4("view", cameras_[active_camera_]->getViewMatrix().asPointer());
+    shader_prog_->setMat4("projection", cameras_[active_camera_]->getProjectionMatrix().asPointer());
     mesh_->draw(GL_LINES);
     //mesh_->draw(GL_TRIANGLES);
     shader_prog_->unbind();

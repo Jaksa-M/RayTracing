@@ -9,12 +9,9 @@
 #include <glad/gl.h>
 #undef GLAD_GL_IMPLEMENTATION //must stay here because of multiple gl.h includes
 
-// Not using anymore, was using for writing image to a file
-//#define STB_IMAGE_WRITE_IMPLEMENTATION
-//#include "stb_image/stb_image_write.h"
-
 // Includes for my code
 #include <vector>
+#include "file_utility.h"
 #include "types.h"
 #include "gui_settings.h"
 #include "mesh_buffer_manager.h"
@@ -23,9 +20,10 @@
 #include "statistics.h"
 #include "camera.h"
 #include "camera_controller.h"
-//#include "scene_transformations.h"
-//#include "scene_boxes.h"
-//#include "scene_meshes.h"
+#include "texture_loader.h"
+#include "texture.h"
+
+// Scemes
 #include "scene_rt_meshes.h"
 #include "scene_cornell_box.h"
 #include "scene_obj_loader.h"
@@ -101,8 +99,6 @@ int main(int, char**) {
 
     // Our state
     bool show_demo_window = true;
-    bool show_another_window = false;
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
     // Setting up settings for each Scene (they are all using same settings)
     std::unique_ptr<GUISettings> gui_settings = std::make_unique<GUISettings>();
@@ -123,9 +119,6 @@ int main(int, char**) {
 
     std::unique_ptr<Scene> active_scene;
 
-    Camera cam;
-    cam.setInitalValues();
-
     // Decides how much pixels will be traced
     float trace_percentage = 0.1f;
     int reflection_depth = 2;
@@ -135,18 +128,25 @@ int main(int, char**) {
     int selected_option = -1;
     bool fast_mode = true;
     bool debug_rays = false;
+    bool hdr = false;
     int block_size = 8;
     int block_size_values[] = {8, 16, 64};
     int block_size_index = 0;
+    int selected_camera_index = 0;
+    int selected_preset_index = 0;
 
-    CameraController cam_controller(cam, 2.0f);
     std::vector<unsigned char> image_data;
+    std::unique_ptr<CameraController> cam_controller;
+    std::string camera_file = "Cameras/saved_presets.txt";
+    std::vector<CameraPreset> camera_presets;
+
+    loadPresetsFromFile(camera_file, camera_presets);
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
-        glfwPollEvents(); //any pending events like keyboard or mouse inputs, window resize...
+        glfwPollEvents(); // Any pending events like keyboard or mouse inputs, window resize...
         
-        //If the window is minimized (GLFW_ICONIFIED), the application waits (sleeps) for 10 milliseconds and skips the rest of the loop iteration. 
+        // If the window is minimized (GLFW_ICONIFIED), the application waits (sleeps) for 10 milliseconds and skips the rest of the loop iteration. 
         // This helps reduce CPU usage when the window is not actively visible.
         if (glfwGetWindowAttrib(window, GLFW_ICONIFIED) != 0) {
             ImGui_ImplGlfw_Sleep(10);
@@ -158,9 +158,7 @@ int main(int, char**) {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        if (show_demo_window)
-            //ImGui::ShowDemoWindow(&show_demo_window);
-        {
+        if (show_demo_window) {
             static float f = 0.0f;
             const char* scenes[] = { "scene_rt_meshes", "scene_cornell_box", "scene_obj_loader" }; // Dropdown list (combo) items for scene selection
             const char* techniques[] = { "midpoint split", "SAH" }; // Dropdown list (combo) items for technique selection
@@ -188,10 +186,117 @@ int main(int, char**) {
             }
 
             ImGui::Separator();
-            ImGui::Checkbox("Debug Rays", &debug_rays);  // New checkbox
+            ImGui::Checkbox("Debug Rays", &debug_rays);
             if (debug_rays == false) ImGui::BeginDisabled();  // Disable next widget(s) if Debug Rays is off
+            ImGui::SameLine();
             ImGui::Checkbox("Freeze camera", &freeze_camera);
             if (debug_rays == false) ImGui::EndDisabled();  // Re-enable UI interactions
+            if (ImGui::Button("Screenshot")) {
+                int display_w, display_h;
+                glfwGetFramebufferSize(window, &display_w, &display_h);
+                saveScreenshot(display_w, display_h, hdr);
+            }
+            ImGui::SameLine();
+            ImGui::Checkbox("hdr", &hdr);
+            ImGui::Separator();
+
+            ImGui::Text("Select Camera:");
+            if (active_scene) {
+                const std::vector<std::unique_ptr<Camera>>& cameras = active_scene->getCameras();
+
+                std::vector<const char*> camera_names_cstrings;
+                for (size_t i = 0; i < cameras.size(); i++) {
+                    camera_names_cstrings.push_back(cameras[i]->getName().data());
+                }
+
+                if (ImGui::Combo("Cameras", &selected_camera_index, camera_names_cstrings.data(), camera_names_cstrings.size())) {
+                    active_scene->setActiveCamera(selected_camera_index);
+                    cam_controller = std::make_unique<CameraController>(*cameras[selected_camera_index], 2.0f);
+
+                    float yaw, pitch;
+                    cameras[selected_camera_index]->recalculateYawPitch(yaw, pitch);
+                    cam_controller->setYawPitch(yaw, pitch);
+                    active_scene->getActiveCamera().setCameraMoved(true);
+                }
+
+                // Process camera presets
+                std::vector<const char*> camera_presets_cstrings;
+                for (size_t i = 0; i < camera_presets.size(); i++) {
+                    camera_presets_cstrings.push_back(camera_presets[i].name.c_str());
+                }
+                
+                ImGui::Text("Presets");
+                ImGui::PushItemWidth(200); // Adjust width for Combo box
+                if (ImGui::Combo("##camera presets", &selected_preset_index, camera_presets_cstrings.data(), camera_presets_cstrings.size())) {
+                    cameras[selected_camera_index]->applyPreset(camera_presets[selected_preset_index]);
+                    float yaw, pitch;
+                    cameras[selected_camera_index]->recalculateYawPitch(yaw, pitch);
+                    cam_controller->setYawPitch(yaw, pitch);
+                    active_scene->getActiveCamera().setCameraMoved(true);
+                }
+                ImGui::PopItemWidth(); // With this the next widget won't inherit this width setting
+
+                ImGui::SameLine();
+                if (ImGui::Button("Remove")) {
+                    removePresetFromFile(camera_file, camera_presets[selected_preset_index].name);
+                    loadPresetsFromFile(camera_file, camera_presets);
+                }
+
+                ImGui::SameLine();
+                if (ImGui::Button("Snap")) { // Places camera to the current preset again
+                    cameras[selected_camera_index]->applyPreset(camera_presets[selected_preset_index]);
+                    float yaw, pitch;
+                    cameras[selected_camera_index]->recalculateYawPitch(yaw, pitch);
+                    cam_controller->setYawPitch(yaw, pitch);
+                    active_scene->getActiveCamera().setCameraMoved(true);
+                }
+            }
+
+            ImGui::Separator();
+
+            ImGui::Text("Enter preset name to be added:");
+
+            static char camera_name_buffer[64] = ""; // Text input field for camera name
+            ImGui::PushItemWidth(200);
+            ImGui::InputText("##Preset Name", camera_name_buffer, IM_ARRAYSIZE(camera_name_buffer));
+            ImGui::PopItemWidth();
+
+            // Disable "Add Camera" button if text field is empty
+            bool enable_add_button = (strlen(camera_name_buffer) > 0);
+            if (!enable_add_button) ImGui::BeginDisabled();
+
+            ImGui::SameLine();
+            if (ImGui::Button("Add")) {
+                if (active_scene) {
+                    Camera& cam = active_scene->getActiveCamera();
+                    vec3 pos = cam.getPosition();
+                    vec3 dir = cam.getDirection();
+                    vec3 up = cam.getUpVector();
+                    vec3 right = cam.getRightVector();
+
+                    std::ofstream file(camera_file, std::ios::app);  // Append mode
+                    if (!file) {
+                        std::cerr << "Error: Could not open file " << camera_file << std::endl;
+                        exit(-1);
+                    }
+
+                    file << "Name " << camera_name_buffer << "\n";
+                    file << "Center " << pos.x() << " " << pos.y() << " " << pos.z() << "\n";
+                    file << "Direction " << dir.x() << " " << dir.y() << " " << dir.z() << "\n";
+                    file << "Up " << up.x() << " " << up.y() << " " << up.z() << "\n";
+                    file << "Right " << right.x() << " " << right.y() << " " << right.z() << "\n";
+                    file << "FocalLength " << cam.getFocalLength() << "\n\n";
+
+                    file.close();
+
+                    CameraPreset preset(std::string(camera_name_buffer), dir, pos, up, right, cam.getFocalLength());
+                    camera_presets.push_back(preset);
+
+                    camera_name_buffer[0] = '\0'; // Clear the text input field after capturing
+                }
+            }
+            if (!enable_add_button) ImGui::EndDisabled();
+
             ImGui::Separator();
 
             int scene_index = static_cast<int>(selected_scene_index); // Convert enum class to int (bceause ImGui is C library)
@@ -222,20 +327,31 @@ int main(int, char**) {
                 switch (selected_scene_index) {
                     case SceneType::RT_MESHES:  // scene_rt_meshes
                         active_scene = std::make_unique<SceneRtMeshes>();
-                        active_scene->context = context;
-                        active_scene->initialize(cam);
                         break;
                     case SceneType::CORNELL_BOX:  // scene_cornell_box
                         active_scene = std::make_unique<SceneCornellBox>();
-                        active_scene->context = context;
-                        active_scene->initialize(cam);
                         break;
                     case SceneType::OBJ_LOADER:  // scene_custom_meshes
                         active_scene = std::make_unique<SceneObjLoader>();
-                        active_scene->context = context;
-                        active_scene->initialize(cam);
                         break;
                 }
+                active_scene->context = context;
+                active_scene->initialize();
+
+                const std::vector<std::unique_ptr<Camera>>& cameras = active_scene->getCameras();
+                
+                std::vector<const char*> camera_names_cstrings;
+                for (size_t i = 0; i < cameras.size(); i++) {
+                    camera_names_cstrings.push_back(cameras[i]->getName().data());
+                }
+
+                selected_camera_index = 0;
+                ImGui::Combo("Cameras", &selected_camera_index, camera_names_cstrings.data(), camera_names_cstrings.size());
+                active_scene->setActiveCamera(selected_camera_index);
+                cam_controller = std::make_unique<CameraController>(*cameras[selected_camera_index], 2.0f);
+                float yaw, pitch;
+                cameras[selected_camera_index]->recalculateYawPitch(yaw, pitch);
+                cam_controller->setYawPitch(yaw, pitch);
             }
 
             // Enable/Disable BVH for active scene + assign the BVH technique
@@ -256,10 +372,10 @@ int main(int, char**) {
         }
         
         if (!io.WantCaptureKeyboard) {
-            cam_controller.handleKeyboardInput(io.DeltaTime);
+            cam_controller->handleKeyboardInput(io.DeltaTime);
         }
         if (!io.WantCaptureMouse) {
-            cam_controller.handleMouseInput(io);
+            cam_controller->handleMouseInput(io);
         }
 
 
@@ -268,8 +384,6 @@ int main(int, char**) {
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
-        cam.image_width = display_w;
-        cam.image_height = display_h;
         
         active_scene->context.settings->trace_percentage = trace_percentage;
         active_scene->context.settings->reflection_depth = reflection_depth;
@@ -277,20 +391,20 @@ int main(int, char**) {
         active_scene->context.settings->debug_rays = debug_rays;
         active_scene->context.settings->freeze_camera = freeze_camera;
         active_scene->context.settings->block_size = block_size;
-        image_data = active_scene->update(display_w, display_h, cam);
+        image_data = active_scene->update(display_w, display_h);
       
         glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
 
         
-        active_scene->drawBVH(cam); // Drawing of BVH tree/leaves
+        active_scene->drawBVH(); // Drawing of BVH tree/leaves
 
-        cam.drawRays();
-        
-        //scene_rt_meshes.draw_mesh_gizmos(cam);
+        active_scene->getActiveCamera().drawRays();
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         glfwSwapBuffers(window);
-        if (reset_accumulated == true) cam.setCameraMoved(true); // Reseting accumulating buffer every frame to better view rotation... etc
+
+        // Reseting accumulating buffer every frame to better view rotation... etc
+        if (reset_accumulated == true) active_scene->getActiveCamera().setCameraMoved(true);
     }
 
     // Cleanup

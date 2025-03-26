@@ -16,6 +16,10 @@ inline float degrees_to_radians(float degrees) {
     return degrees * pi / 180.0f;
 }
 
+inline float radians_to_degrees(float radians) {
+    return radians * 180.0f / pi;
+}
+
 inline float random_double() {
     // Returns a random real in [0,1).
     return std::rand() / (RAND_MAX + 1.0f);

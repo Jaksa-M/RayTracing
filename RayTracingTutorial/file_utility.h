@@ -1,0 +1,13 @@
+#ifndef FILE_UTILITY_H
+#define FILE_UTILITY_H
+
+#include <string>
+#include "types.h"
+
+void loadPresetsFromFile(const std::string& file, std::vector<CameraPreset>& camera_presets);
+
+void removePresetFromFile(const std::string& file, std::string_view preset_name);
+
+void saveScreenshot(int width, int height, bool hdr);
+
+#endif

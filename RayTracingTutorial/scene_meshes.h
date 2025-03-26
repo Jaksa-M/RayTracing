@@ -9,17 +9,17 @@ class SceneMeshes: public Scene {
 public:
     SceneMeshes();
 
-    void initialize(Camera& cam) override;
+    void initialize() override;
 
     void initShader();
 
-    std::vector<unsigned char> update(int display_w, int display_h, Camera& cam) override;
+    std::vector<unsigned char> update(int display_w, int display_h) override;
 
     std::vector<float> createVerticesArr(int num_of_vert);
 
     std::vector<unsigned int> createIndicesArr(int num_of_vert);
 
-    void draw_mesh_gizmos(Camera& cam) override;
+    void draw_mesh_gizmos() override;
 
 private:
     std::unique_ptr<Mesh> mesh_;

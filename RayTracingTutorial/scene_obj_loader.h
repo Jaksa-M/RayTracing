@@ -13,12 +13,14 @@ class SceneObjLoader : public Scene {
    public:
     SceneObjLoader();
 
-    void initialize(Camera& cam) override;
+    void initialize() override;
 
-    std::vector<unsigned char> update(int display_w, int display_h, Camera& cam) override;
+    std::vector<unsigned char> update(int display_w, int display_h) override;
 
     void initShader();
     void drawBVH(Camera& cam);
+
+    Camera& getActiveCamera() override;
 
     ~SceneObjLoader();
 
