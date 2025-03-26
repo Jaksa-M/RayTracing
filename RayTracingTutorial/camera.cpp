@@ -378,25 +378,17 @@ vec3 Camera::getRightVector() { return camera_right_; }
 
 void Camera::setRightVector(vec3 direction) { camera_right_ = direction; }
 
-matrix4x4 Camera::getViewMatrix() { return view_matrix_; }
+matrix4x4 Camera::getViewMatrix() const { return view_matrix_; }
 
-matrix4x4 Camera::getProjectionMatrix() {
-    return projection_matrix_;
-}
+matrix4x4 Camera::getProjectionMatrix() const { return projection_matrix_; }
 
-std::shared_ptr<Texture> Camera::getBackgroundTexture() const {
-    return background_texture_;
-}
+std::shared_ptr<Texture> Camera::getBackgroundTexture() const { return background_texture_; }
 
-void Camera::setBackgroundTexture(std::shared_ptr<Texture> tex) {
-    background_texture_ = tex;
-}
+void Camera::setBackgroundTexture(std::shared_ptr<Texture> tex) { background_texture_ = tex; }
 
 void Camera::recalculateYawPitch(float& yaw, float& pitch) {
     vec3 direction = getDirection();
-
     yaw = radians_to_degrees(atan2(direction.z(), direction.x()));
-
     pitch = radians_to_degrees(asin(direction.y()));
 }
 

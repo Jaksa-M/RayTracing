@@ -11,7 +11,6 @@
 
 // Includes for my code
 #include <vector>
-#include <fstream>
 #include "file_utility.h"
 #include "types.h"
 #include "gui_settings.h"

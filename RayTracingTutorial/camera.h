@@ -44,8 +44,8 @@ public:
     void setUpVector(vec3 direction);
     vec3 getRightVector();
     void setRightVector(vec3 direction);
-    matrix4x4 getViewMatrix();
-    matrix4x4 getProjectionMatrix();
+    matrix4x4 getViewMatrix() const;
+    matrix4x4 getProjectionMatrix() const;
     std::shared_ptr<Texture> getBackgroundTexture() const;
     void setBackgroundTexture(std::shared_ptr<Texture> tex);
 
