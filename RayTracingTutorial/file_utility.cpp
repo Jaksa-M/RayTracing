@@ -78,6 +78,23 @@ void loadPresetsFromFile(const std::string& file, std::vector<CameraPreset>& cam
     file_stream.close();
 }
 
+void addPresetToFile(const std::string& camera_file, CameraPreset& preset) {
+    std::ofstream file(camera_file, std::ios::app);  // Append mode
+    if (!file) {
+        std::cerr << "Error: Could not open file " << camera_file << std::endl;
+        exit(-1);
+    }
+
+    file << "Name " << preset.name << "\n";
+    file << "Center " << preset.pos.x() << " " << preset.pos.y() << " " << preset.pos.z() << "\n";
+    file << "Direction " << preset.dir.x() << " " << preset.dir.y() << " " << preset.dir.z() << "\n";
+    file << "Up " << preset.up.x() << " " << preset.up.y() << " " << preset.up.z() << "\n";
+    file << "Right " << preset.right.x() << " " << preset.right.y() << " " << preset.right.z() << "\n";
+    file << "FocalLength " << preset.focal_len << "\n\n";
+
+    file.close();
+}
+
 void removePresetFromFile(const std::string& file, std::string_view preset_name) {
     std::ifstream file_stream(file);
     if (!file_stream) {

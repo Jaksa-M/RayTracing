@@ -274,22 +274,8 @@ int main(int, char**) {
                     vec3 up = cam.getUpVector();
                     vec3 right = cam.getRightVector();
 
-                    std::ofstream file(camera_file, std::ios::app);  // Append mode
-                    if (!file) {
-                        std::cerr << "Error: Could not open file " << camera_file << std::endl;
-                        exit(-1);
-                    }
-
-                    file << "Name " << camera_name_buffer << "\n";
-                    file << "Center " << pos.x() << " " << pos.y() << " " << pos.z() << "\n";
-                    file << "Direction " << dir.x() << " " << dir.y() << " " << dir.z() << "\n";
-                    file << "Up " << up.x() << " " << up.y() << " " << up.z() << "\n";
-                    file << "Right " << right.x() << " " << right.y() << " " << right.z() << "\n";
-                    file << "FocalLength " << cam.getFocalLength() << "\n\n";
-
-                    file.close();
-
                     CameraPreset preset(std::string(camera_name_buffer), dir, pos, up, right, cam.getFocalLength());
+                    addPresetToFile(camera_file, preset);
                     camera_presets.push_back(preset);
 
                     camera_name_buffer[0] = '\0'; // Clear the text input field after capturing
