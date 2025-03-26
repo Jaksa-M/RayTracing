@@ -5,3 +5,4 @@ RayTracingTutorial/imgui.ini
 x64/
 
 # Some files that I only need on my PC
+RayTracingTutorial/Cameras/saved_presets.txt
