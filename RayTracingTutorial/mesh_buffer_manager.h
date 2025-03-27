@@ -1,5 +1,5 @@
-#ifndef MESH_MANAGER_H
-#define MESH_MANAGER_H
+#ifndef MESH_BUFFER_MANAGER_H
+#define MESH_BUFFER_MANAGER_H
 
 #include <vector>
 #include <array>
@@ -7,6 +7,13 @@
 #include <span>
 #include "vec3.h"
 #include "types.h"
+
+struct ResolvedMeshInfo {
+    std::span<const float> vertices;
+    std::span<const float> vertex_normals;
+    std::span<const float> uv;
+    std::span<const std::uint32_t> indices;
+};
 
 class MeshBufferManager {
 public:
@@ -18,11 +25,11 @@ public:
 
 	std::span<const std::uint32_t> getIndices(MeshHandle mesh) const;
 	std::span<std::uint32_t> getIndices(MeshHandle mesh);
-	std::span<const float> getNormals(MeshHandle mesh, std::uint32_t attribute) const;
-
 	std::span<const float> getAttribute(MeshHandle mesh, AttributeType attribute) const;
 
 	std::vector<float> buffer;
+
+	ResolvedMeshInfo getResolvedMesh(MeshHandle mesh) const;
 
 private:
 	struct MeshInfo {
@@ -34,5 +41,9 @@ private:
 	std::size_t mesh_ids_ = 0;
 	std::unordered_map<MeshHandle, MeshInfo> mesh_info_;
 };
+
+void getTriangleVertices(const ResolvedMeshInfo& res_mesh, std::uint32_t i0, std::uint32_t i1, std::uint32_t i2, vec3& v0, vec3& v1, vec3& v2);
+void getTriangleNormals(const ResolvedMeshInfo& res_mesh, std::uint32_t i0, std::uint32_t i1, std::uint32_t i2, vec3& n0, vec3& n1, vec3& n2);
+void getTriangleUVs(const ResolvedMeshInfo& res_mesh, std::uint32_t i0, std::uint32_t i1, std::uint32_t i2, vec2& uv0, vec2& uv1, vec2& uv2);
 
 #endif

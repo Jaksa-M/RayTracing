@@ -18,7 +18,7 @@ class SceneObjLoader : public Scene {
     std::vector<unsigned char> update(int display_w, int display_h) override;
 
     void initShader();
-    void drawBVH(Camera& cam);
+    void drawBVH() override;
 
     Camera& getActiveCamera() override;
 
@@ -34,9 +34,9 @@ class SceneObjLoader : public Scene {
     std::shared_ptr<Texture> erato_texture_;
 
     std::unique_ptr<Shader> shader_prog_;
-    std::vector<std::unique_ptr<Mesh>> bounding_boxes_;  // 1 bounding box for each object that will get translated while drawing
+    std::vector<std::unique_ptr<Mesh>> bounding_boxes_; // 1 bounding box for each object that will get translated while drawing
 
-    BVHTechnique prev_BVH_technique_;  // Used for checking whether BVH techique has changed
+    BVHTechnique prev_BVH_technique_; // Used for checking whether BVH techique has changed
 };
 
 #endif

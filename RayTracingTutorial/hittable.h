@@ -5,6 +5,8 @@
 #include <span>
 #include "ray.h"
 #include "matrix.h"
+#include "types.h"
+#include "mesh_buffer_manager.h"
 
 class Material;
 class matrix4x4;
@@ -14,25 +16,28 @@ class HitRecord {
 public:
     point3 p;
     vec3 face_normal;
-    vec3 shading_normal;
     bool type_of_normal = false;
     std::shared_ptr<Material> mat;
     float t;
     bool front_face;
     std::string object_type;
-    float u, v;
-
+    MeshHandle mesh_handle;
+    std::uint32_t triangle_index;
+    vec3 buv;
+    MeshBufferManager* mesh_buf_manager;
+    matrix4x4 local_to_world_mat;
+    
     void set_face_normal(const ray& r, const vec3& outward_normal) {
         // NOTE: the parameter `outward_normal` is assumed to have unit length.
         front_face = dot(r.direction(), outward_normal) < 0;
         face_normal = front_face ? outward_normal : -outward_normal;
     }
 
-    void set_shading_normal(const ray& r, const vec3& outward_normal) {
-        // NOTE: the parameter `outward_normal` is assumed to have unit length.
-        front_face = dot(r.direction(), outward_normal) < 0;
-        shading_normal = front_face ? outward_normal : -outward_normal;
-    }
+    //void set_shading_normal(const ray& r, const vec3& outward_normal) {
+    //    // NOTE: the parameter `outward_normal` is assumed to have unit length.
+    //    front_face = dot(r.direction(), outward_normal) < 0;
+    //    shading_normal = front_face ? outward_normal : -outward_normal;
+    //}
 };
 
 class hittable {

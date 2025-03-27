@@ -380,7 +380,6 @@ int main(int, char**) {
         image_data = active_scene->update(display_w, display_h);
       
         glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
-
         
         active_scene->drawBVH(); // Drawing of BVH tree/leaves
 

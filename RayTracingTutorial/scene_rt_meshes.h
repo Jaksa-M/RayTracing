@@ -16,7 +16,7 @@ public:
     std::vector<unsigned char> update(int display_w, int display_h) override;
 
     void initShader();
-    void drawBVH();
+    void drawBVH() override;
 
     void draw_mesh_gizmos() override;
 

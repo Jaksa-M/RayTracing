@@ -128,7 +128,7 @@ inline vec2 barycentricInterpolate(const vec2& v0, const vec2& v1, const vec2& v
 //-----------------------Other objects intersections that are currently not being used-----------------------
 
 // Plane intersection
-bool hitPlane(const ray& r, interval ray_t, HitRecord& rec) {
+inline bool hitPlane(const ray& r, interval ray_t, HitRecord& rec) {
     // Setup real values when needed
     vec3 p1, p2, p3;
     vec3 plane_normal = unit_vector(cross(p2 - p1, p3 - p1));
@@ -150,7 +150,7 @@ bool hitPlane(const ray& r, interval ray_t, HitRecord& rec) {
 }
 
 // Rectangle intersection
-bool hitRectangle(const ray& r, interval ray_t, HitRecord& rec) {
+inline bool hitRectangle(const ray& r, interval ray_t, HitRecord& rec) {
     // Setup real values when needed
     vec3 p1, p2, p3, p4;
     vec3 rectangle_normal = unit_vector(cross(p2 - p1, p3 - p1));
@@ -186,7 +186,7 @@ bool hitRectangle(const ray& r, interval ray_t, HitRecord& rec) {
     return true;
 }
 
-bool hitSphere(const ray& r, interval ray_t, HitRecord& rec) {
+inline bool hitSphere(const ray& r, interval ray_t, HitRecord& rec) {
     // Setup real values when needed
     vec3 center;
     float radius = 1.0f;

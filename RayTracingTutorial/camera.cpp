@@ -235,10 +235,10 @@ color Camera::ray_color(const ray& r, int depth, const hittable_list& world) {
             return background_texture_->value(u, v, point3(0, 0, 0)) * settings_.environment_light;
 
 
-            // Background gradient if no object is hit
-            unit_direction = unit_vector(r.direction());
-            a = 0.5f * (unit_direction.y() + 1.0f);
-            return (1.0f - a) * color(1.0f, 1.0f, 1.0f) + a * color(0.5f, 0.7f, 1.0f);
+            //// Background gradient if no object is hit
+            //unit_direction = unit_vector(r.direction());
+            //a = 0.5f * (unit_direction.y() + 1.0f);
+            //return (1.0f - a) * color(1.0f, 1.0f, 1.0f) + a * color(0.5f, 0.7f, 1.0f);
             
         case MeshColor::GEOMETRIC_NORMAL: // Showing colors based on geometric normals
             if (world.hit(r, interval(0.001f, float_max), rec)) {
@@ -246,20 +246,20 @@ color Camera::ray_color(const ray& r, int depth, const hittable_list& world) {
             }
             return vec3(0.0f, 0.0f, 0.0f);
 
-        case MeshColor::SHADING_NORMAL:  // Showing colors based on shading normals
-            /*if (world.hit(r, interval(0.001f, infinity), rec)) {
-                return rec.face_normal_ * 0.5 + vec3(0.5f, 0.5f, 0.5f);
-            }
-            return vec3(0.0f, 0.0f, 0.0f);*/
-            if (world.hit(r, interval(0.001f, float_max), rec)) {
-                return vec3(std::abs(rec.shading_normal.x()), std::abs(rec.shading_normal.y()), std::abs(rec.shading_normal.z()));
-                //return vec3(
-                //    std::max(0.0f, rec.shading_normal_.x()),
-                //    std::max(0.0f, rec.shading_normal_.y()),
-                //    std::max(0.0f, rec.shading_normal_.z())
-                //);
-            }
-            return vec3(0.0f, 0.0f, 0.0f);
+        //case MeshColor::SHADING_NORMAL:  // Showing colors based on shading normals
+        //    /*if (world.hit(r, interval(0.001f, infinity), rec)) {
+        //        return rec.face_normal_ * 0.5 + vec3(0.5f, 0.5f, 0.5f);
+        //    }
+        //    return vec3(0.0f, 0.0f, 0.0f);*/
+        //    if (world.hit(r, interval(0.001f, float_max), rec)) {
+        //        return vec3(std::abs(rec.shading_normal.x()), std::abs(rec.shading_normal.y()), std::abs(rec.shading_normal.z()));
+        //        //return vec3(
+        //        //    std::max(0.0f, rec.shading_normal_.x()),
+        //        //    std::max(0.0f, rec.shading_normal_.y()),
+        //        //    std::max(0.0f, rec.shading_normal_.z())
+        //        //);
+        //    }
+        //    return vec3(0.0f, 0.0f, 0.0f);
 
         case MeshColor::DEPTH: // Showing colors based on the depth
             if (world.hit(r, interval(0.001f, float_max), rec)) {
@@ -268,16 +268,16 @@ color Camera::ray_color(const ray& r, int depth, const hittable_list& world) {
             }
             return vec3(0.0f, 0.0f, 0.0f);
 
-        case MeshColor::UV:
-            if (world.hit(r, interval(0.001f, float_max), rec)) {
-                // Ensure UV coordinates are in range [0, 1]
-                float u = std::fmod(std::abs(rec.u), 1.0f);
-                float v = std::fmod(std::abs(rec.v), 1.0f);
+        //case MeshColor::UV:
+        //    if (world.hit(r, interval(0.001f, float_max), rec)) {
+        //        // Ensure UV coordinates are in range [0, 1]
+        //        float u = std::fmod(std::abs(rec.u), 1.0f);
+        //        float v = std::fmod(std::abs(rec.v), 1.0f);
 
-                // Map UV to colors (U -> Red, V -> Green)
-                return color(u, v, 0.0f);
-            }
-            return color(0.0f, 0.0f, 0.0f);
+        //        // Map UV to colors (U -> Red, V -> Green)
+        //        return color(u, v, 0.0f);
+        //    }
+        //    return color(0.0f, 0.0f, 0.0f);
     }
 
     // Won't happen but here to surpass warning
