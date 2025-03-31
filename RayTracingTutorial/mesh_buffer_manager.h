@@ -22,13 +22,11 @@ public:
 	std::vector<float>& getBuffer();
 
 	MeshHandle addToBuffer(std::span<Attribute> attributes, std::span<std::uint32_t> indices);
+    void removeMesh(MeshHandle mesh);
 
 	std::span<const std::uint32_t> getIndices(MeshHandle mesh) const;
 	std::span<std::uint32_t> getIndices(MeshHandle mesh);
 	std::span<const float> getAttribute(MeshHandle mesh, AttributeType attribute) const;
-
-	std::vector<float> buffer;
-
 	ResolvedMeshInfo getResolvedMesh(MeshHandle mesh) const;
 
 private:
@@ -37,9 +35,13 @@ private:
 		std::size_t count_v; // how many vertices there are
 		std::size_t offset_i; // position where indices array is placed
 		std::uint32_t count_i; // how much elements inside indices array there are
+        bool active = false;
 	};
+    std::vector<float> buffer;
 	std::size_t mesh_ids_ = 0;
-	std::unordered_map<MeshHandle, MeshInfo> mesh_info_;
+
+    std::vector<MeshInfo> mesh_info_;
+    std::vector<std::size_t> free_indices_;
 };
 
 void getTriangleVertices(const ResolvedMeshInfo& res_mesh, std::uint32_t i0, std::uint32_t i1, std::uint32_t i2, vec3& v0, vec3& v1, vec3& v2);
