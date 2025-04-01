@@ -32,12 +32,6 @@ public:
         front_face = dot(r.direction(), outward_normal) < 0;
         face_normal = front_face ? outward_normal : -outward_normal;
     }
-
-    //void set_shading_normal(const ray& r, const vec3& outward_normal) {
-    //    // NOTE: the parameter `outward_normal` is assumed to have unit length.
-    //    front_face = dot(r.direction(), outward_normal) < 0;
-    //    shading_normal = front_face ? outward_normal : -outward_normal;
-    //}
 };
 
 class hittable {
