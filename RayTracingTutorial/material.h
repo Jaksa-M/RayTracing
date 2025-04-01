@@ -59,7 +59,8 @@ private:
 
 class Metal : public Material {
 public:
-    Metal(std::shared_ptr<Texture> roughness_tex) : roughness_tex_(roughness_tex) {}
+    Metal(std::shared_ptr<Texture> albedo_tex, std::shared_ptr<Texture> roughness_tex)
+        : albedo_tex_(albedo_tex), roughness_tex_(roughness_tex) {}
 
     bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered) const override {
         ResolvedMeshInfo res_mesh_info = rec.mesh_buf_manager->getResolvedMesh(rec.mesh_handle);
@@ -85,12 +86,12 @@ public:
         reflected = unit_vector(reflected);
         reflected += roughness * random_unit_vector();
         scattered = ray(rec.p, unit_vector(reflected));
-        attenuation = roughness_tex_->value(uv[0], uv[1], rec.p);
+        attenuation = albedo_tex_->value(uv[0], uv[1], rec.p);
         return (dot(scattered.direction(), (rec.type_of_normal == false) ? rec.face_normal : shading_normal) > 0);
     }
 
 private:
-    color albedo_;
+    std::shared_ptr<Texture> albedo_tex_;
     std::shared_ptr<Texture> roughness_tex_;
 };
 
