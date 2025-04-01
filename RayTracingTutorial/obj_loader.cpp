@@ -47,7 +47,18 @@ bool ObjLoader::load(Context& context) {
 
     for (auto& mat : reader.GetMaterials()) {
         std::shared_ptr<Material> material;
-        if (mat.diffuse_texname.empty() == false) {
+
+        if (mat.specular_texname.empty() == false) {
+            fs::path specular_texture_path = file_.parent_path() / mat.specular_texname;
+            TextureLoader spec_tex_loader(specular_texture_path.string());
+            if (!spec_tex_loader.load()) {
+                std::cerr << "ERROR: Could not load specular texture file '" << specular_texture_path << "'.\n";
+            }
+            std::shared_ptr<Texture> roughness_tex =
+                std::make_shared<Texture>(spec_tex_loader.getData(), spec_tex_loader.getImageWidth(), spec_tex_loader.getImageHeight());
+            material = std::make_shared<Metal>(roughness_tex);
+        }
+        else if (mat.diffuse_texname.empty() == false) {
             fs::path texture_path = file_.parent_path() / mat.diffuse_texname;
             TextureLoader tex_loader(texture_path.string());
             if (!tex_loader.load()) {

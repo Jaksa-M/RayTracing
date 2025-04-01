@@ -59,13 +59,9 @@ private:
 
 class Metal : public Material {
 public:
-    Metal(const color& albedo, std::shared_ptr<Texture> roughness_tex) : albedo_(albedo), roughness_tex_(roughness_tex) {}
+    Metal(std::shared_ptr<Texture> roughness_tex) : roughness_tex_(roughness_tex) {}
 
     bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered) const override {
-        vec3 reflected = reflect(r_in.direction(), rec.face_normal);
-        //vec3 reflected = reflect(r_in.direction(), (rec.type_of_normal == false) ? rec.face_normal : rec.shading_normal);
-        reflected = unit_vector(reflected);
-
         ResolvedMeshInfo res_mesh_info = rec.mesh_buf_manager->getResolvedMesh(rec.mesh_handle);
 
         std::uint32_t i0 = res_mesh_info.indices[rec.triangle_index];
@@ -82,14 +78,15 @@ public:
         matrix3x3 normal_matrix = rec.local_to_world_mat.convertTo3x3().invert().transpose();
         shading_normal = unit_vector(normal_matrix * shading_normal);
 
-        float roughness = roughness_tex_->value(uv[0], uv[1], rec.p).x();
+        float roughness = 1 - roughness_tex_->value(uv[0], uv[1], rec.p).x();
         roughness = std::clamp(roughness, 0.0f, 1.0f);
         
+        vec3 reflected = reflect(r_in.direction(), shading_normal);
+        reflected = unit_vector(reflected);
         reflected += roughness * random_unit_vector();
         scattered = ray(rec.p, unit_vector(reflected));
-        attenuation = albedo_;
-        return (dot(scattered.direction(), rec.face_normal) > 0);
-        //return (dot(scattered.direction(), (rec.type_of_normal == false) ? rec.face_normal : rec.shading_normal) > 0);
+        attenuation = roughness_tex_->value(uv[0], uv[1], rec.p);
+        return (dot(scattered.direction(), (rec.type_of_normal == false) ? rec.face_normal : shading_normal) > 0);
     }
 
 private:
