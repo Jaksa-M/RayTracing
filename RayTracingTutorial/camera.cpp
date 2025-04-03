@@ -222,7 +222,7 @@ color Camera::ray_color(const ray& r, int depth, const hittable_list& world) {
                         }
                     }
                     return attenuation * ray_color(scattered, depth - 1, world);
-                    //return attenuation;
+                    //return attenuation; // used for roughness view
                 }
                 return color(0.0f, 0.0f, 0.0f);
             }

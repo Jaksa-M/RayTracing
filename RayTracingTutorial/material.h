@@ -41,11 +41,12 @@ public:
         matrix3x3 normal_matrix = rec.local_to_world_mat.convertTo3x3().invert().transpose();
         shading_normal = unit_vector(normal_matrix * shading_normal);
 
-        vec3 normal = (rec.type_of_normal == false) ? rec.face_normal : shading_normal;
+        bool type_of_normal = true;
+        vec3 normal = (type_of_normal == false) ? rec.face_normal : shading_normal;
         auto scatter_direction = unit_vector(normal + random_unit_vector());
         // Catch degenerate scatter direction
         if (scatter_direction.near_zero())
-            (rec.type_of_normal == false) ? scatter_direction = rec.face_normal : scatter_direction = shading_normal;
+            (type_of_normal == false) ? scatter_direction = rec.face_normal : scatter_direction = shading_normal;
 
         scattered = ray(rec.p + rec.face_normal * 0.00001f, scatter_direction);
         attenuation = tex_->value(uv[0], uv[1], rec.p);
@@ -82,7 +83,8 @@ public:
         float roughness = roughness_tex_->value(uv[0], uv[1], rec.p).x();
         roughness = std::clamp(roughness, 0.0f, 1.0f);
         
-        vec3 normal = (rec.type_of_normal == false) ? rec.face_normal : shading_normal;
+        bool type_of_normal = true;
+        vec3 normal = (type_of_normal == false) ? rec.face_normal : shading_normal;
         vec3 reflected = reflect(r_in.direction(), shading_normal);
         reflected = unit_vector(reflected + roughness * random_unit_vector());
         if (reflected.near_zero()) reflected = normal;

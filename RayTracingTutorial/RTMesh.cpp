@@ -36,8 +36,6 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
     intersectBVH(changed_ray, ray_t, intersect_result, 0, closest_hit_t);
 
     if (closest_hit_t != std::numeric_limits<float>::max()) {
-        rec.type_of_normal = true;
-        rec.object_type = "triangle";
         rec.mat = mat_;
 
         std::uint32_t i0 = res_mesh_info_.indices[intersect_result.closest_tri_index];
@@ -106,8 +104,6 @@ bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
             }
         }
         if (closest_intersection.t != float_max) {
-            rec.type_of_normal = true;
-            rec.object_type = "triangle";
             rec.mat = mat_;
 
             std::uint32_t i0 = res_mesh_info_.indices[closest_intersection.closest_tri_index];

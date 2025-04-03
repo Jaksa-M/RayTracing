@@ -145,7 +145,6 @@ inline bool hitPlane(const ray& r, interval ray_t, HitRecord& rec) {
     rec.t = t;
     rec.p = r.at(rec.t);
     rec.set_face_normal(r, plane_normal);
-    rec.object_type = "plane";
     return true;  // Intersection occurred in the ray's direction
 }
 
@@ -182,7 +181,6 @@ inline bool hitRectangle(const ray& r, interval ray_t, HitRecord& rec) {
     rec.t = t;
     rec.p = Q;
     rec.set_face_normal(r, rectangle_normal);
-    rec.object_type = "rectangle";
     return true;
 }
 
@@ -210,7 +208,6 @@ inline bool hitSphere(const ray& r, interval ray_t, HitRecord& rec) {
     rec.p = r.at(rec.t);
     vec3 outward_normal = (rec.p - center) / radius;
     rec.set_face_normal(r, outward_normal);
-    rec.object_type = "sphere";
     // rec.mat = mat_;
     return true;
 }

@@ -16,11 +16,9 @@ class HitRecord {
 public:
     point3 p;
     vec3 face_normal;
-    bool type_of_normal = false;
     std::shared_ptr<Material> mat;
     float t;
     bool front_face;
-    std::string object_type;
     MeshHandle mesh_handle;
     std::uint32_t triangle_index;
     vec3 buv;
