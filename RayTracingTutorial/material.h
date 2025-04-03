@@ -49,7 +49,7 @@ public:
             (type_of_normal == false) ? scatter_direction = rec.face_normal : scatter_direction = shading_normal;
 
         scattered = ray(rec.p + rec.face_normal * 0.00001f, scatter_direction);
-        attenuation = tex_->value(uv[0], uv[1], rec.p);
+        attenuation = tex_->value(uv[0], uv[1]);
         return true;
     }
 
@@ -80,7 +80,7 @@ public:
         matrix3x3 normal_matrix = rec.local_to_world_mat.convertTo3x3().invert().transpose();
         shading_normal = unit_vector(normal_matrix * shading_normal);
 
-        float roughness = roughness_tex_->value(uv[0], uv[1], rec.p).x();
+        float roughness = roughness_tex_->value(uv[0], uv[1]).x();
         roughness = std::clamp(roughness, 0.0f, 1.0f);
         
         bool type_of_normal = true;
@@ -91,7 +91,7 @@ public:
 
         scattered = ray(rec.p + rec.face_normal * 0.00001f, reflected);
 
-        attenuation = albedo_tex_->value(uv[0], uv[1], rec.p);
+        attenuation = albedo_tex_->value(uv[0], uv[1]);
         //attenuation = roughness;
         return (dot(scattered.direction(), normal) > 0);
     }

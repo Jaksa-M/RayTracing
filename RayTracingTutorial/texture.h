@@ -83,7 +83,7 @@ class Texture {
         data_.clear();
     }
 
-    color value(float u, float v, const point3& p) const {
+    color value(float u, float v) const {
         u = std::fmod(std::abs(u), 1.0f);
         v = 1.0f - std::fmod(std::abs(v), 1.0f);
 

@@ -233,7 +233,7 @@ color Camera::ray_color(const ray& r, int depth, const hittable_list& world) {
             u = (std::atan2(-unit_direction.z(), unit_direction.x()) + pi) / (2 * pi);
             v = std::acos(-unit_direction.y()) / pi;
 
-            return background_texture_->value(u, v, point3(0, 0, 0)) * settings_.environment_light;
+            return background_texture_->value(u, v) * settings_.environment_light;
 
 
             //// Background gradient if no object is hit
