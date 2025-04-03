@@ -18,6 +18,28 @@ class Texture {
     Texture(std::vector<unsigned char> data, std::uint32_t image_width, std::uint32_t image_height): 
         data_(data), image_width_(image_width), image_height_(image_height), bytes_per_scanline_(3 * image_width_) {}
 
+    Texture(std::uint32_t image_width, std::uint32_t image_height)
+        : image_width_(image_width), image_height_(image_height), bytes_per_scanline_(3 * image_width_) {
+
+        data_.resize(image_width_ * image_height_ * bytes_per_pixel_);
+
+        for (std::uint32_t j = 0; j < image_height_; j++) {
+            for (std::uint32_t i = 0; i < image_width_; i++) {
+                float t = static_cast<float>(i) / static_cast<float>(image_width_ - 1);
+
+                // Interpolating between red (left) and blue (right)
+                unsigned char r = static_cast<unsigned char>((1.0f - t) * 255); // Red fades out
+                unsigned char g = 0; // No green component
+                unsigned char b = static_cast<unsigned char>(t * 255); // Blue increases
+
+                std::size_t index = (j * image_width_ + i) * bytes_per_pixel_;
+                data_[index] = r;
+                data_[index + 1] = g;
+                data_[index + 2] = b;
+            }
+        }
+    }
+
     ~Texture() { 
         data_.clear();
     }
@@ -30,6 +52,12 @@ class Texture {
         std::uint32_t j = std::uint32_t(v * image_height_);
 
         return pixelData(i, j);
+    }
+
+    void invertColor() {
+        for (std::size_t i = 0; i < data_.size(); i += 3) {
+            data_[i] = 255 - data_[i]; // we only need to invert first color
+        }
     }
 
    private:

@@ -56,6 +56,9 @@ bool ObjLoader::load(Context& context) {
                 std::cerr << "ERROR: Could not load specular texture file '" << specular_texture_path << "'.\n";
             }
             roughness_tex = std::make_shared<Texture>(spec_tex_loader.getData(), spec_tex_loader.getImageWidth(), spec_tex_loader.getImageHeight());
+
+            // We need to invert R pixel for correct roughness
+            roughness_tex->invertColor();
         }
         if (mat.diffuse_texname.empty() == false) {
             fs::path texture_path = file_.parent_path() / mat.diffuse_texname;
@@ -69,7 +72,6 @@ bool ObjLoader::load(Context& context) {
             } else {
                 material = std::make_shared<Lambertian>(tex);
             }
-            
         } else {
             color col(mat.diffuse[0], mat.diffuse[1], mat.diffuse[2]);
             material = std::make_shared<Lambertian>(col);

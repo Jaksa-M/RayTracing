@@ -36,49 +36,55 @@ void SceneRtMeshes::initialize() {
     }
 
     // Loading texture from an image
-    TextureLoader tex_loader2("Resources/textures/default_texture.jpg");
+    TextureLoader tex_loader2("Resources/textures/spnza_bricks_a_diff.png");
     if (!tex_loader2.load()) {
         std::cerr << "ERROR: Could not load texture file" << "\n ";
     }
     std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader2.getData(), tex_loader2.getImageWidth(), tex_loader2.getImageHeight());
     std::shared_ptr<Material> texture_mat = std::make_shared<Lambertian>(tex);
 
-    auto mat = std::make_shared<Lambertian>(color(0.8f, 0.8f, 0.0f));
-    //cube_mesh_ = MeshUtils::GenerateTriangleCube(mat, mesh_buf_manager.get(), 2);
-    //cube_sphere_ = MeshUtils::GenerateTriangleSphere(mat, mesh_buf_manager.get(), 4);
-    //ico_sphere_ = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2, vec3(2.0f,0.0f,0.0f));
-    //ico_sphere_ = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2);
-    //rectangle_mesh_ = MeshUtils::GenerateTriangleRectangle(mat, mesh_buf_manager.get(), 6, 3);
+    //rect_prism_mesh1_ = MeshUtils::GenerateTriangleCube(context, texture_mat, 4);
+    //matrix4x4 m = transformation::create_rotation_matrix(0.0f, 30.0f * (3.14159f / 180.0f), 0.0f) *
+    //              transformation::create_translation_matrix(vec3(-2.0f, 0.0f, 0.0f)); // 30 degree rotation on y-axis + translation on x-axis
+    //rect_prism_mesh1_->setTransformationMatrix(m);
+    //world_.add(rect_prism_mesh1_);
 
-    rect_prism_mesh1_ = MeshUtils::GenerateTriangleCube(context, texture_mat, 4);
-    matrix4x4 m = transformation::create_rotation_matrix(0.0f, 30.0f * (3.14159f / 180.0f), 0.0f) *
-                  transformation::create_translation_matrix(vec3(-2.0f, 0.0f, 0.0f)); // 30 degree rotation on y-axis + translation on x-axis
+    //rect_prism_mesh2_ = std::make_shared<RTMesh>(context, rect_prism_mesh1_->getMeshHandle(), texture_mat);
+    //m = transformation::create_rotation_matrix(0.0f, 70.0f * (3.14159f / 180.0f), 0.0f) *
+    //    transformation::create_translation_matrix(vec3(2.0f, 0.0f, 0.0f)); // 70 degree rotation on y-axis + translation on x-axis
+    //rect_prism_mesh2_->setTransformationMatrix(m);
+    //world_.add(rect_prism_mesh2_);
+
+    TextureLoader tex_loader3("Resources/textures/spnza_bricks_a_spec.png");
+    if (!tex_loader3.load()) {
+        std::cerr << "ERROR: Could not load texture file" << "\n ";
+    }
+    //std::shared_ptr<Texture> roughness_tex = std::make_shared<Texture>(tex_loader3.getData(), tex_loader3.getImageWidth(), tex_loader3.getImageHeight());
+    //roughness_tex->invertColor();
+    std::shared_ptr<Texture> rough_tex = std::make_shared<Texture>(vec3(1, 0, 0));
+    std::shared_ptr<Texture> rough_zero_tex = std::make_shared<Texture>(vec3(0, 0, 0));
+    std::shared_ptr<Texture> rough_mid_tex = std::make_shared<Texture>(vec3(0.3, 0.3, 0.3));
+    std::shared_ptr<Texture> rough_gradient_tex = std::make_shared<Texture>(tex_loader3.getImageWidth(), tex_loader3.getImageHeight());
+    std::shared_ptr<Texture> white_tex = std::make_shared<Texture>(vec3(1, 1, 1));
+    
+    auto plane_mat = std::make_shared<Metal>(white_tex, rough_gradient_tex);
+    //auto plane_mat = std::make_shared<Lambertian>(tex);
+    
+    plane_mesh_ = MeshUtils::GenerateTriangleRectangle(context, plane_mat, 2, 2);
+    matrix4x4 m = transformation::create_translation_matrix(vec3(0.0f, 1.0f, -0.99f)) * transformation::create_scaling_matrix(30.0f, 30.0f, 30.0f);
+    plane_mesh_->setTransformationMatrix(m);
+    world_.add(plane_mesh_);
+
+    auto cube_mat = std::make_shared<Lambertian>(white_tex);
+    rect_prism_mesh1_ = MeshUtils::GenerateTriangleCube(context, cube_mat, 4);
+    m = transformation::create_translation_matrix(vec3(0.0f, 3.0f, 0.0f));
     rect_prism_mesh1_->setTransformationMatrix(m);
     world_.add(rect_prism_mesh1_);
 
-    rect_prism_mesh2_ = std::make_shared<RTMesh>(context, rect_prism_mesh1_->getMeshHandle(), texture_mat);
-    m = transformation::create_rotation_matrix(0.0f, 70.0f * (3.14159f / 180.0f), 0.0f) *
-        transformation::create_translation_matrix(vec3(2.0f, 0.0f, 0.0f)); // 70 degree rotation on y-axis + translation on x-axis
+    rect_prism_mesh2_ = std::make_shared<RTMesh>(context, rect_prism_mesh1_->getMeshHandle(), cube_mat);
+    m = transformation::create_translation_matrix(vec3(2.0f, 2.0f, 3.0f));
     rect_prism_mesh2_->setTransformationMatrix(m);
     world_.add(rect_prism_mesh2_);
-
-    /*ico_sphere_ = MeshUtils::GenerateIcosphere(context, texture_mat, 2);
-    matrix4x4 m = transformation::create_translation_matrix(vec3(1.0f, 0.0f, 0.0f));
-    ico_sphere_->setTransformationMatrix(m);
-    world_.add(ico_sphere_);
-    */
-
-    /*triangle_sphere_ = MeshUtils::GenerateTriangleSphere(context, texture_mat, 6);
-    matrix4x4 m = matrix4x4::identity();
-    triangle_sphere_->setTransformationMatrix(m);
-    world_.add(triangle_sphere_);
-    */
-
-    //rect_mesh_back_ = MeshUtils::GenerateTriangleRectangle(context, texture_mat, 2, 2);
-    ////m = transformation::create_translation_matrix(vec3(0.0f, 1.0f, -0.99f));
-    //    //transformation::create_rotation_matrix(90.0f * (3.14159f / 180.0f), 0.0f, 0.0f) * transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
-    //rect_mesh_back_->setTransformationMatrix(matrix4x4::identity());
-    //world_.add(rect_mesh_back_);
 
     initShader();
 }

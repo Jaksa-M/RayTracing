@@ -106,7 +106,7 @@ int main(int, char**) {
     std::unique_ptr<BVHManager> bvh_manager = std::make_unique<BVHManager>(gui_settings.get());
     std::unique_ptr<Statistics> statistics = std::make_unique<Statistics>();
 
-    SceneType selected_scene_index = SceneType::OBJ_LOADER;
+    SceneType selected_scene_index = SceneType::RT_MESHES;
     BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
     MeshColor chosen_mesh_color = MeshColor::MATERIAL;
 
@@ -162,7 +162,7 @@ int main(int, char**) {
             static float f = 0.0f;
             const char* scenes[] = { "scene_rt_meshes", "scene_cornell_box", "scene_obj_loader" }; // Dropdown list (combo) items for scene selection
             const char* techniques[] = { "midpoint split", "SAH" }; // Dropdown list (combo) items for technique selection
-            const char* mesh_colors[] = {"material", "geometric normal", "shading normal", "depth", "uv"};  // Dropdown list (combo) items for color representation selection
+            const char* mesh_colors[] = {"material", "geometric normal", "shading normal", "depth", "uv"}; // Dropdown list (combo) items for color representation selection
             const char* block_sizes[] = {"8x8", "16x16", "64x64"}; // Dropdown list (combo) items for block size selection
             
             ImGui::Begin("Ray Tracer");                          // Create a window called "Hello, world!" and append into it.

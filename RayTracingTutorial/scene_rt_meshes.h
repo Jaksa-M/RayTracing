@@ -34,6 +34,7 @@ private:
     std::shared_ptr<RTMesh> rect_prism_mesh2_;
     std::shared_ptr<RTMesh> test_mesh_;
     std::shared_ptr<RTMesh> rect_mesh_back_;
+    std::shared_ptr<RTMesh> plane_mesh_;
 
     std::unique_ptr<Mesh> mesh_;
     std::unique_ptr<Shader> shader_prog_;
