@@ -123,6 +123,9 @@
     <ClCompile Include="file_utility.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="scene_material_testing.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vec3.h">
@@ -264,6 +267,9 @@
       <Filter>External Libraries\tinyobjloader</Filter>
     </ClInclude>
     <ClInclude Include="file_utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scene_material_testing.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

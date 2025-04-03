@@ -29,7 +29,7 @@ void SceneCornellBox::initialize() {
     if (!tex_loader.load()) {
         std::cerr << "ERROR: Could not load background texture file.\n";
     }
-    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight());
+    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight(), false);
     for (int i = 0; i < cameras_.size(); i++) {
         cameras_[i]->setBackgroundTexture(background_texture_);
     }

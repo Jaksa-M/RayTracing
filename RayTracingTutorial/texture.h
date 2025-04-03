@@ -8,18 +8,18 @@
 
 class Texture {
    public:
-    Texture(const color& solid_color): image_width_(1), image_height_(1) {
+    Texture(const color& solid_color, bool is_gamma) : image_width_(1), image_height_(1), is_gamma_(is_gamma) {
         bytes_per_scanline_ = 3;
         data_ = {static_cast<unsigned char>(solid_color.x() * 255), 
                  static_cast<unsigned char>(solid_color.y() * 255),
                  static_cast<unsigned char>(solid_color.z() * 255)};
     }
 
-    Texture(std::vector<unsigned char> data, std::uint32_t image_width, std::uint32_t image_height): 
-        data_(data), image_width_(image_width), image_height_(image_height), bytes_per_scanline_(3 * image_width_) {}
+    Texture(std::vector<unsigned char> data, std::uint32_t image_width, std::uint32_t image_height, bool is_gamma): 
+        data_(data), image_width_(image_width), image_height_(image_height), bytes_per_scanline_(3 * image_width_), is_gamma_(is_gamma) {}
 
-    Texture(std::uint32_t image_width, std::uint32_t image_height)
-        : image_width_(image_width), image_height_(image_height), bytes_per_scanline_(3 * image_width_) {
+    Texture(std::uint32_t image_width, std::uint32_t image_height, bool is_gamma)
+        : image_width_(image_width), image_height_(image_height), bytes_per_scanline_(3 * image_width_), is_gamma_(is_gamma) {
 
         data_.resize(image_width_ * image_height_ * bytes_per_pixel_);
 
@@ -39,6 +39,45 @@ class Texture {
             }
         }
     }
+
+    Texture(std::uint32_t image_width, std::uint32_t image_height, const color& color1, const color& color2, bool is_gamma)
+        : image_width_(image_width), image_height_(image_height), bytes_per_scanline_(3 * image_width_), is_gamma_(is_gamma)
+    {
+        data_.resize(image_width_ * image_height_ * bytes_per_pixel_);
+
+        for (std::uint32_t j = 0; j < image_height_; j++) {
+            for (std::uint32_t i = 0; i < image_width_; i++) {
+                bool is_color1 = ((i / 10) % 2 == (j / 10) % 2); // Checker pattern with 10-pixel squares
+                color c = is_color1 ? color1 : color2;
+
+                std::size_t index = (j * image_width_ + i) * bytes_per_pixel_;
+                data_[index] = static_cast<unsigned char>(c.x() * 255);
+                data_[index + 1] = static_cast<unsigned char>(c.y() * 255);
+                data_[index + 2] = static_cast<unsigned char>(c.z() * 255);
+            }
+        }
+    }
+
+    Texture(std::uint32_t image_width, std::uint32_t image_height, std::uint32_t step_size, bool is_gamma)
+        : image_width_(image_width), image_height_(image_height), bytes_per_scanline_(3 * image_width_), is_gamma_(is_gamma)
+    {
+        data_.resize(image_width_ * image_height_ * bytes_per_pixel_);
+
+        for (std::uint32_t j = 0; j < image_height_; j++) {
+            for (std::uint32_t i = 0; i < image_width_; i++) {
+                float roughness = (i / step_size) * (1.0f / (image_width_ / step_size));
+                roughness = std::min(roughness, 1.0f); // Clamp to max_roughness
+
+                unsigned char roughness_value = static_cast<unsigned char>(roughness * 255);
+
+                std::size_t index = (j * image_width_ + i) * bytes_per_pixel_;
+                data_[index] = roughness_value;
+                data_[index + 1] = roughness_value;
+                data_[index + 2] = roughness_value;
+            }
+        }
+    }
+
 
     ~Texture() { 
         data_.clear();
@@ -61,6 +100,7 @@ class Texture {
     }
 
    private:
+    bool is_gamma_; // Check if we should do gamma correction
     std::vector<unsigned char> data_;
     std::uint32_t image_width_ = 0;
     std::uint32_t image_height_ = 0;
@@ -74,6 +114,11 @@ class Texture {
         return high - 1;
     }
 
+    vec3 gammaToLinear(vec3& color) const {
+        return vec3(std::pow(color.x(), 2.2f), std::pow(color.y(), 2.2f), std::pow(color.z(), 2.2f));
+    }
+
+
     vec3 pixelData(std::uint32_t x, std::uint32_t y) const {
         // Return the address of the three RGB bytes of the pixel at x,y. If there is no image data, returns magenta.
         if (data_.empty()) return vec3(255, 0, 255);
@@ -84,7 +129,8 @@ class Texture {
         const unsigned char* pixel = &data_[y * bytes_per_scanline_ + x * bytes_per_pixel_];
         float color_scale = 1.0f / 255.0f;
 
-        return vec3(color_scale * pixel[0], color_scale * pixel[1], color_scale * pixel[2]);
+        vec3 color  = vec3(color_scale * pixel[0], color_scale * pixel[1], color_scale * pixel[2]);
+        return is_gamma_ ? gammaToLinear(color) : color;
     }
 };
 

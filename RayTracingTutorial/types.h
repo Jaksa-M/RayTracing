@@ -10,9 +10,10 @@ using MeshHandle = std::size_t;
 
 // UI types
 enum class SceneType {
-    RT_MESHES,     // scene_rt_meshes
-    CORNELL_BOX,   // scene_cornell_box
-    OBJ_LOADER     // scene_custom_meshes
+    RT_MESHES,       // scene_rt_meshes
+    CORNELL_BOX,     // scene_cornell_box
+    OBJ_LOADER,      // scene_custom_meshes
+    MATERIAL_TESTING // scene_material_testing
 };
 
 enum class BVHTechnique {

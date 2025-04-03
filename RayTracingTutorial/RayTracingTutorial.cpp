@@ -27,6 +27,7 @@
 #include "scene_rt_meshes.h"
 #include "scene_cornell_box.h"
 #include "scene_obj_loader.h"
+#include "scene_material_testing.h"
 
 // ImGui things
 #include "imgui/imgui.h"
@@ -160,7 +161,8 @@ int main(int, char**) {
 
         if (show_demo_window) {
             static float f = 0.0f;
-            const char* scenes[] = { "scene_rt_meshes", "scene_cornell_box", "scene_obj_loader" }; // Dropdown list (combo) items for scene selection
+            const char* scenes[] = {"scene_rt_meshes", "scene_cornell_box", "scene_obj_loader",
+                                    "scene_material_testing"}; // Dropdown list (combo) items for scene selection
             const char* techniques[] = { "midpoint split", "SAH" }; // Dropdown list (combo) items for technique selection
             const char* mesh_colors[] = {"material", "geometric normal", "shading normal", "depth", "uv"}; // Dropdown list (combo) items for color representation selection
             const char* block_sizes[] = {"8x8", "16x16", "64x64"}; // Dropdown list (combo) items for block size selection
@@ -311,14 +313,17 @@ int main(int, char**) {
             // Initialize a scene depending on which scene is chosen (only if scene is not already initalized)
             if (scene_changed == true || !active_scene) {
                 switch (selected_scene_index) {
-                    case SceneType::RT_MESHES:  // scene_rt_meshes
+                    case SceneType::RT_MESHES: // scene_rt_meshes
                         active_scene = std::make_unique<SceneRtMeshes>();
                         break;
-                    case SceneType::CORNELL_BOX:  // scene_cornell_box
+                    case SceneType::CORNELL_BOX: // scene_cornell_box
                         active_scene = std::make_unique<SceneCornellBox>();
                         break;
-                    case SceneType::OBJ_LOADER:  // scene_custom_meshes
+                    case SceneType::OBJ_LOADER: // scene_custom_meshes
                         active_scene = std::make_unique<SceneObjLoader>();
+                        break;
+                    case SceneType::MATERIAL_TESTING: // scene_material_testing
+                        active_scene = std::make_unique<SceneMaterialTesting>();
                         break;
                 }
                 active_scene->context = context;
