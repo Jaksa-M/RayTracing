@@ -53,7 +53,7 @@ void SceneMaterialTesting::initialize() {
     std::shared_ptr<Texture> rough_checkered_tex = Texture::generateCheckerboard(tex_loader3.getImageWidth(), tex_loader3.getImageHeight(),
         vec3(0.0f, 0.0f, 0.0f), vec3(0.3f, 0.3f, 0.3f), false);
     std::shared_ptr<Texture> rough_non_smooth_grad_tex =
-        Texture::generateSlowGradient(tex_loader3.getImageWidth(), tex_loader3.getImageHeight(), 170, false);
+        Texture::generateSmoothGradient(tex_loader3.getImageWidth(), tex_loader3.getImageHeight(), 170, false);
     std::shared_ptr<Texture> white_tex = std::make_shared<Texture>(vec3(1, 1, 1), true);
 
     auto plane_mat = std::make_shared<Metal>(white_tex, rough_non_smooth_grad_tex);

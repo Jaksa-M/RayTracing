@@ -12,4 +12,10 @@ inline vec3 linearToGamma(const vec3& color) {
     return vec3(std::pow(color.x(), inv_gamma), std::pow(color.y(), inv_gamma), std::pow(color.z(), inv_gamma));
 }
 
+inline float linearToGamma(float x) {
+    if (x > 0) return std::pow(x, 1.0f / 2.2f);
+    else return 0;
+}
+
+
 #endif

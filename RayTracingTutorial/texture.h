@@ -60,20 +60,20 @@ class Texture {
         return std::make_shared<Texture>(std::move(data), width, height, is_gamma);
     }
 
-    static std::shared_ptr<Texture> generateSlowGradient(std::uint32_t width, std::uint32_t height, std::uint32_t step_size, bool is_gamma) {
+    static std::shared_ptr<Texture> generateSmoothGradient(std::uint32_t width, std::uint32_t height, std::uint32_t step_size, bool is_gamma) {
         std::vector<unsigned char> data(width * height * 3);
 
         for (std::uint32_t j = 0; j < height; j++) {
             for (std::uint32_t i = 0; i < width; i++) {
-                float roughness = (i / step_size) * (1.0f / (width / step_size));
-                roughness = std::min(roughness, 1.0f); // Clamp to max_roughness
+                float gradient = (i / step_size) * (1.0f / (width / step_size));
+                gradient = std::min(gradient, 1.0f);  // Clamp to max_roughness
 
-                unsigned char roughness_value = static_cast<unsigned char>(roughness * 255);
+                unsigned char gradient_value = static_cast<unsigned char>(gradient * 255);
 
                 std::size_t index = (j * width + i) * 3;
-                data[index] = roughness_value;
-                data[index + 1] = roughness_value;
-                data[index + 2] = roughness_value;
+                data[index] = gradient_value;
+                data[index + 1] = gradient_value;
+                data[index + 2] = gradient_value;
             }
         }
         return std::make_shared<Texture>(std::move(data), width, height, is_gamma);
