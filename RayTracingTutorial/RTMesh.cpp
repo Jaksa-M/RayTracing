@@ -6,11 +6,11 @@
 #include "context.h"
 #include "gui_settings.h"
 #include "interval.h"
-#include "math_constants.h"
+#include "math_utility.h"
 #include "mesh_utils.h"
 #include "ray.h"
 #include "transformations.h"
-#include "utility.h"
+#include "intersection_utility.h"
 #include "vec3.h"
 
 RTMesh::RTMesh(Context& context, MeshHandle mesh_handle, std::shared_ptr<Material> mat)

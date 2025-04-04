@@ -4,78 +4,79 @@
 #include "color.h"
 #include "vec3.h"
 #include "interval.h"
+#include "utility.h"
 #include <span>
 
 class Texture {
    public:
     Texture(const color& solid_color, bool is_gamma) : image_width_(1), image_height_(1), is_gamma_(is_gamma) {
         bytes_per_scanline_ = 3;
-        data_ = {static_cast<unsigned char>(solid_color.x() * 255), 
-                 static_cast<unsigned char>(solid_color.y() * 255),
-                 static_cast<unsigned char>(solid_color.z() * 255)};
+
+        color c = is_gamma_ ? linearToGamma(solid_color) : solid_color;
+        data_ = {static_cast<unsigned char>(c.x() * 255), 
+                 static_cast<unsigned char>(c.y() * 255),
+                 static_cast<unsigned char>(c.z() * 255)};
     }
 
     Texture(std::vector<unsigned char> data, std::uint32_t image_width, std::uint32_t image_height, bool is_gamma): 
         data_(data), image_width_(image_width), image_height_(image_height), bytes_per_scanline_(3 * image_width_), is_gamma_(is_gamma) {}
 
-    Texture(std::uint32_t image_width, std::uint32_t image_height, bool is_gamma)
-        : image_width_(image_width), image_height_(image_height), bytes_per_scanline_(3 * image_width_), is_gamma_(is_gamma) {
-
-        data_.resize(image_width_ * image_height_ * bytes_per_pixel_);
-
-        for (std::uint32_t j = 0; j < image_height_; j++) {
-            for (std::uint32_t i = 0; i < image_width_; i++) {
-                float t = static_cast<float>(i) / static_cast<float>(image_width_ - 1);
+    static std::shared_ptr<Texture> generateGradient(std::uint32_t width, std::uint32_t height, bool is_gamma) {
+        std::vector<unsigned char> data(width * height * 3);
+        for (std::uint32_t j = 0; j < height; j++) {
+            for (std::uint32_t i = 0; i < width; i++) {
+                float t = static_cast<float>(i) / static_cast<float>(width - 1);
 
                 // Interpolating between red (left) and blue (right)
                 unsigned char r = static_cast<unsigned char>((1.0f - t) * 255); // Red fades out
                 unsigned char g = 0; // No green component
                 unsigned char b = static_cast<unsigned char>(t * 255); // Blue increases
 
-                std::size_t index = (j * image_width_ + i) * bytes_per_pixel_;
-                data_[index] = r;
-                data_[index + 1] = g;
-                data_[index + 2] = b;
+                std::size_t index = (j * width + i) * 3;
+                data[index] = r;
+                data[index + 1] = g;
+                data[index + 2] = b;
             }
         }
+        return std::make_shared<Texture>(std::move(data), width, height, is_gamma);
     }
 
-    Texture(std::uint32_t image_width, std::uint32_t image_height, const color& color1, const color& color2, bool is_gamma)
-        : image_width_(image_width), image_height_(image_height), bytes_per_scanline_(3 * image_width_), is_gamma_(is_gamma)
+    static std::shared_ptr<Texture> generateCheckerboard(std::uint32_t width, std::uint32_t height, const color& color1, const color& color2,
+            bool is_gamma) 
     {
-        data_.resize(image_width_ * image_height_ * bytes_per_pixel_);
+        std::vector<unsigned char> data(width * height * 3);
 
-        for (std::uint32_t j = 0; j < image_height_; j++) {
-            for (std::uint32_t i = 0; i < image_width_; i++) {
-                bool is_color1 = ((i / 10) % 2 == (j / 10) % 2); // Checker pattern with 10-pixel squares
+        for (std::uint32_t j = 0; j < height; j++) {
+            for (std::uint32_t i = 0; i < width; i++) {
+                bool is_color1 = ((i / 10) % 2 == (j / 10) % 2);  // Checker pattern with 10-pixel squares
                 color c = is_color1 ? color1 : color2;
 
-                std::size_t index = (j * image_width_ + i) * bytes_per_pixel_;
-                data_[index] = static_cast<unsigned char>(c.x() * 255);
-                data_[index + 1] = static_cast<unsigned char>(c.y() * 255);
-                data_[index + 2] = static_cast<unsigned char>(c.z() * 255);
+                std::size_t index = (j * width + i) * 3;
+                data[index] = static_cast<unsigned char>(c.x() * 255);
+                data[index + 1] = static_cast<unsigned char>(c.y() * 255);
+                data[index + 2] = static_cast<unsigned char>(c.z() * 255);
             }
         }
+        return std::make_shared<Texture>(std::move(data), width, height, is_gamma);
     }
 
-    Texture(std::uint32_t image_width, std::uint32_t image_height, std::uint32_t step_size, bool is_gamma)
-        : image_width_(image_width), image_height_(image_height), bytes_per_scanline_(3 * image_width_), is_gamma_(is_gamma)
-    {
-        data_.resize(image_width_ * image_height_ * bytes_per_pixel_);
+    static std::shared_ptr<Texture> generateSlowGradient(std::uint32_t width, std::uint32_t height, std::uint32_t step_size, bool is_gamma) {
+        std::vector<unsigned char> data(width * height * 3);
 
-        for (std::uint32_t j = 0; j < image_height_; j++) {
-            for (std::uint32_t i = 0; i < image_width_; i++) {
-                float roughness = (i / step_size) * (1.0f / (image_width_ / step_size));
+        for (std::uint32_t j = 0; j < height; j++) {
+            for (std::uint32_t i = 0; i < width; i++) {
+                float roughness = (i / step_size) * (1.0f / (width / step_size));
                 roughness = std::min(roughness, 1.0f); // Clamp to max_roughness
 
                 unsigned char roughness_value = static_cast<unsigned char>(roughness * 255);
 
-                std::size_t index = (j * image_width_ + i) * bytes_per_pixel_;
-                data_[index] = roughness_value;
-                data_[index + 1] = roughness_value;
-                data_[index + 2] = roughness_value;
+                std::size_t index = (j * width + i) * 3;
+                data[index] = roughness_value;
+                data[index + 1] = roughness_value;
+                data[index + 2] = roughness_value;
             }
         }
+        return std::make_shared<Texture>(std::move(data), width, height, is_gamma);
     }
 
 
@@ -93,11 +94,7 @@ class Texture {
         return pixelData(i, j);
     }
 
-    void invertColor() {
-        for (std::size_t i = 0; i < data_.size(); i += 3) {
-            data_[i] = 255 - data_[i]; // we only need to invert first color
-        }
-    }
+    std::span<unsigned char> getData() { return std::span<unsigned char>(data_); }
 
    private:
     bool is_gamma_; // Check if we should do gamma correction
@@ -113,11 +110,6 @@ class Texture {
         if (x < high) return x;
         return high - 1;
     }
-
-    vec3 gammaToLinear(vec3& color) const {
-        return vec3(std::pow(color.x(), 2.2f), std::pow(color.y(), 2.2f), std::pow(color.z(), 2.2f));
-    }
-
 
     vec3 pixelData(std::uint32_t x, std::uint32_t y) const {
         // Return the address of the three RGB bytes of the pixel at x,y. If there is no image data, returns magenta.

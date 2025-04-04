@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MATH_UTILITY_H
+#define MATH_UTILITY_H
 
 #include <limits>
 #include <random>
@@ -29,3 +30,5 @@ inline float random_double(float min, float max) {
     // Returns a random real in [min,max).
     return min + (max - min) * random_double();
 }
+
+#endif

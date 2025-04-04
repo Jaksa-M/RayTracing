@@ -58,7 +58,10 @@ bool ObjLoader::load(Context& context) {
             roughness_tex = std::make_shared<Texture>(spec_tex_loader.getData(), spec_tex_loader.getImageWidth(), spec_tex_loader.getImageHeight(), false);
 
             // We need to invert R pixel for correct roughness
-            roughness_tex->invertColor();
+            std::span<unsigned char> pixels = roughness_tex->getData();
+            for (std::size_t i = 0; i < pixels.size(); i += 3) {
+                pixels[i] = 255 - pixels[i]; // we only need to invert first color
+            }
         }
         if (mat.diffuse_texname.empty() == false) {
             fs::path texture_path = file_.parent_path() / mat.diffuse_texname;

@@ -63,34 +63,34 @@ void MeshBufferManager::removeMesh(MeshHandle mesh) {
 }
 
 std::span<const std::uint32_t> MeshBufferManager::getIndices(MeshHandle mesh) const {
-    if (mesh < mesh_info_.size() && mesh_info_[mesh].active) {
-        return std::span<const std::uint32_t>(reinterpret_cast<const std::uint32_t*>(buffer.data() + mesh_info_[mesh].offset_i), mesh_info_[mesh].count_i);
+    if (mesh >= mesh_info_.size() || !mesh_info_[mesh].active) {
+        throw std::out_of_range("Invalid mesh handle in getIndices");
     }
-    return {};
+    return std::span<const std::uint32_t>(reinterpret_cast<const std::uint32_t*>(buffer.data() + mesh_info_[mesh].offset_i), mesh_info_[mesh].count_i);
 }
 
 std::span<std::uint32_t> MeshBufferManager::getIndices(MeshHandle mesh) {
-    if (mesh < mesh_info_.size() && mesh_info_[mesh].active) {
-        return std::span<std::uint32_t>(reinterpret_cast<std::uint32_t*>(buffer.data() + mesh_info_[mesh].offset_i), mesh_info_[mesh].count_i);
+    if (mesh >= mesh_info_.size() || !mesh_info_[mesh].active) {
+        throw std::out_of_range("Invalid mesh handle in getIndices");
     }
-    return {};
+    return std::span<std::uint32_t>(reinterpret_cast<std::uint32_t*>(buffer.data() + mesh_info_[mesh].offset_i), mesh_info_[mesh].count_i);
 }
 
 std::span<const float> MeshBufferManager::getAttribute(MeshHandle mesh, AttributeType attribute) const {
-    if (mesh < mesh_info_.size() && mesh_info_[mesh].active) {
-        std::size_t count = mesh_info_[mesh].count_v * getComponentCount(attribute);
-        return std::span(&buffer[mesh_info_[mesh].offsets_v[static_cast<std::uint32_t>(attribute)]], count);
+    if (mesh >= mesh_info_.size() || !mesh_info_[mesh].active) {
+        throw std::out_of_range("Invalid mesh handle in getAttribute");
     }
-    return {};
+    std::size_t count = mesh_info_[mesh].count_v * getComponentCount(attribute);
+    return std::span(&buffer[mesh_info_[mesh].offsets_v[static_cast<std::uint32_t>(attribute)]], count);
 }
 
 ResolvedMeshInfo MeshBufferManager::getResolvedMesh(MeshHandle mesh) const {
-    if (mesh < mesh_info_.size() && mesh_info_[mesh].active) {
-        const MeshInfo& info = mesh_info_[mesh];
-        return {std::span(&buffer[info.offsets_v[static_cast<std::uint32_t>(AttributeType::Position)]], info.count_v * 3),
-                std::span(&buffer[info.offsets_v[static_cast<std::uint32_t>(AttributeType::Normal)]], info.count_v * 3),
-                std::span(&buffer[info.offsets_v[static_cast<std::uint32_t>(AttributeType::UV)]], info.count_v * 2),
-                std::span(reinterpret_cast<const std::uint32_t*>(buffer.data() + info.offset_i), info.count_i)};
+    if (mesh >= mesh_info_.size() || !mesh_info_[mesh].active) {
+        throw std::out_of_range("Invalid mesh handle in getResolvedMesh");
     }
-    return {};
+    const MeshInfo& info = mesh_info_[mesh];
+    return {std::span(&buffer[info.offsets_v[static_cast<std::uint32_t>(AttributeType::Position)]], info.count_v * 3),
+            std::span(&buffer[info.offsets_v[static_cast<std::uint32_t>(AttributeType::Normal)]], info.count_v * 3),
+            std::span(&buffer[info.offsets_v[static_cast<std::uint32_t>(AttributeType::UV)]], info.count_v * 2),
+            std::span(reinterpret_cast<const std::uint32_t*>(buffer.data() + info.offset_i), info.count_i)};
 }

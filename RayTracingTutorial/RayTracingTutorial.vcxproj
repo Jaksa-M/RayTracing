@@ -146,7 +146,7 @@
     <ClInclude Include="hittable_list.h" />
     <ClInclude Include="interval.h" />
     <ClInclude Include="material.h" />
-    <ClInclude Include="math_constants.h" />
+    <ClInclude Include="math_utility.h" />
     <ClInclude Include="matrix.h" />
     <ClInclude Include="mesh.h" />
     <ClInclude Include="mesh_buffer_manager.h" />
@@ -166,6 +166,7 @@
     <ClInclude Include="texture.h" />
     <ClInclude Include="transformations.h" />
     <ClInclude Include="types.h" />
+    <ClInclude Include="intersection_utility.h" />
     <ClInclude Include="utility.h" />
     <ClInclude Include="vec3.h" />
   </ItemGroup>

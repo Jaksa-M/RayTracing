@@ -1,6 +1,6 @@
 #include "bvh_builder.h"
 #include "ray.h"
-#include "math_constants.h"
+#include "math_utility.h"
 #include "vec3.h"
 #include "interval.h"
 #include <algorithm>

@@ -49,11 +49,11 @@ void SceneMaterialTesting::initialize() {
     std::shared_ptr<Texture> rough_tex = std::make_shared<Texture>(vec3(1, 0, 0), false);
     std::shared_ptr<Texture> rough_zero_tex = std::make_shared<Texture>(vec3(0, 0, 0), false);
     std::shared_ptr<Texture> rough_mid_tex = std::make_shared<Texture>(vec3(0.3, 0.3, 0.3), false);
-    std::shared_ptr<Texture> rough_gradient_tex = std::make_shared<Texture>(tex_loader3.getImageWidth(), tex_loader3.getImageHeight(), false);
-    std::shared_ptr<Texture> rough_checkered_tex =
-        std::make_shared<Texture>(tex_loader3.getImageWidth(), tex_loader3.getImageHeight(), vec3(0.0f, 0.0f, 0.0f), vec3(0.3f, 0.3f, 0.3f), false);
+    std::shared_ptr<Texture> rough_gradient_tex = Texture::generateGradient(tex_loader3.getImageWidth(), tex_loader3.getImageHeight(), false);
+    std::shared_ptr<Texture> rough_checkered_tex = Texture::generateCheckerboard(tex_loader3.getImageWidth(), tex_loader3.getImageHeight(),
+        vec3(0.0f, 0.0f, 0.0f), vec3(0.3f, 0.3f, 0.3f), false);
     std::shared_ptr<Texture> rough_non_smooth_grad_tex =
-        std::make_shared<Texture>(tex_loader3.getImageWidth(), tex_loader3.getImageHeight(), 170, false);
+        Texture::generateSlowGradient(tex_loader3.getImageWidth(), tex_loader3.getImageHeight(), 170, false);
     std::shared_ptr<Texture> white_tex = std::make_shared<Texture>(vec3(1, 1, 1), true);
 
     auto plane_mat = std::make_shared<Metal>(white_tex, rough_non_smooth_grad_tex);

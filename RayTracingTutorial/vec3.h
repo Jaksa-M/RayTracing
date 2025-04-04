@@ -2,7 +2,7 @@
 #define VEC3_H
 
 #include <cmath>
-#include "math_constants.h"
+#include "math_utility.h"
 #include <iostream>
 
 class vec3 {

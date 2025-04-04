@@ -22,7 +22,7 @@ public:
     MeshHandle mesh_handle;
     std::uint32_t triangle_index;
     vec3 buv;
-    MeshBufferManager* mesh_buf_manager;
+    const MeshBufferManager* mesh_buf_manager;
     matrix4x4 local_to_world_mat;
     
     void set_face_normal(const ray& r, const vec3& outward_normal) {

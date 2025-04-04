@@ -7,7 +7,7 @@
 #include <span>
 #include "types.h"
 #include "matrix.h"
-#include "utility.h"
+#include "intersection_utility.h"
 
 class Material {
 public:
@@ -92,7 +92,7 @@ public:
         scattered = ray(rec.p + rec.face_normal * 0.00001f, reflected);
 
         attenuation = albedo_tex_->value(uv[0], uv[1]);
-        //attenuation = roughness;
+        //attenuation = roughness; // used for roughness view
         return (dot(scattered.direction(), normal) > 0);
     }
 
