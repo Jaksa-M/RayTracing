@@ -30,7 +30,7 @@ void SceneRtMeshes::initialize() {
     if (!tex_loader.load()) {
         std::cerr << "ERROR: Could not load background texture file.\n";
     }
-    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight());
+    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight(), false);
     for (int i = 0; i < cameras_.size(); i++) {
         cameras_[i]->setBackgroundTexture(background_texture_);
     }
@@ -40,15 +40,8 @@ void SceneRtMeshes::initialize() {
     if (!tex_loader2.load()) {
         std::cerr << "ERROR: Could not load texture file" << "\n ";
     }
-    std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader2.getData(), tex_loader2.getImageWidth(), tex_loader2.getImageHeight());
+    std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader2.getData(), tex_loader2.getImageWidth(), tex_loader2.getImageHeight(), true);
     std::shared_ptr<Material> texture_mat = std::make_shared<Lambertian>(tex);
-
-    auto mat = std::make_shared<Lambertian>(color(0.8f, 0.8f, 0.0f));
-    //cube_mesh_ = MeshUtils::GenerateTriangleCube(mat, mesh_buf_manager.get(), 2);
-    //cube_sphere_ = MeshUtils::GenerateTriangleSphere(mat, mesh_buf_manager.get(), 4);
-    //ico_sphere_ = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2, vec3(2.0f,0.0f,0.0f));
-    //ico_sphere_ = MeshUtils::GenerateIcosphere(mat, mesh_buf_manager.get(), 2);
-    //rectangle_mesh_ = MeshUtils::GenerateTriangleRectangle(mat, mesh_buf_manager.get(), 6, 3);
 
     rect_prism_mesh1_ = MeshUtils::GenerateTriangleCube(context, texture_mat, 4);
     matrix4x4 m = transformation::create_rotation_matrix(0.0f, 30.0f * (3.14159f / 180.0f), 0.0f) *
@@ -61,24 +54,6 @@ void SceneRtMeshes::initialize() {
         transformation::create_translation_matrix(vec3(2.0f, 0.0f, 0.0f)); // 70 degree rotation on y-axis + translation on x-axis
     rect_prism_mesh2_->setTransformationMatrix(m);
     world_.add(rect_prism_mesh2_);
-
-    /*ico_sphere_ = MeshUtils::GenerateIcosphere(context, texture_mat, 2);
-    matrix4x4 m = transformation::create_translation_matrix(vec3(1.0f, 0.0f, 0.0f));
-    ico_sphere_->setTransformationMatrix(m);
-    world_.add(ico_sphere_);
-    */
-
-    /*triangle_sphere_ = MeshUtils::GenerateTriangleSphere(context, texture_mat, 6);
-    matrix4x4 m = matrix4x4::identity();
-    triangle_sphere_->setTransformationMatrix(m);
-    world_.add(triangle_sphere_);
-    */
-
-    //rect_mesh_back_ = MeshUtils::GenerateTriangleRectangle(context, texture_mat, 2, 2);
-    ////m = transformation::create_translation_matrix(vec3(0.0f, 1.0f, -0.99f));
-    //    //transformation::create_rotation_matrix(90.0f * (3.14159f / 180.0f), 0.0f, 0.0f) * transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
-    //rect_mesh_back_->setTransformationMatrix(matrix4x4::identity());
-    //world_.add(rect_mesh_back_);
 
     initShader();
 }

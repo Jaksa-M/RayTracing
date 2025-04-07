@@ -2,7 +2,6 @@
 #define BVH_BUILDER_H
 
 #include "hittable.h"
-#include "math_constants.h"
 #include <span>
 
 struct BVHNode {

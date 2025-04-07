@@ -6,49 +6,12 @@
 #include "context.h"
 #include "gui_settings.h"
 #include "interval.h"
-#include "math_constants.h"
-#include "mesh_buffer_manager.h"
+#include "math_utility.h"
 #include "mesh_utils.h"
 #include "ray.h"
 #include "transformations.h"
-#include "utility.h"
+#include "intersection_utility.h"
 #include "vec3.h"
-
-// Inline functions
-inline void getTriangleVertices(const ResolvedMeshInfo& res_mesh, std::uint32_t i0, std::uint32_t i1, std::uint32_t i2, vec3& v0, vec3& v1, vec3& v2) {
-    v0.setX(res_mesh.vertices[i0 * 3]);
-    v0.setY(res_mesh.vertices[i0 * 3 + 1]);
-    v0.setZ(res_mesh.vertices[i0 * 3 + 2]);
-
-    v1.setX(res_mesh.vertices[i1 * 3]);
-    v1.setY(res_mesh.vertices[i1 * 3 + 1]);
-    v1.setZ(res_mesh.vertices[i1 * 3 + 2]);
-
-    v2.setX(res_mesh.vertices[i2 * 3]);
-    v2.setY(res_mesh.vertices[i2 * 3 + 1]);
-    v2.setZ(res_mesh.vertices[i2 * 3 + 2]);
-}
-
-inline void getTriangleNormals(const ResolvedMeshInfo& res_mesh, std::uint32_t i0, std::uint32_t i1, std::uint32_t i2, vec3& n0, vec3& n1, vec3& n2) {
-    n0.setX(res_mesh.vertex_normals[i0 * 3]);
-    n0.setY(res_mesh.vertex_normals[i0 * 3 + 1]);
-    n0.setZ(res_mesh.vertex_normals[i0 * 3 + 2]);
-
-    n1.setX(res_mesh.vertex_normals[i1 * 3]);
-    n1.setY(res_mesh.vertex_normals[i1 * 3 + 1]);
-    n1.setZ(res_mesh.vertex_normals[i1 * 3 + 2]);
-
-    n2.setX(res_mesh.vertex_normals[i2 * 3]);
-    n2.setY(res_mesh.vertex_normals[i2 * 3 + 1]);
-    n2.setZ(res_mesh.vertex_normals[i2 * 3 + 2]);
-}
-
-inline void getTriangleUVs(const ResolvedMeshInfo& res_mesh, std::uint32_t i0, std::uint32_t i1, std::uint32_t i2, vec2& uv0, vec2& uv1, vec2& uv2) {
-    uv0 = {res_mesh.uv[i0 * 2], res_mesh.uv[i0 * 2 + 1]};
-    uv1 = {res_mesh.uv[i1 * 2], res_mesh.uv[i1 * 2 + 1]};
-    uv2 = {res_mesh.uv[i2 * 2], res_mesh.uv[i2 * 2 + 1]};
-}
-
 
 RTMesh::RTMesh(Context& context, MeshHandle mesh_handle, std::shared_ptr<Material> mat)
     : context_(context), mesh_handle_(mesh_handle), mat_(mat) {
@@ -73,8 +36,6 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
     intersectBVH(changed_ray, ray_t, intersect_result, 0, closest_hit_t);
 
     if (closest_hit_t != std::numeric_limits<float>::max()) {
-        rec.type_of_normal = false;
-        rec.object_type = "triangle";
         rec.mat = mat_;
 
         std::uint32_t i0 = res_mesh_info_.indices[intersect_result.closest_tri_index];
@@ -94,22 +55,11 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
         // Has to be in world space
         rec.t = (r.origin() - rec.p).length();
 
-        vec3 n0, n1, n2;
-        getTriangleNormals(res_mesh_info_, i0, i1, i2, n0, n1, n2);
-
-        vec3 shading_normal = unit_vector(barycentricInterpolate(n0, n1, n2, intersect_result.buv));
-
-        matrix3x3 normal_matrix = local_to_world_mat_.convertTo3x3().invert().transpose();
-        shading_normal = unit_vector(normal_matrix * shading_normal);
-        rec.set_shading_normal(r, shading_normal);
-
-        // Caclulating the UV coords
-        vec2 uv0, uv1, uv2;
-        getTriangleUVs(res_mesh_info_, i0, i1, i2, uv0, uv1, uv2);
-
-        vec2 uv = barycentricInterpolate(uv0, uv1, uv2, intersect_result.buv);
-        rec.u = uv[0];
-        rec.v = uv[1];
+        rec.mesh_handle = mesh_handle_;
+        rec.buv = intersect_result.buv;
+        rec.triangle_index = intersect_result.closest_tri_index;
+        rec.mesh_buf_manager = context_.mesh_buf_manager;
+        rec.local_to_world_mat = local_to_world_mat_;
     }
 
     return closest_hit_t != std::numeric_limits<float>::max();
@@ -154,8 +104,6 @@ bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
             }
         }
         if (closest_intersection.t != float_max) {
-            rec.type_of_normal = true;
-            rec.object_type = "triangle";
             rec.mat = mat_;
 
             std::uint32_t i0 = res_mesh_info_.indices[closest_intersection.closest_tri_index];
@@ -178,19 +126,11 @@ bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
             vec3 n0, n1, n2;
             getTriangleNormals(res_mesh_info_, i0, i1, i2, n0, n1, n2);
 
-            vec3 shading_normal = unit_vector(barycentricInterpolate(n0, n1, n2, closest_intersection.buv));
-
-            matrix3x3 normal_matrix = local_to_world_mat_.convertTo3x3().invert().transpose();
-            shading_normal = unit_vector(normal_matrix * shading_normal);
-            rec.set_shading_normal(r, shading_normal);
-
-            // Caclulating the UV coords
-            vec2 uv0, uv1, uv2;
-            getTriangleUVs(res_mesh_info_, i0, i1, i2, uv0, uv1, uv2);
-
-            vec2 uv = barycentricInterpolate(uv0, uv1, uv2, closest_intersection.buv);
-            rec.u = uv[0];
-            rec.v = uv[1];
+            rec.mesh_handle = mesh_handle_;
+            rec.buv = closest_intersection.buv;
+            rec.triangle_index = closest_intersection.closest_tri_index;
+            rec.mesh_buf_manager = context_.mesh_buf_manager;
+            rec.local_to_world_mat = local_to_world_mat_;
 
             return true;
         }
@@ -218,7 +158,7 @@ void RTMesh::drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32
         int level = front.second;
         queue.pop();
 
-        const BVHNode& node = res_mesh_info_.bvh_nodes[node_index];
+        const BVHNode& node = bvh_nodes_[node_index];
 
         // Draw the bounding box for the current node
         vec3 center = (node.aabbMin + node.aabbMax) * 0.5f;
@@ -252,10 +192,10 @@ void RTMesh::drawBVHLeaves(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint
     shader_prog->setMat4("projection", cam.getProjectionMatrix().asPointer());
     bounding_boxes[index] = MeshUtils::GenerateLineCube(7);
 
-    for (int i = 0; i < res_mesh_info_.bvh_nodes.size(); i++) {
-        if (res_mesh_info_.bvh_nodes[i].isLeaf() == true) {
-            vec3 center = (res_mesh_info_.bvh_nodes[i].aabbMin + res_mesh_info_.bvh_nodes[i].aabbMax) * 0.5f;
-            vec3 scale = res_mesh_info_.bvh_nodes[i].aabbMax - res_mesh_info_.bvh_nodes[i].aabbMin;
+    for (int i = 0; i < bvh_nodes_.size(); i++) {
+        if (bvh_nodes_[i].isLeaf() == true) {
+            vec3 center = (bvh_nodes_[i].aabbMin + bvh_nodes_[i].aabbMax) * 0.5f;
+            vec3 scale = bvh_nodes_[i].aabbMax - bvh_nodes_[i].aabbMin;
 
             matrix4x4 translation_matrix = transformation::create_translation_matrix(center);
             matrix4x4 scaling_matrix = transformation::create_scaling_matrix(scale.x(), scale.y(), scale.z());
@@ -276,7 +216,7 @@ MeshHandle RTMesh::getMeshHandle() const {
 void RTMesh::setTransformationMatrix(const matrix4x4& mat) {
     hittable::setTransformationMatrix(mat);  // Call base class function
 
-    const BVHNode& node = res_mesh_info_.bvh_nodes[0];
+    const BVHNode& node = bvh_nodes_[0];
 
     aabb_min_ = node.aabbMin;
     aabb_max_ = node.aabbMax;
@@ -284,7 +224,7 @@ void RTMesh::setTransformationMatrix(const matrix4x4& mat) {
 }
 
 void RTMesh::update() {
-    res_mesh_info_.bvh_nodes = context_.bvh_manager->getBVHNodes(mesh_handle_);
+    bvh_nodes_ = context_.bvh_manager->getBVHNodes(mesh_handle_);
     res_mesh_info_.vertices = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::Position);
     res_mesh_info_.indices = context_.mesh_buf_manager->getIndices(mesh_handle_);
     res_mesh_info_.vertex_normals = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::Normal);
@@ -296,7 +236,7 @@ int RTMesh::getTriangleCount() const {
 }
 
 void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, float& closest_hit_t) const {
-    const BVHNode& node = res_mesh_info_.bvh_nodes[nodeIdx];
+    const BVHNode& node = bvh_nodes_[nodeIdx];
 
     if (node.isLeaf() == true) {
         for (std::uint32_t i = 0; i < node.triangle_cnt; i++) {
@@ -322,8 +262,8 @@ void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& interse
 
     float closest_side_left;
     float closest_side_right;
-    const BVHNode* node_left = &res_mesh_info_.bvh_nodes[node.left_child];
-    const BVHNode* node_right = &res_mesh_info_.bvh_nodes[node.right_child];
+    const BVHNode* node_left = &bvh_nodes_[node.left_child];
+    const BVHNode* node_right = &bvh_nodes_[node.right_child];
     bool left_check =
         intersectAABB(r, intersect_result.t, node_left->aabbMin, node_left->aabbMax, closest_side_left);
     bool right_check =

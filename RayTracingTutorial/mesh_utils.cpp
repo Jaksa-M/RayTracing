@@ -275,7 +275,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(Context& context, c
     d.setZ((0.5f - (-0.5f)) / (num_of_vert_row - 1));
     std::vector<float> tex_coords;
     // center and normalize variables are not used here, since we are drawing rectangle
-    createFaceVertices(false, center, vertices, num_of_vert_row, num_of_vert_col, -0.5f, 0.0f, -0.5f, d.x(), 0.0f, d.z(), tex_coords);  // bottom
+    createFaceVertices(false, center, vertices, num_of_vert_row, num_of_vert_col, -0.5f, 0.0f, -0.5f, d.x(), 0.0f, d.z(), tex_coords); // bottom
 
     std::vector<std::uint32_t> indices;
 

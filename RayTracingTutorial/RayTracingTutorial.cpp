@@ -27,6 +27,7 @@
 #include "scene_rt_meshes.h"
 #include "scene_cornell_box.h"
 #include "scene_obj_loader.h"
+#include "scene_material_testing.h"
 
 // ImGui things
 #include "imgui/imgui.h"
@@ -106,7 +107,7 @@ int main(int, char**) {
     std::unique_ptr<BVHManager> bvh_manager = std::make_unique<BVHManager>(gui_settings.get());
     std::unique_ptr<Statistics> statistics = std::make_unique<Statistics>();
 
-    SceneType selected_scene_index = SceneType::OBJ_LOADER;
+    SceneType selected_scene_index = SceneType::RT_MESHES;
     BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
     MeshColor chosen_mesh_color = MeshColor::MATERIAL;
 
@@ -160,9 +161,10 @@ int main(int, char**) {
 
         if (show_demo_window) {
             static float f = 0.0f;
-            const char* scenes[] = { "scene_rt_meshes", "scene_cornell_box", "scene_obj_loader" }; // Dropdown list (combo) items for scene selection
+            const char* scenes[] = {"scene_rt_meshes", "scene_cornell_box", "scene_obj_loader",
+                                    "scene_material_testing"}; // Dropdown list (combo) items for scene selection
             const char* techniques[] = { "midpoint split", "SAH" }; // Dropdown list (combo) items for technique selection
-            const char* mesh_colors[] = {"material", "geometric normal", "shading normal", "depth", "uv"};  // Dropdown list (combo) items for color representation selection
+            const char* mesh_colors[] = {"material", "geometric normal", "shading normal", "depth", "uv"}; // Dropdown list (combo) items for color representation selection
             const char* block_sizes[] = {"8x8", "16x16", "64x64"}; // Dropdown list (combo) items for block size selection
             
             ImGui::Begin("Ray Tracer");                          // Create a window called "Hello, world!" and append into it.
@@ -274,22 +276,8 @@ int main(int, char**) {
                     vec3 up = cam.getUpVector();
                     vec3 right = cam.getRightVector();
 
-                    std::ofstream file(camera_file, std::ios::app);  // Append mode
-                    if (!file) {
-                        std::cerr << "Error: Could not open file " << camera_file << std::endl;
-                        exit(-1);
-                    }
-
-                    file << "Name " << camera_name_buffer << "\n";
-                    file << "Center " << pos.x() << " " << pos.y() << " " << pos.z() << "\n";
-                    file << "Direction " << dir.x() << " " << dir.y() << " " << dir.z() << "\n";
-                    file << "Up " << up.x() << " " << up.y() << " " << up.z() << "\n";
-                    file << "Right " << right.x() << " " << right.y() << " " << right.z() << "\n";
-                    file << "FocalLength " << cam.getFocalLength() << "\n\n";
-
-                    file.close();
-
                     CameraPreset preset(std::string(camera_name_buffer), dir, pos, up, right, cam.getFocalLength());
+                    addPresetToFile(camera_file, preset);
                     camera_presets.push_back(preset);
 
                     camera_name_buffer[0] = '\0'; // Clear the text input field after capturing
@@ -325,14 +313,17 @@ int main(int, char**) {
             // Initialize a scene depending on which scene is chosen (only if scene is not already initalized)
             if (scene_changed == true || !active_scene) {
                 switch (selected_scene_index) {
-                    case SceneType::RT_MESHES:  // scene_rt_meshes
+                    case SceneType::RT_MESHES: // scene_rt_meshes
                         active_scene = std::make_unique<SceneRtMeshes>();
                         break;
-                    case SceneType::CORNELL_BOX:  // scene_cornell_box
+                    case SceneType::CORNELL_BOX: // scene_cornell_box
                         active_scene = std::make_unique<SceneCornellBox>();
                         break;
-                    case SceneType::OBJ_LOADER:  // scene_custom_meshes
+                    case SceneType::OBJ_LOADER: // scene_custom_meshes
                         active_scene = std::make_unique<SceneObjLoader>();
+                        break;
+                    case SceneType::MATERIAL_TESTING: // scene_material_testing
+                        active_scene = std::make_unique<SceneMaterialTesting>();
                         break;
                 }
                 active_scene->context = context;
@@ -394,7 +385,6 @@ int main(int, char**) {
         image_data = active_scene->update(display_w, display_h);
       
         glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
-
         
         active_scene->drawBVH(); // Drawing of BVH tree/leaves
 

@@ -8,14 +8,7 @@
 #include "shader.h"
 #include "camera.h"
 #include "types.h"
-
-struct ResolvedMeshInfo {
-    std::span<const float> vertices;
-    std::span<const float> vertex_normals;
-    std::span<const float> uv;
-    std::span<const std::uint32_t> indices;
-    std::span<const BVHNode> bvh_nodes;
-};
+#include "mesh_buffer_manager.h"
 
 struct Context;
 
@@ -50,6 +43,7 @@ private:
     vec3 aabb_max_;
     
     ResolvedMeshInfo res_mesh_info_;
+    std::span<const BVHNode> bvh_nodes_;
     
     void intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, float& closest_hit_t) const;
 };

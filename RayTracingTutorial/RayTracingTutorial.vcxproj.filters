@@ -123,6 +123,9 @@
     <ClCompile Include="file_utility.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="scene_material_testing.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vec3.h">
@@ -188,7 +191,7 @@
     <ClInclude Include="scene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="math_constants.h">
+    <ClInclude Include="math_utility.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ExternalLibraries\glad\gl.h">
@@ -233,7 +236,7 @@
     <ClInclude Include="context.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="utility.h">
+    <ClInclude Include="intersection_utility.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="obj_loader.h">
@@ -264,6 +267,12 @@
       <Filter>External Libraries\tinyobjloader</Filter>
     </ClInclude>
     <ClInclude Include="file_utility.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="scene_material_testing.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="utility.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

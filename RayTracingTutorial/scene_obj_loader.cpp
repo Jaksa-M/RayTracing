@@ -34,7 +34,7 @@ void SceneObjLoader::initialize() {
     if (!tex_loader.load()) {
         std::cerr << "ERROR: Could not load background texture file.\n";
     }
-    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight());
+    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight(), false);
     for (int i = 0; i < cameras_.size(); i++) {
         cameras_[i]->setBackgroundTexture(background_texture_);
     }
@@ -99,7 +99,7 @@ void SceneObjLoader::initShader() {
     shader_prog_ = std::make_unique<Shader>("ShaderFiles/shader_bounding_box.vs.txt", "ShaderFiles/shader_bounding_box.fs.txt");
 }
 
-void SceneObjLoader::drawBVH(Camera& cam) {
+void SceneObjLoader::drawBVH() {
     if (context.settings->selected_option != -1) {
         bounding_boxes_.resize(world_.objects_.size());
 
@@ -109,9 +109,9 @@ void SceneObjLoader::drawBVH(Camera& cam) {
 
             if (rtMesh) {                                      // If the cast succeeds, the object is of type RTMesh
                 if (context.settings->selected_option == 0) {  // Drawing whole tree
-                    rtMesh->drawBVHTree(bounding_boxes_, i, shader_prog_, cam);
+                    rtMesh->drawBVHTree(bounding_boxes_, i, shader_prog_, *cameras_[active_camera_]);
                 } else if (context.settings->selected_option == 1) {  // Drawing only leaves
-                    rtMesh->drawBVHLeaves(bounding_boxes_, i, shader_prog_, cam);
+                    rtMesh->drawBVHLeaves(bounding_boxes_, i, shader_prog_, *cameras_[active_camera_]);
                 }
             }
         }

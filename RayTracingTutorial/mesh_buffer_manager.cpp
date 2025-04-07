@@ -17,43 +17,34 @@ MeshBufferManager::MeshBufferManager() {
 }
 
 std::vector<float>& MeshBufferManager::getBuffer() {
-    return this->buffer;
+    return buffer;
 }
 
 MeshHandle MeshBufferManager::addToBuffer(std::span<Attribute> attributes, std::span<std::uint32_t> indices) {
-    MeshHandle new_handle = ++mesh_ids_;
-    MeshInfo& mesh_info = mesh_info_[new_handle];
-    std::size_t vertex_count = attributes[0].data.size() / getComponentCount(attributes[0].type);  // Number of vertices
-    
-    // Iterate thorugh attributes and add them
-    for (std::size_t i = 0; i < attributes.size(); i++) {
-        std::size_t attribute_start = buffer.size();
-
-        switch (attributes[i].type) {
-            case AttributeType::Position:
-            case AttributeType::Color:
-            case AttributeType::Normal:
-                mesh_info.offsets_v[static_cast<std::uint32_t>(attributes[i].type)] = static_cast<std::uint32_t>(attribute_start);
-                buffer.resize(attribute_start + vertex_count * 3); // These are 3D coordinates
-
-                // Copy the attrib values into the buffer
-                std::memcpy(buffer.data() + attribute_start, attributes[i].data.data(), vertex_count * 3 * sizeof(float));
-                break;
-            case AttributeType::UV:
-                mesh_info.offsets_v[static_cast<std::uint32_t>(AttributeType::UV)] = static_cast<std::uint32_t>(attribute_start);
-                buffer.resize(attribute_start + vertex_count * 2); // UVs are 2D coordinates
-                //assert(vertex_count * 2 == attributes[i].data.size());
-                /*std::cout << "vertex count: " << vertex_count << ", attributes[i].data.size(): " << attributes[i].data.size() << std::endl;
-                exit(0);*/
-                // Copy the UV values into the buffer
-                std::memcpy(buffer.data() + attribute_start, attributes[i].data.data(), vertex_count * 2 * sizeof(float));
-                break;
-        }
-
+    MeshHandle new_handle;
+    if (!free_indices_.empty()) {
+        new_handle = free_indices_.back();
+        free_indices_.pop_back();
+    } else {
+        new_handle = mesh_info_.size();
+        mesh_info_.emplace_back();
     }
+
+    MeshInfo& mesh_info = mesh_info_[new_handle];
+    mesh_info.active = true;
+
+    std::size_t vertex_count = attributes[0].data.size() / getComponentCount(attributes[0].type); // Number of vertices
+
+    for (const Attribute& attr : attributes) {
+        std::size_t attribute_start = buffer.size();
+        mesh_info.offsets_v[static_cast<std::uint32_t>(attr.type)] = static_cast<std::uint32_t>(attribute_start);
+        std::size_t component_count = getComponentCount(attr.type);
+        buffer.resize(attribute_start + vertex_count * component_count);
+        std::memcpy(buffer.data() + attribute_start, attr.data.data(), vertex_count * component_count * sizeof(float));
+    }
+
     mesh_info.count_v = vertex_count;
 
-    // Insert indices array
     std::size_t offs = buffer.size();
     buffer.resize(offs + indices.size());
     std::memcpy(buffer.data() + offs, indices.data(), indices.size() * sizeof(std::uint32_t));
@@ -63,27 +54,43 @@ MeshHandle MeshBufferManager::addToBuffer(std::span<Attribute> attributes, std::
     return new_handle;
 }
 
-std::span<const std::uint32_t> MeshBufferManager::getIndices(MeshHandle mesh) const{
-    if (auto it = mesh_info_.find(mesh); it != mesh_info_.end()) {
-        return std::span<const std::uint32_t>(reinterpret_cast<const std::uint32_t*>(buffer.data() + it->second.offset_i), it->second.count_i);
+void MeshBufferManager::removeMesh(MeshHandle mesh) {
+    // TODO: reuse memory that is no longer used
+    if (mesh < mesh_info_.size() && mesh_info_[mesh].active) {
+        mesh_info_[mesh].active = false;
+        free_indices_.push_back(mesh);
     }
-    return {};
+}
+
+std::span<const std::uint32_t> MeshBufferManager::getIndices(MeshHandle mesh) const {
+    if (mesh >= mesh_info_.size() || !mesh_info_[mesh].active) {
+        throw std::out_of_range("Invalid mesh handle in getIndices");
+    }
+    return std::span<const std::uint32_t>(reinterpret_cast<const std::uint32_t*>(buffer.data() + mesh_info_[mesh].offset_i), mesh_info_[mesh].count_i);
 }
 
 std::span<std::uint32_t> MeshBufferManager::getIndices(MeshHandle mesh) {
-    if (auto it = mesh_info_.find(mesh); it != mesh_info_.end()) {
-        return std::span<std::uint32_t>(reinterpret_cast<std::uint32_t*>(buffer.data() + it->second.offset_i), it->second.count_i);
+    if (mesh >= mesh_info_.size() || !mesh_info_[mesh].active) {
+        throw std::out_of_range("Invalid mesh handle in getIndices");
     }
-    return {};
+    return std::span<std::uint32_t>(reinterpret_cast<std::uint32_t*>(buffer.data() + mesh_info_[mesh].offset_i), mesh_info_[mesh].count_i);
 }
 
 std::span<const float> MeshBufferManager::getAttribute(MeshHandle mesh, AttributeType attribute) const {
-    if (auto it = mesh_info_.find(mesh); it != mesh_info_.end()) {
-        if (attribute == AttributeType::UV) {
-            return std::span(&buffer[it->second.offsets_v[static_cast<std::uint32_t>(attribute)]], it->second.count_v * 2);
-        } else {
-            return std::span(&buffer[it->second.offsets_v[static_cast<std::uint32_t>(attribute)]], it->second.count_v * 3);
-        }
+    if (mesh >= mesh_info_.size() || !mesh_info_[mesh].active) {
+        throw std::out_of_range("Invalid mesh handle in getAttribute");
     }
-    return {};
+    std::size_t count = mesh_info_[mesh].count_v * getComponentCount(attribute);
+    return std::span(&buffer[mesh_info_[mesh].offsets_v[static_cast<std::uint32_t>(attribute)]], count);
+}
+
+ResolvedMeshInfo MeshBufferManager::getResolvedMesh(MeshHandle mesh) const {
+    if (mesh >= mesh_info_.size() || !mesh_info_[mesh].active) {
+        throw std::out_of_range("Invalid mesh handle in getResolvedMesh");
+    }
+    const MeshInfo& info = mesh_info_[mesh];
+    return {std::span(&buffer[info.offsets_v[static_cast<std::uint32_t>(AttributeType::Position)]], info.count_v * 3),
+            std::span(&buffer[info.offsets_v[static_cast<std::uint32_t>(AttributeType::Normal)]], info.count_v * 3),
+            std::span(&buffer[info.offsets_v[static_cast<std::uint32_t>(AttributeType::UV)]], info.count_v * 2),
+            std::span(reinterpret_cast<const std::uint32_t*>(buffer.data() + info.offset_i), info.count_i)};
 }

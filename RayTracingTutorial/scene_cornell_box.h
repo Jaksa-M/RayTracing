@@ -17,7 +17,7 @@ public:
     std::vector<unsigned char> update(int display_w, int display_h) override;
 
     void initShader();
-    void drawBVH();
+    void drawBVH() override;
 
 private:
     std::unique_ptr<MeshBufferManager> mesh_buf_manager_;
