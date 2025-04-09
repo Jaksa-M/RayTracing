@@ -21,7 +21,7 @@ public:
 
 class Lambertian : public Material {
 public:
-    Lambertian(const color& albedo) : tex_(std::make_shared<Texture>(albedo, true)) {}
+    Lambertian(const color& albedo) : tex_(std::make_shared<Texture>(albedo, TexFormat::RGB8_UNORM)) {}
     Lambertian(std::shared_ptr<Texture> tex) : tex_(tex) {}
     
     bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered) const override {

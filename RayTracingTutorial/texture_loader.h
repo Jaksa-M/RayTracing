@@ -4,6 +4,8 @@
 #include <vector>
 #include "texture.h"
 
+enum class TexFormat;
+
 class TextureLoader {
    public:
     TextureLoader();
@@ -13,19 +15,21 @@ class TextureLoader {
 
     bool load();
 
-    std::vector<unsigned char> getData() const;
+    std::vector<std::uint8_t> getData() const;
     std::uint32_t getImageWidth() const;
     std::uint32_t getImageHeight() const;
+    TexFormat getFormat() const;
+    TexFormat decideFormat(int channels, bool is_float);
 
    private:
     std::string file_path;
-    const std::uint32_t bytes_per_pixel_ = 3;
-    std::vector<unsigned char> bdata_; // Linear 8-bit pixel data
+    TexFormat format_;
+    std::vector<std::uint8_t> bdata_;
     std::uint32_t image_width_ = 0;
     std::uint32_t image_height_ = 0;
     std::uint32_t bytes_per_scanline_ = 0;
 
-    static unsigned char floatToByte(float value);
+    static std::uint8_t floatToByte(float value);
 };
 
 #endif

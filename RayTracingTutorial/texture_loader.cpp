@@ -3,13 +3,13 @@
 #include "stb_image/stb_image.h"
 #include <iostream>
 #include <cstdlib>
+#include "types.h"
 
 TextureLoader::TextureLoader() {}
 
-TextureLoader::TextureLoader(const std::string& file_path) {
+TextureLoader::TextureLoader(const std::string& file_path): file_path(file_path) {
     // Loads image data from the specified file.
     // If the image was not loaded successfully, width() and height() will return 0.
-    this->file_path = file_path;
 }
 
 TextureLoader::~TextureLoader() {
@@ -17,35 +17,53 @@ TextureLoader::~TextureLoader() {
 }
 
 bool TextureLoader::load() {
-    // Loads the linear (gamma=1) image data from the given file name.
-    // Returns true if the load succeeded.
-    // The resulting data buffer contains the three [0.0, 1.0] floating-point values for the 
-    // first pixel (red, then green, then blue).
-    // Pixels are contiguous, going left to right for the width of the image, followed by the next row
-    // below, for the full height of the image.
+    int w, h, channels;
 
-    int n = bytes_per_pixel_;
-    int w, h;
-    float* raw_fdata = stbi_loadf(file_path.c_str(), &w, &h, &n, bytes_per_pixel_);
-    if (raw_fdata == nullptr || w < 0 || h < 0) return false;
+    bool is_float = stbi_is_hdr(file_path.c_str());
 
-    image_width_ = static_cast<uint32_t>(w);
-    image_height_ = static_cast<uint32_t>(h);
+    if (is_float) {
+        // stbi_loadf will give us the values of width, height and number of channels
+        float* raw_fdata = stbi_loadf(file_path.c_str(), &w, &h, &channels, 0);
+        if (!raw_fdata || w <= 0 || h <= 0) return false;
 
-    std::uint32_t total_bytes = image_width_ * image_height_ * bytes_per_pixel_;
+        image_width_ = static_cast<uint32_t>(w);
+        image_height_ = static_cast<uint32_t>(h);
+        bytes_per_scanline_ = image_width_ * channels * sizeof(float);
 
-    bdata_.resize(total_bytes);
+        size_t total_floats = static_cast<size_t>(image_width_) * image_height_ * channels;
+        bdata_.resize(total_floats * sizeof(float));
+        std::memcpy(bdata_.data(), raw_fdata, bdata_.size());
 
-    for (std::uint32_t i = 0; i < total_bytes; i++) {
-        bdata_[i] = floatToByte(raw_fdata[i]);
+        stbi_image_free(raw_fdata);
+    } 
+    else {
+        std::uint8_t* raw_data = stbi_load(file_path.c_str(), &w, &h, &channels, 0);
+        if (!raw_data || w <= 0 || h <= 0) return false;
+
+        image_width_ = static_cast<uint32_t>(w);
+        image_height_ = static_cast<uint32_t>(h);
+        bytes_per_scanline_ = image_width_ * channels * sizeof(std::uint8_t);
+
+        size_t total_bytes = static_cast<size_t>(image_width_) * image_height_ * channels;
+        bdata_.resize(total_bytes);
+        std::memcpy(bdata_.data(), raw_data, bdata_.size());
+
+        stbi_image_free(raw_data);
     }
 
-    STBI_FREE(raw_fdata);
-    bytes_per_scanline_ = image_width_ * bytes_per_pixel_;
+    format_ = decideFormat(channels, is_float);
+
+    // Checking if we have roughness images, and converting them to R8_UNORM format to reduce memory and avoid gamma conversion.
+    // This is because roughness images are greyscale (meaning they have only 1 channel).
+    if (format_ != TexFormat::RGB8_UNORM && format_ != TexFormat::RGB8_UNORM_SRGB && 
+        format_ != TexFormat::RGBA8_UNORM && format_ != TexFormat::RGBA8_UNORM_SRGB) return true;
+    int bpe = bytesPerElement(format_);
+    convertToR8(bdata_, channels, bpe, image_width_, image_height_, bytes_per_scanline_, format_);
+
     return true;
 }
 
-std::vector<unsigned char> TextureLoader::getData() const {
+std::vector<std::uint8_t> TextureLoader::getData() const {
     return bdata_;
 }
 
@@ -57,8 +75,26 @@ std::uint32_t TextureLoader::getImageHeight() const {
     return image_height_;
 }
 
-unsigned char TextureLoader::floatToByte(float value) {
-    if (value <= 0.0) return 0;
-    if (1.0 <= value) return 255;
-    return static_cast<unsigned char>(256.0 * value);
+TexFormat TextureLoader::getFormat() const {
+    return format_;
+}
+
+TexFormat TextureLoader::decideFormat(int channels, bool is_float) {
+    if (is_float) {
+        if (channels == 1) return TexFormat::R32_FLOAT;
+        if (channels == 3) return TexFormat::RGB32_FLOAT;
+        if (channels == 4) return TexFormat::RGBA32_FLOAT;
+    }
+    else {
+        if (channels == 1) return TexFormat::R8_UNORM;
+        // We can assume that if it's 8 bits jpg/png image, we use the gamma version
+        if (channels == 3) return TexFormat::RGB8_UNORM_SRGB;
+        if (channels == 4) return TexFormat::RGBA8_UNORM_SRGB;
+    }
+
+    throw std::runtime_error("Unsupported texture format: channels = " + std::to_string(channels) + (is_float ? " (float)" : " (uint8)"));
+}
+
+std::uint8_t TextureLoader::floatToByte(float value) {
+    return static_cast<std::uint8_t>(256 * std::clamp(value, 0.0f, 0.999f));
 }
