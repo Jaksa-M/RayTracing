@@ -56,8 +56,8 @@ bool ObjLoader::load(Context& context) {
             if (!spec_tex_loader.load()) {
                 std::cerr << "ERROR: Could not load specular texture file '" << specular_texture_path << "'.\n";
             }
-            roughness_tex = std::make_shared<Texture>(spec_tex_loader.getData(), spec_tex_loader.getImageWidth(), spec_tex_loader.getImageHeight(),
-                                                      spec_tex_loader.getFormat());
+            TexDescription desc(spec_tex_loader.getImageWidth(), spec_tex_loader.getImageHeight(), spec_tex_loader.getFormat());
+            roughness_tex = std::make_shared<Texture>(spec_tex_loader.getData(), desc);
 
             // We need to invert R pixel for correct roughness
             std::span<unsigned char> pixels = roughness_tex->getData();
@@ -71,8 +71,8 @@ bool ObjLoader::load(Context& context) {
             if (!tex_loader.load()) {
                 std::cerr << "ERROR: Could not load texture file '" << texture_path << "'.\n";
             }
-            std::shared_ptr<Texture> tex =
-                std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight(), tex_loader.getFormat());
+            TexDescription desc(tex_loader.getImageWidth(), tex_loader.getImageHeight(), tex_loader.getFormat());
+            std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader.getData(), desc);
             if (roughness_tex != nullptr) {
                 material = std::make_shared<Metal>(tex, roughness_tex);
             } else {
