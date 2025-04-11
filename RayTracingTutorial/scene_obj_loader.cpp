@@ -44,7 +44,7 @@ void SceneObjLoader::initialize() {
 
     auto start_time = std::chrono::high_resolution_clock::now(); // Start timing
 
-    obj_loader_ = std::make_unique<ObjLoader>("Resources/teapot/teapot.obj");
+    obj_loader_ = std::make_unique<ObjLoader>("Resources/crytek_sponza/sponza.obj");
     if (!obj_loader_->load(context)) {
         std::cout << "ERROR: custom mesh failed to load" << std::endl;
     }
