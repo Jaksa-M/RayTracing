@@ -28,8 +28,6 @@ class TextureLoader {
     std::uint32_t image_width_ = 0;
     std::uint32_t image_height_ = 0;
     std::uint32_t bytes_per_scanline_ = 0;
-
-    static std::uint8_t floatToByte(float value);
 };
 
 #endif

@@ -11,13 +11,7 @@ class Texture {
    public:
     Texture(const color& solid_color);
 
-    Texture(std::vector<unsigned char> data, TexDescription desc);
-
-    static std::shared_ptr<Texture> generateGradient(TexDescription desc);
-
-    static std::shared_ptr<Texture> generateCheckerboard(TexDescription desc, const color& color1, const color& color2);
-
-    static std::shared_ptr<Texture> generateSmoothGradient(TexDescription desc, std::uint32_t step_size);
+    Texture(std::vector<std::uint8_t> data, TexDescription desc);
 
     ~Texture() { 
         data_.clear();
@@ -34,8 +28,6 @@ class Texture {
     TexDescription tex_description_;
 
     vec4 pixelData(std::uint32_t x, std::uint32_t y) const;
-
-    bool isGammaFormat(TexFormat format) const; // Check if we should do gamma correction (needed when loading jpg/png images)
 };
 
 #endif

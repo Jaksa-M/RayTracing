@@ -13,6 +13,7 @@
 #include "imgui/imgui.h"
 #include <GLFW/glfw3.h>
 #include "texture_loader.h"
+#include "texture_utility.h"
 
 SceneMaterialTesting::SceneMaterialTesting() {}
 
@@ -51,13 +52,12 @@ void SceneMaterialTesting::initialize() {
     std::shared_ptr<Texture> rough_tex = std::make_shared<Texture>(vec3(1, 0, 0));
     std::shared_ptr<Texture> rough_zero_tex = std::make_shared<Texture>(vec3(0, 0, 0));
     std::shared_ptr<Texture> rough_mid_tex = std::make_shared<Texture>(vec3(0.3, 0.3, 0.3));
-    std::shared_ptr<Texture> rough_gradient_tex = Texture::generateGradient(desc3);
-    std::shared_ptr<Texture> rough_checkered_tex = Texture::generateCheckerboard(desc3, vec3(0.0f, 0.0f, 0.0f), vec3(0.3f, 0.3f, 0.3f));
-    std::shared_ptr<Texture> rough_non_smooth_grad_tex =
-        Texture::generateSmoothGradient(desc3, 170);
+    std::shared_ptr<Texture> rough_gradient_tex = std::make_shared<Texture>(generateGradient(desc3), desc3);
+    std::shared_ptr<Texture> rough_checkered_tex = std::make_shared<Texture>(generateCheckerboard(desc3, vec3(0.0f, 0.0f, 0.0f), vec3(0.3f, 0.3f, 0.3f)), desc3);
+    std::shared_ptr<Texture> rough_non_smooth_grad_tex = std::make_shared<Texture>(generateSmoothGradient(desc3, 170), desc3);
     std::shared_ptr<Texture> white_tex = std::make_shared<Texture>(vec3(1, 1, 1));
 
-    auto plane_mat = std::make_shared<Metal>(white_tex, rough_zero_tex);
+    auto plane_mat = std::make_shared<Metal>(white_tex, rough_gradient_tex);
     //auto plane_mat = std::make_shared<Lambertian>(rough_zero_tex);
 
     plane_mesh_ = MeshUtils::GenerateTriangleRectangle(context, plane_mat, 2, 2);

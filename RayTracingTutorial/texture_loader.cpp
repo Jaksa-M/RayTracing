@@ -92,7 +92,3 @@ TexFormat TextureLoader::decideFormat(int channels, bool is_float) {
 
     throw std::runtime_error("Unsupported texture format: channels = " + std::to_string(channels) + (is_float ? " (float)" : " (uint8)"));
 }
-
-std::uint8_t TextureLoader::floatToByte(float value) {
-    return static_cast<std::uint8_t>(256 * std::clamp(value, 0.0f, 0.999f));
-}

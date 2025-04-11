@@ -62,7 +62,7 @@ void SceneObjLoader::initialize() {
     //matrix4x4 m = transformation::create_scaling_matrix(0.02f, 0.02f, 0.02f); // teapot
     //matrix4x4 m = transformation::create_scaling_matrix(1.0f, 1.0f, 1.0f); // sponza
     //matrix4x4 m = transformation::create_scaling_matrix(0.3f, 0.3f, 0.3f); // erato
-    matrix4x4 m = transformation::create_scaling_matrix(0.01f, 0.01f, 0.01f);  // crytek_sponza
+    matrix4x4 m = transformation::create_scaling_matrix(0.01f, 0.01f, 0.01f); // crytek_sponza
     for (std::uint32_t i = 0; i < rt_meshes_.size(); i++) {
         rt_meshes_[i]->setTransformationMatrix(m);
         world_.add(rt_meshes_[i]);
