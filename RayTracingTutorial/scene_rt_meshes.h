@@ -5,7 +5,6 @@
 #include "shader.h"
 #include "mesh.h"
 #include "RTMesh.h"
-#include "types.h"
 
 class SceneRtMeshes: public Scene {
 public:

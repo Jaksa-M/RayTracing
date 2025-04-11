@@ -30,7 +30,9 @@ void SceneRtMeshes::initialize() {
     if (!tex_loader.load()) {
         std::cerr << "ERROR: Could not load background texture file.\n";
     }
-    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight(), false);
+
+    TexDescription desc(tex_loader.getImageWidth(), tex_loader.getImageHeight(), tex_loader.getFormat());
+    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), desc);
     for (int i = 0; i < cameras_.size(); i++) {
         cameras_[i]->setBackgroundTexture(background_texture_);
     }
@@ -40,7 +42,8 @@ void SceneRtMeshes::initialize() {
     if (!tex_loader2.load()) {
         std::cerr << "ERROR: Could not load texture file" << "\n ";
     }
-    std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader2.getData(), tex_loader2.getImageWidth(), tex_loader2.getImageHeight(), true);
+    TexDescription desc2(tex_loader2.getImageWidth(), tex_loader2.getImageHeight(), tex_loader2.getFormat());
+    std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader2.getData(), desc2);
     std::shared_ptr<Material> texture_mat = std::make_shared<Lambertian>(tex);
 
     rect_prism_mesh1_ = MeshUtils::GenerateTriangleCube(context, texture_mat, 4);

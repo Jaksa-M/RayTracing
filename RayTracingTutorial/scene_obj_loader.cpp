@@ -34,7 +34,8 @@ void SceneObjLoader::initialize() {
     if (!tex_loader.load()) {
         std::cerr << "ERROR: Could not load background texture file.\n";
     }
-    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight(), false);
+    TexDescription desc(tex_loader.getImageWidth(), tex_loader.getImageHeight(), tex_loader.getFormat());
+    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), desc);
     for (int i = 0; i < cameras_.size(); i++) {
         cameras_[i]->setBackgroundTexture(background_texture_);
     }
@@ -43,7 +44,7 @@ void SceneObjLoader::initialize() {
 
     auto start_time = std::chrono::high_resolution_clock::now(); // Start timing
 
-    obj_loader_ = std::make_unique<ObjLoader>("Resources/teapot/teapot.obj");
+    obj_loader_ = std::make_unique<ObjLoader>("Resources/crytek_sponza/sponza.obj");
     if (!obj_loader_->load(context)) {
         std::cout << "ERROR: custom mesh failed to load" << std::endl;
     }
@@ -61,7 +62,7 @@ void SceneObjLoader::initialize() {
     //matrix4x4 m = transformation::create_scaling_matrix(0.02f, 0.02f, 0.02f); // teapot
     //matrix4x4 m = transformation::create_scaling_matrix(1.0f, 1.0f, 1.0f); // sponza
     //matrix4x4 m = transformation::create_scaling_matrix(0.3f, 0.3f, 0.3f); // erato
-    matrix4x4 m = transformation::create_scaling_matrix(0.01f, 0.01f, 0.01f);  // crytek_sponza
+    matrix4x4 m = transformation::create_scaling_matrix(0.01f, 0.01f, 0.01f); // crytek_sponza
     for (std::uint32_t i = 0; i < rt_meshes_.size(); i++) {
         rt_meshes_[i]->setTransformationMatrix(m);
         world_.add(rt_meshes_[i]);

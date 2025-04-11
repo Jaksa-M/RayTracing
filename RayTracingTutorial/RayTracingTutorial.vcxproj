@@ -164,6 +164,7 @@
     <ClInclude Include="scene_rt_meshes.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="texture.h" />
+    <ClInclude Include="texture_utility.h" />
     <ClInclude Include="transformations.h" />
     <ClInclude Include="types.h" />
     <ClInclude Include="intersection_utility.h" />

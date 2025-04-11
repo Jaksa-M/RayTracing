@@ -13,6 +13,7 @@
 #include "imgui/imgui.h"
 #include <GLFW/glfw3.h>
 #include "texture_loader.h"
+#include "texture_utility.h"
 
 SceneMaterialTesting::SceneMaterialTesting() {}
 
@@ -28,7 +29,8 @@ void SceneMaterialTesting::initialize() {
     if (!tex_loader.load()) {
         std::cerr << "ERROR: Could not load background texture file.\n";
     }
-    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight(), false);
+    TexDescription desc(tex_loader.getImageWidth(), tex_loader.getImageHeight(), tex_loader.getFormat());
+    background_texture_ = std::make_shared<Texture>(tex_loader.getData(), desc);
     for (int i = 0; i < cameras_.size(); i++) {
         cameras_[i]->setBackgroundTexture(background_texture_);
     }
@@ -45,24 +47,26 @@ void SceneMaterialTesting::initialize() {
         std::cerr << "ERROR: Could not load texture file"
                   << "\n ";
     }
+    TexDescription desc3(tex_loader3.getImageWidth(), tex_loader3.getImageHeight(), TexFormat::RGB8_UNORM);
 
-    std::shared_ptr<Texture> rough_tex = std::make_shared<Texture>(vec3(1, 0, 0), false);
-    std::shared_ptr<Texture> rough_zero_tex = std::make_shared<Texture>(vec3(0, 0, 0), false);
-    std::shared_ptr<Texture> rough_mid_tex = std::make_shared<Texture>(vec3(0.3, 0.3, 0.3), false);
-    std::shared_ptr<Texture> rough_gradient_tex = Texture::generateGradient(tex_loader3.getImageWidth(), tex_loader3.getImageHeight(), false);
-    std::shared_ptr<Texture> rough_checkered_tex = Texture::generateCheckerboard(tex_loader3.getImageWidth(), tex_loader3.getImageHeight(),
-        vec3(0.0f, 0.0f, 0.0f), vec3(0.3f, 0.3f, 0.3f), false);
-    std::shared_ptr<Texture> rough_non_smooth_grad_tex =
-        Texture::generateSmoothGradient(tex_loader3.getImageWidth(), tex_loader3.getImageHeight(), 170, false);
-    std::shared_ptr<Texture> white_tex = std::make_shared<Texture>(vec3(1, 1, 1), true);
+    std::shared_ptr<Texture> rough_tex = std::make_shared<Texture>(vec3(1, 0, 0));
+    std::shared_ptr<Texture> rough_zero_tex = std::make_shared<Texture>(vec3(0, 0, 0));
+    std::shared_ptr<Texture> rough_mid_tex = std::make_shared<Texture>(vec3(0.3, 0.3, 0.3));
+    std::shared_ptr<Texture> rough_gradient_tex = std::make_shared<Texture>(generateGradient(desc3), desc3);
+    std::shared_ptr<Texture> rough_checkered_tex = std::make_shared<Texture>(generateCheckerboard(desc3, vec3(0.0f, 0.0f, 0.0f), vec3(0.3f, 0.3f, 0.3f)), desc3);
+    std::shared_ptr<Texture> rough_non_smooth_grad_tex = std::make_shared<Texture>(generateSmoothGradient(desc3, 170), desc3);
+    std::shared_ptr<Texture> white_tex = std::make_shared<Texture>(vec3(1, 1, 1));
 
-    auto plane_mat = std::make_shared<Metal>(white_tex, rough_non_smooth_grad_tex);
-    //auto plane_mat = std::make_shared<Lambertian>(tex);
+    auto plane_mat = std::make_shared<Metal>(white_tex, rough_gradient_tex);
+    //auto plane_mat = std::make_shared<Lambertian>(rough_zero_tex);
 
     plane_mesh_ = MeshUtils::GenerateTriangleRectangle(context, plane_mat, 2, 2);
     matrix4x4 m = transformation::create_translation_matrix(vec3(0.0f, 1.0f, -0.99f)) * transformation::create_scaling_matrix(30.0f, 30.0f, 30.0f);
     plane_mesh_->setTransformationMatrix(m);
     world_.add(plane_mesh_);
+    vec3 pixel00 = background_texture_->value(0, 0);
+    vec3 pixel01 = background_texture_->value(0, 1);
+    std::vector<std::uint8_t> buf = tex_loader.getData();
 
     auto cube_mat = std::make_shared<Lambertian>(white_tex);
     rect_prism_mesh1_ = MeshUtils::GenerateTriangleCube(context, cube_mat, 4);

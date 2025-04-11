@@ -61,6 +61,26 @@ struct CameraPreset {
     float focal_len;
 };
 
+enum class TexFormat {
+    R8_UNORM, // UNORM -> unsigned normalized
+    RGB8_UNORM,
+    RGB8_UNORM_SRGB,
+    RGBA8_UNORM,
+    RGBA8_UNORM_SRGB,
+    R32_FLOAT,
+    RGB32_FLOAT,
+    RGBA32_FLOAT
+};
+
+struct TexDescription {
+    TexDescription(): image_width(0), image_height(0) {}
+    TexDescription(std::uint32_t width, std::uint32_t height, TexFormat format) :
+        image_width(width), image_height(height), format(format) {}
+    std::uint32_t image_width;
+    std::uint32_t image_height;
+    TexFormat format;
+};
+
 namespace fs = std::filesystem;
 
 #endif

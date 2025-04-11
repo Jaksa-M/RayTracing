@@ -14,7 +14,8 @@
 #include "RTMesh.h"
 #include "texture.h"
 #include "texture_loader.h"
-#include <cassert>  // assert
+#include <cassert> // assert
+#include "texture_utility.h"
 
 struct Subshape {
     int material_id;
@@ -55,11 +56,12 @@ bool ObjLoader::load(Context& context) {
             if (!spec_tex_loader.load()) {
                 std::cerr << "ERROR: Could not load specular texture file '" << specular_texture_path << "'.\n";
             }
-            roughness_tex = std::make_shared<Texture>(spec_tex_loader.getData(), spec_tex_loader.getImageWidth(), spec_tex_loader.getImageHeight(), false);
+            TexDescription desc(spec_tex_loader.getImageWidth(), spec_tex_loader.getImageHeight(), spec_tex_loader.getFormat());
+            roughness_tex = std::make_shared<Texture>(spec_tex_loader.getData(), desc);
 
             // We need to invert R pixel for correct roughness
             std::span<unsigned char> pixels = roughness_tex->getData();
-            for (std::size_t i = 0; i < pixels.size(); i += 3) {
+            for (std::size_t i = 0; i < pixels.size(); i += getChannelCount(roughness_tex->getFormat())) {
                 pixels[i] = 255 - pixels[i]; // we only need to invert first color
             }
         }
@@ -69,7 +71,8 @@ bool ObjLoader::load(Context& context) {
             if (!tex_loader.load()) {
                 std::cerr << "ERROR: Could not load texture file '" << texture_path << "'.\n";
             }
-            std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader.getData(), tex_loader.getImageWidth(), tex_loader.getImageHeight(), true);
+            TexDescription desc(tex_loader.getImageWidth(), tex_loader.getImageHeight(), tex_loader.getFormat());
+            std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader.getData(), desc);
             if (roughness_tex != nullptr) {
                 material = std::make_shared<Metal>(tex, roughness_tex);
             } else {

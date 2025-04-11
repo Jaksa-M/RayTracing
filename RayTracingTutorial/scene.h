@@ -11,6 +11,7 @@
 #include "bvh_manager.h"
 #include <vector>
 #include <memory.h>
+#include "types.h"
 
 class Scene {
 public:
