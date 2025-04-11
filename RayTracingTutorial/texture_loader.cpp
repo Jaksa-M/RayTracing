@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cstdlib>
 #include "types.h"
+#include "texture_utility.h"
 
 TextureLoader::TextureLoader() {}
 
@@ -55,10 +56,7 @@ bool TextureLoader::load() {
 
     // Checking if we have roughness images, and converting them to R8_UNORM format to reduce memory and avoid gamma conversion.
     // This is because roughness images are greyscale (meaning they have only 1 channel).
-    if (format_ != TexFormat::RGB8_UNORM && format_ != TexFormat::RGB8_UNORM_SRGB && 
-        format_ != TexFormat::RGBA8_UNORM && format_ != TexFormat::RGBA8_UNORM_SRGB) return true;
-    int bpe = bytesPerElement(format_);
-    convertToR8(bdata_, channels, bpe, image_width_, image_height_, bytes_per_scanline_, format_);
+    convertGrayscaleToR8(bdata_, image_width_, image_height_, bytes_per_scanline_, format_);
 
     return true;
 }

@@ -48,16 +48,14 @@ void SceneMaterialTesting::initialize() {
     }
     TexDescription desc3(tex_loader3.getImageWidth(), tex_loader3.getImageHeight(), TexFormat::RGB8_UNORM);
 
-    TexDescription single_col_desc(TexFormat::RGB8_UNORM);
-
-    /*std::shared_ptr<Texture> rough_tex = std::make_shared<Texture>(vec3(1, 0, 0), single_col_desc);
-    std::shared_ptr<Texture> rough_zero_tex = std::make_shared<Texture>(vec3(0, 0, 0), single_col_desc);
-    std::shared_ptr<Texture> rough_mid_tex = std::make_shared<Texture>(vec3(0.3, 0.3, 0.3), single_col_desc);*/
+    /*std::shared_ptr<Texture> rough_tex = std::make_shared<Texture>(vec3(1, 0, 0));
+    std::shared_ptr<Texture> rough_zero_tex = std::make_shared<Texture>(vec3(0, 0, 0));
+    std::shared_ptr<Texture> rough_mid_tex = std::make_shared<Texture>(vec3(0.3, 0.3, 0.3));*/
     std::shared_ptr<Texture> rough_gradient_tex = Texture::generateGradient(desc3);
     /*std::shared_ptr<Texture> rough_checkered_tex = Texture::generateCheckerboard(desc3, vec3(0.0f, 0.0f, 0.0f), vec3(0.3f, 0.3f, 0.3f));
     std::shared_ptr<Texture> rough_non_smooth_grad_tex =
         Texture::generateSmoothGradient(desc3, 170);
-    std::shared_ptr<Texture> white_tex = std::make_shared<Texture>(vec3(1, 1, 1), single_col_desc);*/
+    std::shared_ptr<Texture> white_tex = std::make_shared<Texture>(vec3(1, 1, 1));*/
 
     //auto plane_mat = std::make_shared<Metal>(white_tex, rough_gradient_tex);
     auto plane_mat = std::make_shared<Lambertian>(background_texture_);

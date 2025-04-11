@@ -43,8 +43,7 @@ void SceneRtMeshes::initialize() {
         std::cerr << "ERROR: Could not load texture file" << "\n ";
     }
     TexDescription desc2(tex_loader2.getImageWidth(), tex_loader2.getImageHeight(), tex_loader2.getFormat());
-    std::shared_ptr<Texture> tex =
-        std::make_shared<Texture>(tex_loader2.getData(), desc2);
+    std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader2.getData(), desc2);
     std::shared_ptr<Material> texture_mat = std::make_shared<Lambertian>(tex);
 
     rect_prism_mesh1_ = MeshUtils::GenerateTriangleCube(context, texture_mat, 4);

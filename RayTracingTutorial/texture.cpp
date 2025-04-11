@@ -1,17 +1,17 @@
 #include "texture.h"
-#include "types.h"
+#include "texture_utility.h"
+#include "utility.h"
 
-Texture::Texture(const color& solid_color, TexDescription desc): tex_description_(desc) {
+Texture::Texture(const color& solid_color) {
+    tex_description_.format = TexFormat::RGB32_FLOAT;
     tex_description_.image_width = 1;
     tex_description_.image_height = 1;
-    int channels = getChannelCount(desc.format);
-    bytes_per_scanline_ = channels * bytesPerElement(desc.format) * desc.image_width;
+    int channels = getChannelCount(tex_description_.format);
+    bytes_per_scanline_ = channels * bytesPerElement(tex_description_.format) * tex_description_.image_width;
 
     data_.resize(bytes_per_scanline_);
 
-    color c = isGammaFormat(desc.format) ? linearToGamma(solid_color) : solid_color;
-
-    std::memcpy(data_.data(), &c, sizeof(float) * channels);
+    std::memcpy(data_.data(), &solid_color, sizeof(float) * channels);
 }
 
 Texture::Texture(std::vector<std::uint8_t> data, TexDescription desc)
@@ -41,9 +41,9 @@ std::shared_ptr<Texture> Texture::generateGradient(TexDescription desc) {
             } 
             else {
                 unsigned char pixel[4] = {0, 0, 0, 255}; // Default alpha = 255
-                if (channels >= 1) pixel[0] = static_cast<std::uint8_t>(c.x() * 255.0f);
-                if (channels >= 2) pixel[1] = static_cast<std::uint8_t>(c.y() * 255.0f);
-                if (channels >= 3) pixel[2] = static_cast<std::uint8_t>(c.z() * 255.0f);
+                if (channels >= 1) pixel[0] = toUnorm(c.x());
+                if (channels >= 2) pixel[1] = toUnorm(c.y());
+                if (channels >= 3) pixel[2] = toUnorm(c.z());
 
                 std::memcpy(data.data() + index, pixel, channels * sizeof(std::uint8_t));
             }
@@ -76,9 +76,9 @@ std::shared_ptr<Texture> Texture::generateCheckerboard(TexDescription desc, cons
             } 
             else {
                 std::uint8_t pixel[4] = {0, 0, 0, 255}; // Default alpha = 255
-                if (channels >= 1) pixel[0] = static_cast<std::uint8_t>(c.x() * 255.0f);
-                if (channels >= 2) pixel[1] = static_cast<std::uint8_t>(c.y() * 255.0f);
-                if (channels >= 3) pixel[2] = static_cast<std::uint8_t>(c.z() * 255.0f);
+                if (channels >= 1) pixel[0] = toUnorm(c.x());
+                if (channels >= 2) pixel[1] = toUnorm(c.y());
+                if (channels >= 3) pixel[2] = toUnorm(c.z());
 
                 std::memcpy(data.data() + index, pixel, channels * sizeof(std::uint8_t));
             }
@@ -109,7 +109,7 @@ std::shared_ptr<Texture> Texture::generateSmoothGradient(TexDescription desc, st
                 std::memcpy(data.data() + index, pixel, channels * sizeof(float));
             } else {
                 std::uint8_t pixel[4] = {0, 0, 0, 255};
-                std::uint8_t gradient_value = static_cast<std::uint8_t>(gradient * 255.0f);
+                std::uint8_t gradient_value = toUnorm(gradient);
                 if (channels >= 1) pixel[0] = gradient_value;
                 if (channels >= 2) pixel[1] = gradient_value;
                 if (channels >= 3) pixel[2] = gradient_value;
@@ -127,13 +127,6 @@ std::span<unsigned char> Texture::getData() {
 
 TexFormat Texture::getFormat() const { return tex_description_.format; }
 
-std::uint32_t Texture::clamp(std::uint32_t x, std::uint32_t low, std::uint32_t high) const {
-    // Return the value clamped to the range [low, high).
-    if (x < low) return low;
-    if (x < high) return x;
-    return high - 1;
-}
-
 vec3 Texture::value(float u, float v) const {
     // Normalize the u and v coordinates
     u = std::fmod(std::abs(u), 1.0f);
@@ -150,8 +143,8 @@ vec3 Texture::value(float u, float v) const {
 vec4 Texture::pixelData(std::uint32_t x, std::uint32_t y) const { // Return the address of the three RGB bytes of the pixel at x,y
     if (data_.empty()) return vec4(1.0f, 0.0f, 1.0f, 1.0f); // If there is no image data, returns magenta.
 
-    x = clamp(x, 0u, tex_description_.image_width);
-    y = clamp(y, 0u, tex_description_.image_height);
+    x = std::clamp(x, 0u, tex_description_.image_width - 1);
+    y = std::clamp(y, 0u, tex_description_.image_height - 1);
 
     int channels = getChannelCount(tex_description_.format);
     int bpe = bytesPerElement(tex_description_.format);
@@ -166,10 +159,10 @@ vec4 Texture::pixelData(std::uint32_t x, std::uint32_t y) const { // Return the 
     } 
     else {
         // dividing by 255.0f because of color scale (the values are between 0-255 and we have to normalize it between 0 and 1)
-        result[0] = channels > 0 ? pixel[0] / 255.0f : 0.0f;
-        result[1] = channels > 1 ? pixel[1] / 255.0f : 0.0f;
-        result[2] = channels > 2 ? pixel[2] / 255.0f : 0.0f;
-        result[3] = channels > 3 ? pixel[3] / 255.0f : 1.0f;
+        result[0] = channels > 0 ? fromUnorm(pixel[0]) : 0.0f;
+        result[1] = channels > 1 ? fromUnorm(pixel[1]) : 0.0f;
+        result[2] = channels > 2 ? fromUnorm(pixel[2]) : 0.0f;
+        result[3] = channels > 3 ? fromUnorm(pixel[3]) : 1.0f;
         return isGammaFormat(tex_description_.format) ? gammaToLinear(result) : result;
     }
 }

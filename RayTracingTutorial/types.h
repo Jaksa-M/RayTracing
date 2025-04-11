@@ -74,7 +74,6 @@ enum class TexFormat {
 
 struct TexDescription {
     TexDescription(): image_width(0), image_height(0) {}
-    TexDescription(TexFormat format): image_width(0), image_height(0), format(format) {}
     TexDescription(std::uint32_t width, std::uint32_t height, TexFormat format) :
         image_width(width), image_height(height), format(format) {}
     std::uint32_t image_width;

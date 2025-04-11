@@ -4,15 +4,12 @@
 #include "color.h"
 #include "vec3.h"
 #include "interval.h"
-#include "utility.h"
 #include <span>
-
-enum class TexFormat;
-struct TexDescription;
+#include "types.h"
 
 class Texture {
    public:
-    Texture(const color& solid_color, TexDescription desc);
+    Texture(const color& solid_color);
 
     Texture(std::vector<unsigned char> data, TexDescription desc);
 
@@ -35,8 +32,6 @@ class Texture {
     std::vector<std::uint8_t> data_;
     std::uint32_t bytes_per_scanline_ = 0;
     TexDescription tex_description_;
-
-    std::uint32_t clamp(std::uint32_t x, std::uint32_t low, std::uint32_t high) const;
 
     vec4 pixelData(std::uint32_t x, std::uint32_t y) const;
 

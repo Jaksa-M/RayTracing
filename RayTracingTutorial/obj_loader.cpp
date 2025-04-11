@@ -15,7 +15,7 @@
 #include "texture.h"
 #include "texture_loader.h"
 #include <cassert> // assert
-#include "utility.h"
+#include "texture_utility.h"
 
 struct Subshape {
     int material_id;
