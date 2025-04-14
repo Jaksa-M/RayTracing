@@ -2,6 +2,8 @@
 #include "texture_utility.h"
 #include "utility.h"
 
+Texture::Texture() {}
+
 Texture::Texture(const color& solid_color) {
     tex_description_.format = TexFormat::RGB32_FLOAT;
     tex_description_.image_width = 1;
@@ -22,7 +24,29 @@ std::span<unsigned char> Texture::getData() {
     return std::span<unsigned char>(data_);
 }
 
-TexFormat Texture::getFormat() const { return tex_description_.format; }
+void Texture::setData(std::vector<std::uint8_t> data) {
+    data_ = data;
+}
+
+TexFormat Texture::getFormat() const {
+    return tex_description_.format;
+}
+
+void Texture::setFormat(TexFormat format) {
+    tex_description_.format = format;
+}
+
+void Texture::add(std::vector<std::uint8_t> data) {
+    for (size_t i = 0; i < data.size(); i++) {
+        data_[i] += data[i];
+    }
+}
+
+void Texture::divideBy(int val) {
+    for (size_t i = 0; i < data_.size(); i++) {
+        data_[i] = static_cast<std::uint8_t>(static_cast<float>(data_[i]) / val);
+    }
+}
 
 vec3 Texture::value(float u, float v) const {
     // Normalize the u and v coordinates

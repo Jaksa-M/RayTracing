@@ -9,6 +9,6 @@ void loadPresetsFromFile(const std::string& file, std::vector<CameraPreset>& cam
 void addPresetToFile(const std::string& file, CameraPreset& preset);
 void removePresetFromFile(const std::string& file, std::string_view preset_name);
 
-void saveScreenshot(int width, int height, bool hdr);
+void saveScreenshot(std::span<std::uint8_t> data, int width, int height, bool hdr);
 
 #endif

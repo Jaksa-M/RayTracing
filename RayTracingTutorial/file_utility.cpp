@@ -4,6 +4,7 @@
 #include <sstream>
 #include "camera.h"
 #include "vec3.h"
+#include <span>
 #include <GLFW/glfw3.h>
 #include <ctime>
 
@@ -139,10 +140,14 @@ void removePresetFromFile(const std::string& file, std::string_view preset_name)
     out_file.close();
 }
 
-void saveScreenshot(int width, int height, bool hdr) {
+void saveScreenshot(std::span<std::uint8_t> data, int width, int height, bool hdr) {
     std::vector<float> pixels(3 * width * height);
 
-    glReadPixels(0, 0, width, height, GL_RGB, GL_FLOAT, pixels.data());
+    for (int i = 0; i < width * height; i++) {
+        pixels[3 * i + 0] = data[3 * i + 0] / 255.0f;
+        pixels[3 * i + 1] = data[3 * i + 1] / 255.0f;
+        pixels[3 * i + 2] = data[3 * i + 2] / 255.0f;
+    }
 
     // Flip the image vertically
     std::vector<float> flipped_pixels(width * height * 3);

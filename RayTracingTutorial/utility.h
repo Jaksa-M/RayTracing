@@ -21,4 +21,12 @@ inline float linearToGamma(float x) {
     else return 0;
 }
 
+inline float fromUnorm(std::uint8_t value) {
+    return static_cast<float>(value) / 255.0f;
+}
+
+inline std::uint8_t toUnorm(float value) {
+    return static_cast<std::uint8_t>(std::clamp(value, 0.0f, 1.0f) * 255.0f);
+}
+
 #endif

@@ -107,7 +107,7 @@ int main(int, char**) {
     std::unique_ptr<BVHManager> bvh_manager = std::make_unique<BVHManager>(gui_settings.get());
     std::unique_ptr<Statistics> statistics = std::make_unique<Statistics>();
 
-    SceneType selected_scene_index = SceneType::OBJ_LOADER;
+    SceneType selected_scene_index = SceneType::RT_MESHES;
     BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
     MeshColor chosen_mesh_color = MeshColor::MATERIAL;
 
@@ -127,7 +127,6 @@ int main(int, char**) {
     bool reset_accumulated = false;
     bool freeze_camera = false;
     int selected_option = -1;
-    bool fast_mode = true;
     bool debug_rays = false;
     bool hdr = false;
     int block_size = 8;
@@ -135,6 +134,14 @@ int main(int, char**) {
     int block_size_index = 0;
     int selected_camera_index = 0;
     int selected_preset_index = 0;
+
+    // screenshot variables
+    bool capturing_high_qual_screenshot = false;
+    int frames_captured = 0;
+    const int frames_to_accumulate = 64;
+    bool screenshot_button_pressed = false;
+    float screenshot_progress = 0.0f;
+    std::vector<float> accumulated_image_float;
 
     std::vector<unsigned char> image_data;
     std::unique_ptr<CameraController> cam_controller;
@@ -193,11 +200,26 @@ int main(int, char**) {
             ImGui::SameLine();
             ImGui::Checkbox("Freeze camera", &freeze_camera);
             if (debug_rays == false) ImGui::EndDisabled();  // Re-enable UI interactions
-            if (ImGui::Button("Screenshot")) {
-                int display_w, display_h;
-                glfwGetFramebufferSize(window, &display_w, &display_h);
-                saveScreenshot(display_w, display_h, hdr);
+
+            if (!capturing_high_qual_screenshot) {
+                if (ImGui::Button("High-quality Screenshot")) {
+                    capturing_high_qual_screenshot = true;
+                    frames_captured = 0;
+
+                    // Switch to quality mode
+                    trace_percentage = 1.0f;
+                    reflection_depth = 5;
+
+                    int display_w, display_h;
+                    glfwGetFramebufferSize(window, &display_w, &display_h);
+
+                    accumulated_image_float.resize(display_w * display_h * 3, 0.0f);
+                }
             }
+
+            ImGui::SameLine();
+            screenshot_button_pressed = ImGui::Button("Screenshot");
+            
             ImGui::SameLine();
             ImGui::Checkbox("hdr", &hdr);
             ImGui::Separator();
@@ -383,6 +405,54 @@ int main(int, char**) {
         active_scene->context.settings->freeze_camera = freeze_camera;
         active_scene->context.settings->block_size = block_size;
         image_data = active_scene->update(display_w, display_h);
+
+        // Screenshots processing
+        if (screenshot_button_pressed) {
+            saveScreenshot(image_data, display_w, display_h, hdr);
+        }
+
+        if (capturing_high_qual_screenshot) {   
+            for (int i = 0; i < display_w * display_h; i++) {
+                accumulated_image_float[3 * i + 0] += fromUnorm(image_data[3 * i + 0]);
+                accumulated_image_float[3 * i + 1] += fromUnorm(image_data[3 * i + 1]);
+                accumulated_image_float[3 * i + 2] += fromUnorm(image_data[3 * i + 2]);
+            }
+
+            frames_captured++;
+
+            screenshot_progress = static_cast<float>(frames_captured) / frames_to_accumulate;
+            //ImGui::ProgressBar(screenshot_progress, ImVec2(0.0f, 0.0f)); // (0,0) means full width
+
+            if (frames_captured >= frames_to_accumulate) {
+                // Done accumulating
+                std::vector<std::uint8_t> output_image(3 * display_w * display_h);
+
+                for (int i = 0; i < display_w * display_h; i++) {
+                    accumulated_image_float[3 * i + 0] /= frames_to_accumulate;
+                    accumulated_image_float[3 * i + 1] /= frames_to_accumulate;
+                    accumulated_image_float[3 * i + 2] /= frames_to_accumulate;
+                }
+
+                // Converting from float to uint8
+                for (int i = 0; i < display_w * display_h; i++) {
+                    float r = accumulated_image_float[3 * i + 0];
+                    float g = accumulated_image_float[3 * i + 1];
+                    float b = accumulated_image_float[3 * i + 2];
+
+                    output_image[3 * i + 0] = static_cast<std::uint8_t>(toUnorm(r));
+                    output_image[3 * i + 1] = static_cast<std::uint8_t>(toUnorm(g));
+                    output_image[3 * i + 2] = static_cast<std::uint8_t>(toUnorm(b));
+                }
+
+                saveScreenshot(output_image, display_w, display_h, hdr);
+
+                // Switch back to fast mode
+                trace_percentage = 0.05f;
+                reflection_depth = 2;
+
+                capturing_high_qual_screenshot = false; // Release button
+            }
+        }
       
         glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
         
