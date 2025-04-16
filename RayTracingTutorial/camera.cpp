@@ -6,15 +6,6 @@
 #include <array>
 #include <list>
 
-inline void write_color(std::vector<float>& image_data_acc, const color& pixel_color, std::uint32_t index, std::uint32_t index_acc, bool skip) {
-    if (!skip) {
-        image_data_acc[index_acc + 0] += pixel_color.x();  // Red channel
-        image_data_acc[index_acc + 1] += pixel_color.y();  // Green channel
-        image_data_acc[index_acc + 2] += pixel_color.z();  // Blue channel
-        image_data_acc[index_acc + 3] += 1;                // Number of samples
-    }
-}
-
 Camera::Camera(std::string name) : name_(name) {}
 
 Camera::Camera(std::string name, vec3 center) : name_(name), center_(center) {}
@@ -51,17 +42,16 @@ void Camera::setInitalValues() {
     shader_prog_ = std::make_unique<Shader>("ShaderFiles/shader_bounding_box.vs.txt", "ShaderFiles/shader_bounding_box.fs.txt");
 }
 
-void Camera::render(const hittable_list& world, std::vector<float>& image_data_acc, GUISettings& settings) {
+void Camera::render(const hittable_list& world, std::vector<vec4>& image_data_acc, GUISettings& settings) {
     this->settings_ = settings;
     initialize();
 
     if (image_data_acc.empty()) {
-        image_data_acc.assign(image_width * image_height * 4, 0.0f);
+        image_data_acc.assign(image_width * image_height, vec4());
     }
 
     if (camera_moved_ == true) {
-        std::fill(image_data_acc.begin(), image_data_acc.end(), 0.0f);
-        
+        std::fill(image_data_acc.begin(), image_data_acc.end(), vec4());
         camera_moved_ = false;
     }
 
@@ -109,14 +99,12 @@ void Camera::render(const hittable_list& world, std::vector<float>& image_data_a
                 //int flipped_j = image_height_ - j - 1;  // Flip the row index
                 int flipped_j = j;
                 for (std::uint32_t i = start_x; i < std::min(start_x + block_size, std::uint32_t(image_width)); i++) {
-                    std::uint32_t index = (flipped_j * image_width + i) * 3;
-                    std::uint32_t index_acc = (flipped_j * image_width + i) * 4;
+                    std::uint32_t index_acc = flipped_j * image_width + i;
                     color pixel_color(0.0f, 0.0f, 0.0f);
 
                     // decides whether to trace current pixel or skip it and go on next
                     double trace_pixel = random_double(0.0f, 1.0f);
                     if (trace_pixel > settings_.trace_percentage) {
-                        write_color(image_data_acc, pixel_color, index, index_acc, true);
                         continue;
                     }
 
@@ -130,7 +118,8 @@ void Camera::render(const hittable_list& world, std::vector<float>& image_data_a
 
                     pixel_color = ray_color(ra, settings_.reflection_depth, world);
 
-                    write_color(image_data_acc, pixel_color, index, index_acc, false);
+                    // Last channel represents number of samples
+                    image_data_acc[index_acc] += vec4(pixel_color.x(), pixel_color.y(), pixel_color.z(), 1.0f);
                 }
             }
         }

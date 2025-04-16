@@ -123,7 +123,7 @@ int main(int, char**) {
 
     std::unique_ptr<Scene> active_scene;
 
-    std::vector<float> image_data_acc; // Used for accumulation of image shown on the screen
+    std::vector<vec4> image_data_acc;  // Used for accumulation of image shown on the screen
     std::vector<std::uint8_t> image_data;
     std::vector<float> image_data_float;
     float trace_percentage = 0.1f; // Decides how much pixels will be traced

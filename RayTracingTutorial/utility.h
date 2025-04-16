@@ -31,23 +31,18 @@ inline std::uint8_t toUnorm(float value) {
     return static_cast<std::uint8_t>(std::clamp(value, 0.0f, 1.0f) * 255.0f);
 }
 
-inline std::vector<std::uint8_t> convertAccumulatedToImageData(std::vector<std::uint8_t>& image_data, const std::vector<float>& acc,
+inline std::vector<std::uint8_t> convertAccumulatedToImageData(std::vector<std::uint8_t>& image_data, const std::vector<vec4>& acc,
     int width, int height)
 {
-    static const interval intensity(0.000f, 0.999f);
     for (int i = 0; i < width * height; i++) {
-        float sample_count = acc[i * 4 + 3];
-        float inv_sample_count = sample_count > 0 ? 1.0f / sample_count : 0.0f;
-        float r = acc[i * 4 + 0] * inv_sample_count;
-        float g = acc[i * 4 + 1] * inv_sample_count;
-        float b = acc[i * 4 + 2] * inv_sample_count;
+        const vec4& pixel = acc[i];
+        float sample_count = pixel.w();
+        float inv_sample_count = sample_count > 0.0f ? 1.0f / sample_count : 0.0f;
 
-        /*image_data[i * 3 + 0] = static_cast<std::uint8_t>(255.999f * linearToGamma(intensity.clamp(r)));
-        image_data[i * 3 + 1] = static_cast<std::uint8_t>(255.999f * linearToGamma(intensity.clamp(g)));
-        image_data[i * 3 + 2] = static_cast<std::uint8_t>(255.999f * linearToGamma(intensity.clamp(b)));*/
-        //image_data[i * 3 + 0] = static_cast<std::uint8_t>(255.999f * intensity.clamp(r));
-        //image_data[i * 3 + 1] = static_cast<std::uint8_t>(255.999f * intensity.clamp(g));
-        //image_data[i * 3 + 2] = static_cast<std::uint8_t>(255.999f * intensity.clamp(b));
+        float r = pixel.x() * inv_sample_count;
+        float g = pixel.y() * inv_sample_count;
+        float b = pixel.z() * inv_sample_count;
+
         image_data[i * 3 + 0] = toUnorm(std::clamp(r, 0.0f, 1.0f));
         image_data[i * 3 + 1] = toUnorm(std::clamp(g, 0.0f, 1.0f));
         image_data[i * 3 + 2] = toUnorm(std::clamp(b, 0.0f, 1.0f));
@@ -55,12 +50,14 @@ inline std::vector<std::uint8_t> convertAccumulatedToImageData(std::vector<std::
     return image_data;
 }
 
-inline std::vector<float> convertAccumulatedToFloatImage(std::vector<float>& image_data_float, const std::vector<float>& acc, int width, int height) {
+inline std::vector<float> convertAccumulatedToFloatImage(std::vector<float>& image_data_float, const std::vector<vec4>& acc, int width, int height) {
     for (int i = 0; i < width * height; i++) {
-        float sample_count = acc[i * 4 + 3];
-        float r = sample_count > 0 ? acc[i * 4 + 0] / sample_count : 0.0f;
-        float g = sample_count > 0 ? acc[i * 4 + 1] / sample_count : 0.0f;
-        float b = sample_count > 0 ? acc[i * 4 + 2] / sample_count : 0.0f;
+        const vec4& pixel = acc[i];
+        float sample_count = pixel.w();
+
+        float r = sample_count > 0.0f ? pixel.x() / sample_count : 0.0f;
+        float g = sample_count > 0.0f ? pixel.y() / sample_count : 0.0f;
+        float b = sample_count > 0.0f ? pixel.z() / sample_count : 0.0f;
 
         image_data_float[i * 3 + 0] = r;
         image_data_float[i * 3 + 1] = g;
