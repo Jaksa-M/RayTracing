@@ -9,7 +9,6 @@
 #include "material.h"
 #include "matrix.h"
 #include "transformations.h"
-#include "color.h"
 #include "mesh_utils.h"
 #include "imgui/imgui.h"
 #include <GLFW/glfw3.h>

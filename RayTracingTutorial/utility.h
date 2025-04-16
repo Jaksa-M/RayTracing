@@ -2,6 +2,7 @@
 #define UTILITY_H
 
 #include "vec3.h"
+#include "interval.h"
 #include <vector>
 
 inline vec3 gammaToLinear(vec3& color) {
@@ -18,7 +19,7 @@ inline vec3 linearToGamma(const vec3& color) {
 }
 
 inline float linearToGamma(float x) {
-    if (x > 0) return std::pow(x, 1.0f / 2.2f);
+    if (x > 0) return std::sqrt(x);
     else return 0;
 }
 
@@ -36,13 +37,20 @@ inline std::vector<std::uint8_t> convertAccumulatedToImageData(std::vector<std::
     static const interval intensity(0.000f, 0.999f);
     for (int i = 0; i < width * height; i++) {
         float sample_count = acc[i * 4 + 3];
-        float r = sample_count > 0 ? acc[i * 4 + 0] / sample_count : 0.0f;
-        float g = sample_count > 0 ? acc[i * 4 + 1] / sample_count : 0.0f;
-        float b = sample_count > 0 ? acc[i * 4 + 2] / sample_count : 0.0f;
+        float inv_sample_count = sample_count > 0 ? 1.0f / sample_count : 0.0f;
+        float r = acc[i * 4 + 0] * inv_sample_count;
+        float g = acc[i * 4 + 1] * inv_sample_count;
+        float b = acc[i * 4 + 2] * inv_sample_count;
 
-        image_data[i * 3 + 0] = static_cast<std::uint8_t>(255.999f * linearToGamma(intensity.clamp(r)));
+        /*image_data[i * 3 + 0] = static_cast<std::uint8_t>(255.999f * linearToGamma(intensity.clamp(r)));
         image_data[i * 3 + 1] = static_cast<std::uint8_t>(255.999f * linearToGamma(intensity.clamp(g)));
-        image_data[i * 3 + 2] = static_cast<std::uint8_t>(255.999f * linearToGamma(intensity.clamp(b)));
+        image_data[i * 3 + 2] = static_cast<std::uint8_t>(255.999f * linearToGamma(intensity.clamp(b)));*/
+        //image_data[i * 3 + 0] = static_cast<std::uint8_t>(255.999f * intensity.clamp(r));
+        //image_data[i * 3 + 1] = static_cast<std::uint8_t>(255.999f * intensity.clamp(g));
+        //image_data[i * 3 + 2] = static_cast<std::uint8_t>(255.999f * intensity.clamp(b));
+        image_data[i * 3 + 0] = toUnorm(std::clamp(r, 0.0f, 1.0f));
+        image_data[i * 3 + 1] = toUnorm(std::clamp(g, 0.0f, 1.0f));
+        image_data[i * 3 + 2] = toUnorm(std::clamp(b, 0.0f, 1.0f));
     }
     return image_data;
 }

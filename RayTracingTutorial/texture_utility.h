@@ -5,6 +5,7 @@
 #include "vec3.h"
 #include <memory>
 #include <vector>
+#include "utility.h"
 
 inline int getChannelCount(TexFormat format) {
     switch (format) {

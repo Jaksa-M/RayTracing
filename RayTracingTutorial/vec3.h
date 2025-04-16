@@ -327,4 +327,6 @@ inline vec2 unit_vector(const vec2& v) {
     return v / v.length();
 }
 
+using color = vec3;
+
 #endif

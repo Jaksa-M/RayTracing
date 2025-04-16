@@ -13,6 +13,7 @@
 #include <vector>
 #include <span>
 #include "file_utility.h"
+#include "utility.h"
 #include "types.h"
 #include "gui_settings.h"
 #include "mesh_buffer_manager.h"
@@ -412,11 +413,7 @@ int main(int, char**) {
 
         // Filling image_data
         image_data.resize(display_w * display_h * 3);
-        auto start_time = std::chrono::high_resolution_clock::now();
         convertAccumulatedToImageData(image_data, image_data_acc, display_w, display_h);
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-        std::cout << "Render time: " << duration.count() << " ms" << std::endl;
         if (hdr) {
             image_data_float.resize(display_w * display_h * 3);
             convertAccumulatedToFloatImage(image_data_float, image_data_acc, display_w, display_h);
@@ -449,8 +446,10 @@ int main(int, char**) {
             }
         }
       
+        glEnable(GL_FRAMEBUFFER_SRGB);
         glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
-        
+        glDisable(GL_FRAMEBUFFER_SRGB);
+
         active_scene->drawBVH(); // Drawing of BVH tree/leaves
 
         active_scene->getActiveCamera().drawRays();

@@ -5,6 +5,7 @@
 #include "camera.h"
 #include "vec3.h"
 #include <GLFW/glfw3.h>
+#include "utility.h"
 #include <ctime>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -140,6 +141,7 @@ void removePresetFromFile(const std::string& file, std::string_view preset_name)
 }
 
 void saveScreenshot(std::span<const std::byte> data, int width, int height, bool hdr) {
+    fs::create_directories("Screenshots"); // Creates directory if it doesn't already exist
     char file_name[64];
     time_t now = time(nullptr);
     strftime(file_name, sizeof(file_name), "Screenshots/screenshot_%Y-%m-%d_%H-%M-%S", localtime(&now));
@@ -151,8 +153,19 @@ void saveScreenshot(std::span<const std::byte> data, int width, int height, bool
         stbi_write_hdr(hdr_file_name.c_str(), width, height, 3, (const float*) data.data());
     }
     else {
+        // Gamma-correct and store in a new vector
+        std::vector<std::uint8_t> gamma_corrected_data(width * height * 3);
+
+        const std::byte* byte_ptr = data.data();
+        for (size_t i = 0; i < gamma_corrected_data.size(); i++) {
+            std::uint8_t value = static_cast<std::uint8_t>(byte_ptr[i]);
+            float linear = fromUnorm(value);
+            float gamma = linearToGamma(linear);
+            gamma_corrected_data[i] = toUnorm(gamma);
+        }
+
         std::string png_file = std::string(file_name) + ".png";
-        if (!stbi_write_png(png_file.c_str(), width, height, 3, data.data(), width * 3)) {
+        if (!stbi_write_png(png_file.c_str(), width, height, 3, gamma_corrected_data.data(), width * 3)) {
             std::cerr << "Failed to save screenshot." << std::endl;
         }
     }

@@ -1,7 +1,6 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
-#include "color.h"
 #include "vec3.h"
 #include "interval.h"
 #include <span>

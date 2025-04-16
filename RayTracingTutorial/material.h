@@ -2,7 +2,6 @@
 #define MATERIAL_H
 
 #include "hittable.h"
-#include "color.h"
 #include "texture.h"
 #include <span>
 #include "types.h"
