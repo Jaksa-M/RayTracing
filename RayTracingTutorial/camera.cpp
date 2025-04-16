@@ -42,12 +42,10 @@ void Camera::setInitalValues() {
     shader_prog_ = std::make_unique<Shader>("ShaderFiles/shader_bounding_box.vs.txt", "ShaderFiles/shader_bounding_box.fs.txt");
 }
 
-std::vector<unsigned char> Camera::render(const hittable_list& world, std::vector<float>& image_data_acc, GUISettings& settings) {
+void Camera::render(const hittable_list& world, std::vector<float>& image_data_acc, GUISettings& settings) {
     this->settings_ = settings;
     initialize();
 
-    // Create a vector to hold the pixel data (3 channels for RGB)
-    std::vector<unsigned char> image_data(image_width * image_height * 3);
     if (image_data_acc.empty()) {
         image_data_acc.assign(image_width * image_height * 4, 0.0f);
     }
@@ -109,7 +107,7 @@ std::vector<unsigned char> Camera::render(const hittable_list& world, std::vecto
                     // decides whether to trace current pixel or skip it and go on next
                     double trace_pixel = random_double(0.0f, 1.0f);
                     if (trace_pixel > settings_.trace_percentage) {
-                        write_color(image_data, image_data_acc, pixel_color, index, index_acc, true);
+                        write_color(image_data_acc, pixel_color, index, index_acc, true);
                         continue;
                     }
 
@@ -123,7 +121,7 @@ std::vector<unsigned char> Camera::render(const hittable_list& world, std::vecto
 
                     pixel_color = ray_color(ra, settings_.reflection_depth, world);
 
-                    write_color(image_data, image_data_acc, pixel_color, index, index_acc, false);
+                    write_color(image_data_acc, pixel_color, index, index_acc, false);
                 }
             }
         }
@@ -149,8 +147,6 @@ std::vector<unsigned char> Camera::render(const hittable_list& world, std::vecto
     else {
         render_block();
     }
-
-    return image_data;
 }
 
 void Camera::initialize() {

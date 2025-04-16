@@ -22,7 +22,7 @@ public:
     Camera(std::string name, vec3 center);
     Camera(const Camera& other);
     void setInitalValues();
-    std::vector<unsigned char> render(const hittable_list& world, std::vector<float>& image_data_acc, GUISettings& settings);
+    void render(const hittable_list& world, std::vector<float>& image_data_acc, GUISettings& settings);
 
     void drawRays();
 

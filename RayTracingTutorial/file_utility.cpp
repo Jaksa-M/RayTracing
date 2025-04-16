@@ -4,7 +4,6 @@
 #include <sstream>
 #include "camera.h"
 #include "vec3.h"
-#include <span>
 #include <GLFW/glfw3.h>
 #include <ctime>
 
@@ -140,38 +139,20 @@ void removePresetFromFile(const std::string& file, std::string_view preset_name)
     out_file.close();
 }
 
-void saveScreenshot(std::span<std::uint8_t> data, int width, int height, bool hdr) {
-    std::vector<float> pixels(3 * width * height);
-
-    for (int i = 0; i < width * height; i++) {
-        pixels[3 * i + 0] = data[3 * i + 0] / 255.0f;
-        pixels[3 * i + 1] = data[3 * i + 1] / 255.0f;
-        pixels[3 * i + 2] = data[3 * i + 2] / 255.0f;
-    }
-
-    // Flip the image vertically
-    std::vector<float> flipped_pixels(width * height * 3);
-    for (int y = 0; y < height; ++y) {
-        std::copy_n(pixels.begin() + (height - 1 - y) * width * 3, width * 3, flipped_pixels.begin() + y * width * 3);
-    }
-
+void saveScreenshot(std::span<const std::byte> data, int width, int height, bool hdr) {
     char file_name[64];
     time_t now = time(nullptr);
     strftime(file_name, sizeof(file_name), "Screenshots/screenshot_%Y-%m-%d_%H-%M-%S", localtime(&now));
 
+    stbi_flip_vertically_on_write(1); // Tell stb_image_write to flip the image vertically
+
     if (hdr) {
         std::string hdr_file_name = std::string(file_name) + ".hdr";
-        stbi_write_hdr(hdr_file_name.c_str(), width, height, 3, flipped_pixels.data());
-    } 
+        stbi_write_hdr(hdr_file_name.c_str(), width, height, 3, (const float*) data.data());
+    }
     else {
-        // Convert to 8-bit for PNG output
-        std::vector<std::uint8_t> png_pixels(width * height * 3);
-        for (size_t i = 0; i < png_pixels.size(); i++) {
-            png_pixels[i] = static_cast<std::uint8_t>(std::clamp(flipped_pixels[i] * 255.0f, 0.0f, 255.0f));
-        }
-
-        std::string png_file_name = std::string(file_name) + ".png";
-        if (!stbi_write_png(png_file_name.c_str(), width, height, 3, png_pixels.data(), width * 3)) {
+        std::string png_file = std::string(file_name) + ".png";
+        if (!stbi_write_png(png_file.c_str(), width, height, 3, data.data(), width * 3)) {
             std::cerr << "Failed to save screenshot." << std::endl;
         }
     }

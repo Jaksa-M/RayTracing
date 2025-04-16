@@ -11,6 +11,7 @@
 
 // Includes for my code
 #include <vector>
+#include <span>
 #include "file_utility.h"
 #include "types.h"
 #include "gui_settings.h"
@@ -22,8 +23,9 @@
 #include "camera_controller.h"
 #include "texture_loader.h"
 #include "texture.h"
+#include <chrono>
 
-// Scemes
+// Scenes
 #include "scene_rt_meshes.h"
 #include "scene_cornell_box.h"
 #include "scene_obj_loader.h"
@@ -120,8 +122,10 @@ int main(int, char**) {
 
     std::unique_ptr<Scene> active_scene;
 
-    // Decides how much pixels will be traced
-    float trace_percentage = 0.1f;
+    std::vector<float> image_data_acc; // Used for accumulation of image shown on the screen
+    std::vector<std::uint8_t> image_data;
+    std::vector<float> image_data_float;
+    float trace_percentage = 0.1f; // Decides how much pixels will be traced
     int reflection_depth = 2;
     float environment_light = 1.0f;
     bool reset_accumulated = false;
@@ -141,9 +145,7 @@ int main(int, char**) {
     const int frames_to_accumulate = 64;
     bool screenshot_button_pressed = false;
     float screenshot_progress = 0.0f;
-    std::vector<float> accumulated_image_float;
 
-    std::vector<unsigned char> image_data;
     std::unique_ptr<CameraController> cam_controller;
     std::string camera_file = "Cameras/saved_presets.txt";
     std::vector<CameraPreset> camera_presets;
@@ -209,12 +211,11 @@ int main(int, char**) {
                     // Switch to quality mode
                     trace_percentage = 1.0f;
                     reflection_depth = 5;
-
-                    int display_w, display_h;
-                    glfwGetFramebufferSize(window, &display_w, &display_h);
-
-                    accumulated_image_float.resize(display_w * display_h * 3, 0.0f);
                 }
+            }
+            else {
+                screenshot_progress = static_cast<float>(frames_captured) / frames_to_accumulate;
+                ImGui::ProgressBar(screenshot_progress, ImVec2(0.0f, 0.0f));  // (0,0) means full width
             }
 
             ImGui::SameLine();
@@ -404,47 +405,41 @@ int main(int, char**) {
         active_scene->context.settings->debug_rays = debug_rays;
         active_scene->context.settings->freeze_camera = freeze_camera;
         active_scene->context.settings->block_size = block_size;
-        image_data = active_scene->update(display_w, display_h);
+        active_scene->update(display_w, display_h);
+
+        Camera& cam = active_scene->getActiveCamera();
+        cam.render(active_scene->getWorld(), image_data_acc, *(context.settings));
+
+        // Filling image_data
+        image_data.resize(display_w * display_h * 3);
+        auto start_time = std::chrono::high_resolution_clock::now();
+        convertAccumulatedToImageData(image_data, image_data_acc, display_w, display_h);
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+        std::cout << "Render time: " << duration.count() << " ms" << std::endl;
+        if (hdr) {
+            image_data_float.resize(display_w * display_h * 3);
+            convertAccumulatedToFloatImage(image_data_float, image_data_acc, display_w, display_h);
+        }
 
         // Screenshots processing
         if (screenshot_button_pressed) {
-            saveScreenshot(image_data, display_w, display_h, hdr);
+            if (hdr) {
+                saveScreenshot(std::as_bytes(std::span(image_data_float)), display_w, display_h, hdr);
+            } else {
+                saveScreenshot(std::as_bytes(std::span(image_data)), display_w, display_h, hdr);
+            }   
         }
 
-        if (capturing_high_qual_screenshot) {   
-            for (int i = 0; i < display_w * display_h; i++) {
-                accumulated_image_float[3 * i + 0] += fromUnorm(image_data[3 * i + 0]);
-                accumulated_image_float[3 * i + 1] += fromUnorm(image_data[3 * i + 1]);
-                accumulated_image_float[3 * i + 2] += fromUnorm(image_data[3 * i + 2]);
-            }
-
+        if (capturing_high_qual_screenshot) {
             frames_captured++;
-
-            screenshot_progress = static_cast<float>(frames_captured) / frames_to_accumulate;
-            //ImGui::ProgressBar(screenshot_progress, ImVec2(0.0f, 0.0f)); // (0,0) means full width
-
             if (frames_captured >= frames_to_accumulate) {
                 // Done accumulating
-                std::vector<std::uint8_t> output_image(3 * display_w * display_h);
-
-                for (int i = 0; i < display_w * display_h; i++) {
-                    accumulated_image_float[3 * i + 0] /= frames_to_accumulate;
-                    accumulated_image_float[3 * i + 1] /= frames_to_accumulate;
-                    accumulated_image_float[3 * i + 2] /= frames_to_accumulate;
+                if (hdr) {
+                    saveScreenshot(std::as_bytes(std::span(image_data_float)), display_w, display_h, hdr);
+                } else {
+                    saveScreenshot(std::as_bytes(std::span(image_data)), display_w, display_h, hdr);
                 }
-
-                // Converting from float to uint8
-                for (int i = 0; i < display_w * display_h; i++) {
-                    float r = accumulated_image_float[3 * i + 0];
-                    float g = accumulated_image_float[3 * i + 1];
-                    float b = accumulated_image_float[3 * i + 2];
-
-                    output_image[3 * i + 0] = static_cast<std::uint8_t>(toUnorm(r));
-                    output_image[3 * i + 1] = static_cast<std::uint8_t>(toUnorm(g));
-                    output_image[3 * i + 2] = static_cast<std::uint8_t>(toUnorm(b));
-                }
-
-                saveScreenshot(output_image, display_w, display_h, hdr);
 
                 // Switch back to fast mode
                 trace_percentage = 0.05f;

@@ -51,12 +51,8 @@ void SceneMeshes::initShader() {
     //mesh_ = MeshUtils::GenerateSphereLines(60);
 }
 
-std::vector<unsigned char> SceneMeshes::update(int display_w, int display_h) {
+void SceneMeshes::update(int display_w, int display_h) {
     std::vector<unsigned char> image_data(display_w * display_h * 3);
-
-    image_data = cameras_[active_camera_]->render(world_, image_data_acc_, *(context.settings));
-
-    return image_data;
 }
 
 std::vector<float> SceneMeshes::createVerticesArr(int num_of_vert) {
