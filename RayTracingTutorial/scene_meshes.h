@@ -13,7 +13,7 @@ public:
 
     void initShader();
 
-    std::vector<unsigned char> update(int display_w, int display_h) override;
+    void update(int display_w, int display_h) override;
 
     std::vector<float> createVerticesArr(int num_of_vert);
 

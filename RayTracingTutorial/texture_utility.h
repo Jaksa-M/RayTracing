@@ -5,6 +5,7 @@
 #include "vec3.h"
 #include <memory>
 #include <vector>
+#include "utility.h"
 
 inline int getChannelCount(TexFormat format) {
     switch (format) {
@@ -83,14 +84,6 @@ inline void convertGrayscaleToR8(std::vector<std::uint8_t>& bdata_, std::uint32_
         format = TexFormat::R8_UNORM;
         bytes_per_scanline = image_width;  // 1 byte per pixel now
     }
-}
-
-inline float fromUnorm(std::uint8_t value) {
-    return static_cast<float>(value) / 255.0f;
-}
-
-inline std::uint8_t toUnorm(float value) {
-    return static_cast<std::uint8_t>(std::clamp(value, 0.0f, 1.0f) * 255.0f);
 }
 
 inline bool isGammaFormat(TexFormat format) { // Check if we should do gamma correction (needed when loading jpg/png images)

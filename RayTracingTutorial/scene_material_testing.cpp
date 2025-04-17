@@ -8,7 +8,6 @@
 #include "material.h"
 #include "matrix.h"
 #include "transformations.h"
-#include "color.h"
 #include "mesh_utils.h"
 #include "imgui/imgui.h"
 #include <GLFW/glfw3.h>
@@ -82,7 +81,7 @@ void SceneMaterialTesting::initialize() {
     initShader();
 }
 
-std::vector<unsigned char> SceneMaterialTesting::update(int display_w, int display_h) {
+void SceneMaterialTesting::update(int display_w, int display_h) {
     if (prev_BVH_technique_ != context.settings->BVH_technique) {
         world_.clear();
         initialize();
@@ -91,11 +90,6 @@ std::vector<unsigned char> SceneMaterialTesting::update(int display_w, int displ
     cameras_[active_camera_]->image_height = display_h;
     // Update RTMesh vertices/indices/uvs/normals/bvhNodes once per frame
     world_.update();
-
-    std::vector<unsigned char> image_data;
-    image_data = cameras_[active_camera_]->render(world_, image_data_acc_, *(context.settings));
-
-    return image_data;
 }
 
 void SceneMaterialTesting::initShader() {

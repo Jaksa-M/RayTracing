@@ -2,6 +2,8 @@
 #define UTILITY_H
 
 #include "vec3.h"
+#include "interval.h"
+#include <vector>
 
 inline vec3 gammaToLinear(vec3& color) {
     return vec3(std::pow(color.x(), 2.2f), std::pow(color.y(), 2.2f), std::pow(color.z(), 2.2f));
@@ -18,7 +20,47 @@ inline vec3 linearToGamma(const vec3& color) {
 
 inline float linearToGamma(float x) {
     if (x > 0) return std::pow(x, 1.0f / 2.2f);
+    //if (x > 0) return std::sqrt(x);
     else return 0;
+}
+
+inline float fromUnorm(std::uint8_t value) {
+    return static_cast<float>(value) / 255.0f;
+}
+
+inline std::uint8_t toUnorm(float value) {
+    return static_cast<std::uint8_t>(std::clamp(value, 0.0f, 1.0f) * 255.0f + 0.5f);
+}
+
+inline void convertAccumulatedToImageData(std::span<std::uint8_t> image_data, const std::vector<vec4>& acc,
+    int width, int height)
+{
+    for (int i = 0; i < width * height; i++) {
+        const vec4& pixel = acc[i];
+        float sample_count = pixel.w();
+        float inv_sample_count = sample_count > 0.0f ? 1.0f / sample_count : 0.0f;
+
+        float r = pixel.x() * inv_sample_count;
+        float g = pixel.y() * inv_sample_count;
+        float b = pixel.z() * inv_sample_count;
+
+        image_data[i * 3 + 0] = toUnorm(std::clamp(r, 0.0f, 1.0f));
+        image_data[i * 3 + 1] = toUnorm(std::clamp(g, 0.0f, 1.0f));
+        image_data[i * 3 + 2] = toUnorm(std::clamp(b, 0.0f, 1.0f));
+    }
+}
+
+inline void convertAccumulatedToFloatImage(std::span<vec3> image_data_float, const std::vector<vec4>& acc, int width, int height) {
+    for (int i = 0; i < width * height; i++) {
+        const vec4& pixel = acc[i];
+        float sample_count = pixel.w();
+
+        float r = sample_count > 0.0f ? pixel.x() / sample_count : 0.0f;
+        float g = sample_count > 0.0f ? pixel.y() / sample_count : 0.0f;
+        float b = sample_count > 0.0f ? pixel.z() / sample_count : 0.0f;
+
+        image_data_float[i] = vec3(r, g, b);
+    }
 }
 
 #endif

@@ -19,7 +19,7 @@ public:
 
 	virtual void initialize() = 0;
 
-	virtual std::vector<unsigned char> update(int display_w, int display_h) = 0;
+	virtual void update(int display_w, int display_h) = 0;
 
 	virtual ~Scene() = default;
 
@@ -27,13 +27,14 @@ public:
 
 	virtual void drawBVH() {}
 
+	virtual hittable_list& getWorld() { return world_; }
+
 	virtual void setActiveCamera(int index) { active_camera_ = index; }
 	virtual Camera& getActiveCamera() { return *cameras_[active_camera_]; };
 	virtual const std::vector<std::unique_ptr<Camera>>& getCameras() const { return cameras_; };
 	
 protected:
 	hittable_list world_;
-	std::vector<float> image_data_acc_;
     std::vector<std::unique_ptr<Camera>> cameras_;
     int active_camera_;
 };

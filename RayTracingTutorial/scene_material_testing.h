@@ -12,7 +12,7 @@ class SceneMaterialTesting: public Scene {
 
     void initialize() override;
 
-    std::vector<unsigned char> update(int display_w, int display_h) override;
+    void update(int display_w, int display_h) override;
 
     void initShader();
     void drawBVH() override;

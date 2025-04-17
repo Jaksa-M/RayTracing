@@ -11,7 +11,10 @@
 
 // Includes for my code
 #include <vector>
+#include <span>
 #include "file_utility.h"
+#include "utility.h"
+#include "main_utility.h"
 #include "types.h"
 #include "gui_settings.h"
 #include "mesh_buffer_manager.h"
@@ -22,8 +25,9 @@
 #include "camera_controller.h"
 #include "texture_loader.h"
 #include "texture.h"
+#include <chrono>
 
-// Scemes
+// Scenes
 #include "scene_rt_meshes.h"
 #include "scene_cornell_box.h"
 #include "scene_obj_loader.h"
@@ -107,7 +111,7 @@ int main(int, char**) {
     std::unique_ptr<BVHManager> bvh_manager = std::make_unique<BVHManager>(gui_settings.get());
     std::unique_ptr<Statistics> statistics = std::make_unique<Statistics>();
 
-    SceneType selected_scene_index = SceneType::OBJ_LOADER;
+    SceneType selected_scene_index = SceneType::RT_MESHES;
     BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
     MeshColor chosen_mesh_color = MeshColor::MATERIAL;
 
@@ -120,14 +124,15 @@ int main(int, char**) {
 
     std::unique_ptr<Scene> active_scene;
 
-    // Decides how much pixels will be traced
-    float trace_percentage = 0.1f;
+    std::vector<vec4> image_data_acc;  // Used for accumulation of image shown on the screen
+    std::vector<std::uint8_t> image_data;
+    std::vector<vec3> image_data_float;
+    float trace_percentage = 0.1f; // Decides how much pixels will be traced
     int reflection_depth = 2;
     float environment_light = 1.0f;
     bool reset_accumulated = false;
     bool freeze_camera = false;
     int selected_option = -1;
-    bool fast_mode = true;
     bool debug_rays = false;
     bool hdr = false;
     int block_size = 8;
@@ -136,7 +141,12 @@ int main(int, char**) {
     int selected_camera_index = 0;
     int selected_preset_index = 0;
 
-    std::vector<unsigned char> image_data;
+    // screenshot variables
+    bool capturing_high_qual_screenshot = false;
+    int frames_captured = 0;
+    int frames_to_accumulate = 64;
+    bool screenshot_button_pressed = false;
+
     std::unique_ptr<CameraController> cam_controller;
     std::string camera_file = "Cameras/saved_presets.txt";
     std::vector<CameraPreset> camera_presets;
@@ -178,13 +188,11 @@ int main(int, char**) {
             ImGui::Checkbox("Reset accumulated", &reset_accumulated);
 
             if (ImGui::Button("Fast Mode")) {
-                trace_percentage = 0.05f;
-                reflection_depth = 2;
+                switchToFastMode(trace_percentage, reflection_depth);
             }
             ImGui::SameLine();  // Places the next widget on the same line
             if (ImGui::Button("Quality Mode")) {
-                trace_percentage = 1.0f;
-                reflection_depth = 5;
+                switchToQualityMode(trace_percentage, reflection_depth);
             }
 
             ImGui::Separator();
@@ -193,13 +201,27 @@ int main(int, char**) {
             ImGui::SameLine();
             ImGui::Checkbox("Freeze camera", &freeze_camera);
             if (debug_rays == false) ImGui::EndDisabled();  // Re-enable UI interactions
-            if (ImGui::Button("Screenshot")) {
-                int display_w, display_h;
-                glfwGetFramebufferSize(window, &display_w, &display_h);
-                saveScreenshot(display_w, display_h, hdr);
-            }
+
+            screenshot_button_pressed = ImGui::Button("Screenshot");
+            
             ImGui::SameLine();
             ImGui::Checkbox("hdr", &hdr);
+
+            if (!capturing_high_qual_screenshot) {
+                if (ImGui::Button("High-quality Screenshot")) {
+                    capturing_high_qual_screenshot = true;
+                    frames_captured = 0;
+
+                    switchToQualityMode(trace_percentage, reflection_depth);
+                }
+            } else {
+                float screenshot_progress = static_cast<float>(frames_captured) / frames_to_accumulate;
+                ImGui::ProgressBar(screenshot_progress, ImVec2(0.0f, 0.0f));  // (0,0) means full width
+            }
+
+            ImGui::SetNextItemWidth(100);
+            ImGui::InputInt("Number of frames", &frames_to_accumulate);
+
             ImGui::Separator();
 
             ImGui::Text("Select Camera:");
@@ -343,6 +365,8 @@ int main(int, char**) {
                 float yaw, pitch;
                 cameras[selected_camera_index]->recalculateYawPitch(yaw, pitch);
                 cam_controller->setYawPitch(yaw, pitch);
+
+                active_scene->getActiveCamera().setCameraMoved(true);
             }
 
             // Enable/Disable BVH for active scene + assign the BVH technique
@@ -382,10 +406,40 @@ int main(int, char**) {
         active_scene->context.settings->debug_rays = debug_rays;
         active_scene->context.settings->freeze_camera = freeze_camera;
         active_scene->context.settings->block_size = block_size;
-        image_data = active_scene->update(display_w, display_h);
+        active_scene->update(display_w, display_h);
+
+        Camera& cam = active_scene->getActiveCamera();
+        cam.render(active_scene->getWorld(), image_data_acc, *(context.settings));
+
+        // Filling image_data
+        image_data.resize(display_w * display_h * 3);
+        convertAccumulatedToImageData(image_data, image_data_acc, display_w, display_h);
+
+        // Screenshots processing
+        if (screenshot_button_pressed) {
+            image_data_float.resize(display_w * display_h);
+            convertAccumulatedToFloatImage(image_data_float, image_data_acc, display_w, display_h);
+            saveScreenshot(image_data_float, display_w, display_h, hdr);
+        }
+
+        if (capturing_high_qual_screenshot) {
+            frames_captured++;
+            if (frames_captured >= frames_to_accumulate) {
+                // Done accumulating
+                image_data_float.resize(display_w * display_h);
+                convertAccumulatedToFloatImage(image_data_float, image_data_acc, display_w, display_h);
+                saveScreenshot(image_data_float, display_w, display_h, hdr);
+
+                switchToFastMode(trace_percentage, reflection_depth);
+
+                capturing_high_qual_screenshot = false; // Release button
+            }
+        }
       
+        glEnable(GL_FRAMEBUFFER_SRGB);
         glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
-        
+        glDisable(GL_FRAMEBUFFER_SRGB);
+
         active_scene->drawBVH(); // Drawing of BVH tree/leaves
 
         active_scene->getActiveCamera().drawRays();

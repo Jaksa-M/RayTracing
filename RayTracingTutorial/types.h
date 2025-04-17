@@ -30,6 +30,8 @@ enum class MeshColor {
 };
 
 // Code types
+namespace fs = std::filesystem;
+
 struct IntersectResult {
     float t = float_max;  // Intersection distance
     vec3 buv = vec3();   // short for barycentrics uv, vec3(alpha, beta, gamma)
@@ -80,7 +82,5 @@ struct TexDescription {
     std::uint32_t image_height;
     TexFormat format;
 };
-
-namespace fs = std::filesystem;
 
 #endif
