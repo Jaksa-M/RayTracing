@@ -14,6 +14,7 @@
 #include <span>
 #include "file_utility.h"
 #include "utility.h"
+#include "main_utility.h"
 #include "types.h"
 #include "gui_settings.h"
 #include "mesh_buffer_manager.h"

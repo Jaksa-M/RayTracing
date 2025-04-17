@@ -32,7 +32,7 @@ inline std::uint8_t toUnorm(float value) {
     return static_cast<std::uint8_t>(std::clamp(value, 0.0f, 1.0f) * 255.0f + 0.5f);
 }
 
-inline void convertAccumulatedToImageData(std::vector<std::uint8_t>& image_data, const std::vector<vec4>& acc,
+inline void convertAccumulatedToImageData(std::span<std::uint8_t> image_data, const std::vector<vec4>& acc,
     int width, int height)
 {
     for (int i = 0; i < width * height; i++) {
@@ -50,7 +50,7 @@ inline void convertAccumulatedToImageData(std::vector<std::uint8_t>& image_data,
     }
 }
 
-inline void convertAccumulatedToFloatImage(std::vector<vec3>& image_data_float, const std::vector<vec4>& acc, int width, int height) {
+inline void convertAccumulatedToFloatImage(std::span<vec3> image_data_float, const std::vector<vec4>& acc, int width, int height) {
     for (int i = 0; i < width * height; i++) {
         const vec4& pixel = acc[i];
         float sample_count = pixel.w();
@@ -59,24 +59,8 @@ inline void convertAccumulatedToFloatImage(std::vector<vec3>& image_data_float, 
         float g = sample_count > 0.0f ? pixel.y() / sample_count : 0.0f;
         float b = sample_count > 0.0f ? pixel.z() / sample_count : 0.0f;
 
-        /*image_data_float[i * 3 + 0] = r;
-        image_data_float[i * 3 + 1] = g;
-        image_data_float[i * 3 + 2] = b;*/
         image_data_float[i] = vec3(r, g, b);
     }
 }
-
-// Functions used only in main
-inline void switchToFastMode(float& trace_percentage, int& reflection_depth) {
-    trace_percentage = 0.1f;
-    reflection_depth = 2;
-}
-
-inline void switchToQualityMode(float& trace_percentage, int& reflection_depth) {
-    trace_percentage = 1.0f;
-    reflection_depth = 5;
-}
-
-
 
 #endif
