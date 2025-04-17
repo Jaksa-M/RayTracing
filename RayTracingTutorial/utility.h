@@ -19,7 +19,8 @@ inline vec3 linearToGamma(const vec3& color) {
 }
 
 inline float linearToGamma(float x) {
-    if (x > 0) return std::sqrt(x);
+    if (x > 0) return std::pow(x, 1.0f / 2.2f);
+    //if (x > 0) return std::sqrt(x);
     else return 0;
 }
 
@@ -28,10 +29,10 @@ inline float fromUnorm(std::uint8_t value) {
 }
 
 inline std::uint8_t toUnorm(float value) {
-    return static_cast<std::uint8_t>(std::clamp(value, 0.0f, 1.0f) * 255.0f);
+    return static_cast<std::uint8_t>(std::clamp(value, 0.0f, 1.0f) * 255.0f + 0.5f);
 }
 
-inline std::vector<std::uint8_t> convertAccumulatedToImageData(std::vector<std::uint8_t>& image_data, const std::vector<vec4>& acc,
+inline void convertAccumulatedToImageData(std::vector<std::uint8_t>& image_data, const std::vector<vec4>& acc,
     int width, int height)
 {
     for (int i = 0; i < width * height; i++) {
@@ -47,10 +48,9 @@ inline std::vector<std::uint8_t> convertAccumulatedToImageData(std::vector<std::
         image_data[i * 3 + 1] = toUnorm(std::clamp(g, 0.0f, 1.0f));
         image_data[i * 3 + 2] = toUnorm(std::clamp(b, 0.0f, 1.0f));
     }
-    return image_data;
 }
 
-inline std::vector<float> convertAccumulatedToFloatImage(std::vector<float>& image_data_float, const std::vector<vec4>& acc, int width, int height) {
+inline void convertAccumulatedToFloatImage(std::vector<vec3>& image_data_float, const std::vector<vec4>& acc, int width, int height) {
     for (int i = 0; i < width * height; i++) {
         const vec4& pixel = acc[i];
         float sample_count = pixel.w();
@@ -59,11 +59,24 @@ inline std::vector<float> convertAccumulatedToFloatImage(std::vector<float>& ima
         float g = sample_count > 0.0f ? pixel.y() / sample_count : 0.0f;
         float b = sample_count > 0.0f ? pixel.z() / sample_count : 0.0f;
 
-        image_data_float[i * 3 + 0] = r;
+        /*image_data_float[i * 3 + 0] = r;
         image_data_float[i * 3 + 1] = g;
-        image_data_float[i * 3 + 2] = b;
+        image_data_float[i * 3 + 2] = b;*/
+        image_data_float[i] = vec3(r, g, b);
     }
-    return image_data_float;
 }
+
+// Functions used only in main
+inline void switchToFastMode(float& trace_percentage, int& reflection_depth) {
+    trace_percentage = 0.1f;
+    reflection_depth = 2;
+}
+
+inline void switchToQualityMode(float& trace_percentage, int& reflection_depth) {
+    trace_percentage = 1.0f;
+    reflection_depth = 5;
+}
+
+
 
 #endif

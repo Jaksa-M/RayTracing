@@ -19,10 +19,6 @@ class Texture {
     std::span<unsigned char> getData();
     void setData(std::vector<std::uint8_t> data);
     TexFormat getFormat() const;
-    void setFormat(TexFormat format);
-
-    void add(std::vector<std::uint8_t> data);
-    void divideBy(int val);
 
     vec3 value(float u, float v) const;
 
