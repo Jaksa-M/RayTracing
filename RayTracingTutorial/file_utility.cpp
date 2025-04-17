@@ -140,7 +140,7 @@ void removePresetFromFile(const std::string& file, std::string_view preset_name)
     out_file.close();
 }
 
-void saveScreenshot(std::span<const std::byte> data, int width, int height, bool hdr) {
+void saveScreenshot(std::span<const vec3> data, int width, int height, bool hdr) {
     fs::create_directories("Screenshots"); // Creates directory if it doesn't already exist
     char file_name[64];
     time_t now = time(nullptr);
@@ -156,12 +156,18 @@ void saveScreenshot(std::span<const std::byte> data, int width, int height, bool
         // Gamma-correct and store in a new vector
         std::vector<std::uint8_t> gamma_corrected_data(width * height * 3);
 
-        const std::byte* byte_ptr = data.data();
-        for (size_t i = 0; i < gamma_corrected_data.size(); i++) {
-            std::uint8_t value = static_cast<std::uint8_t>(byte_ptr[i]);
-            float linear = fromUnorm(value);
-            float gamma = linearToGamma(linear);
-            gamma_corrected_data[i] = toUnorm(gamma);
+        for (int i = 0; i < width * height; i++) {
+            const vec3& color = data[i];
+
+            // First apply gamma correction to each component
+            float r_gamma = linearToGamma(color.x());
+            float g_gamma = linearToGamma(color.y());
+            float b_gamma = linearToGamma(color.z());
+
+            // Then convert to uint8
+            gamma_corrected_data[i * 3 + 0] = toUnorm(r_gamma);
+            gamma_corrected_data[i * 3 + 1] = toUnorm(g_gamma);
+            gamma_corrected_data[i * 3 + 2] = toUnorm(b_gamma);
         }
 
         std::string png_file = std::string(file_name) + ".png";

@@ -413,29 +413,21 @@ int main(int, char**) {
         // Filling image_data
         image_data.resize(display_w * display_h * 3);
         convertAccumulatedToImageData(image_data, image_data_acc, display_w, display_h);
-        if (hdr) {
-            image_data_float.resize(display_w * display_h);
-            convertAccumulatedToFloatImage(image_data_float, image_data_acc, display_w, display_h);
-        }
 
         // Screenshots processing
         if (screenshot_button_pressed) {
-            if (hdr) {
-                saveScreenshot(std::as_bytes(std::span(image_data_float)), display_w, display_h, hdr);
-            } else {
-                saveScreenshot(std::as_bytes(std::span(image_data)), display_w, display_h, hdr);
-            }   
+            image_data_float.resize(display_w * display_h);
+            convertAccumulatedToFloatImage(image_data_float, image_data_acc, display_w, display_h);
+            saveScreenshot(image_data_float, display_w, display_h, hdr);
         }
 
         if (capturing_high_qual_screenshot) {
             frames_captured++;
             if (frames_captured >= frames_to_accumulate) {
                 // Done accumulating
-                if (hdr) {
-                    saveScreenshot(std::as_bytes(std::span(image_data_float)), display_w, display_h, hdr);
-                } else {
-                    saveScreenshot(std::as_bytes(std::span(image_data)), display_w, display_h, hdr);
-                }
+                image_data_float.resize(display_w * display_h);
+                convertAccumulatedToFloatImage(image_data_float, image_data_acc, display_w, display_h);
+                saveScreenshot(image_data_float, display_w, display_h, hdr);
 
                 switchToFastMode(trace_percentage, reflection_depth);
 
