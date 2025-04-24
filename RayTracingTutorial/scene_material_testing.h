@@ -24,6 +24,8 @@ class SceneMaterialTesting: public Scene {
     std::shared_ptr<RTMesh> rect_prism_mesh1_;
     std::shared_ptr<RTMesh> rect_prism_mesh2_;
     std::shared_ptr<RTMesh> plane_mesh_;
+    std::shared_ptr<RTMesh> plane_mesh2_;
+    std::shared_ptr<RTMesh> plane_mesh3_;
 
     std::unique_ptr<Shader> shader_prog_;
     std::shared_ptr<Texture> background_texture_;

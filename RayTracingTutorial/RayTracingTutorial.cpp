@@ -111,7 +111,7 @@ int main(int, char**) {
     std::unique_ptr<BVHManager> bvh_manager = std::make_unique<BVHManager>(gui_settings.get());
     std::unique_ptr<Statistics> statistics = std::make_unique<Statistics>();
 
-    SceneType selected_scene_index = SceneType::RT_MESHES;
+    SceneType selected_scene_index = SceneType::MATERIAL_TESTING;
     BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
     MeshColor chosen_mesh_color = MeshColor::MATERIAL;
 
@@ -128,7 +128,7 @@ int main(int, char**) {
     std::vector<std::uint8_t> image_data;
     std::vector<vec3> image_data_float;
     float trace_percentage = 0.1f; // Decides how much pixels will be traced
-    int reflection_depth = 2;
+    int reflection_depth = 3;
     float environment_light = 1.0f;
     bool reset_accumulated = false;
     bool freeze_camera = false;
