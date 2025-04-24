@@ -6,6 +6,7 @@
 #include "types.h"
 #include "matrix.h"
 #include "intersection_utility.h"
+#include <cassert>
 
 class Material {
 public:
@@ -38,10 +39,16 @@ public:
         getTriangleNormals(res_mesh_info, i0, i1, i2, n0, n1, n2);
         vec3 shading_normal = unit_vector(barycentricInterpolate(n0, n1, n2, rec.buv));
 
+        matrix3x3 local_to_world = rec.local_to_world_mat.convertTo3x3().invert().transpose();
+        shading_normal = unit_vector(local_to_world * shading_normal); // transform shading_normal to world space
+
         if (normal_map_tex) {  // Apply normal map if specified
             // Tangent and bitangent calculation
             vec3 v0, v1, v2;
             getTriangleVertices(res_mesh_info, i0, i1, i2, v0, v1, v2);
+            v0 = rec.local_to_world_mat * v0;
+            v1 = rec.local_to_world_mat * v1;
+            v2 = rec.local_to_world_mat * v2;
 
             vec2 delta_uv1 = uv1 - uv0;
             vec2 delta_uv2 = uv2 - uv0;
@@ -55,26 +62,21 @@ public:
 
             vec3 tangent = r * (delta_pos1 * delta_uv2.y() - delta_pos2 * delta_uv1.y());
             tangent = unit_vector(tangent);
-
             vec3 bitangent = unit_vector(cross(shading_normal, tangent));
-            //tangent = cross(bitangent, shading_normal);  // Re-orthogonalize
+            tangent = cross(bitangent, shading_normal);  // Re-orthogonalize
+            //assert(std::abs(dot(tangent, bitangent)) < 1e-3f && "Tangent and bitangent are not orthogonal!");
+            //assert(std::abs(dot(tangent, shading_normal)) < 1e-3f && "Tangent and normal are not orthogonal!");
+            //assert(std::abs(dot(bitangent, shading_normal)) < 1e-3f && "Bitangent and normal are not orthogonal!");
+
 
             vec3 normal_sample = normal_map_tex->value(uv[0], uv[1]);
             vec3 tangent_normal = unit_vector(2.0f * normal_sample - vec3(1.0f));  // [0,1] -> [-1,1]
 
             // Transform normal from tangent to world space
             matrix3x3 TBN(tangent, bitangent, shading_normal);
-            matrix3x3 local_to_world = rec.local_to_world_mat.convertTo3x3().invert().transpose();
-            vec3 T = unit_vector(local_to_world * tangent);
-            vec3 B = unit_vector(local_to_world * bitangent);
-            vec3 N = unit_vector(local_to_world * shading_normal);
-            matrix3x3 TBN_world(T, B, N);
 
-            shading_normal = unit_vector(TBN_world * tangent_normal);
+            shading_normal = unit_vector(TBN * tangent_normal);
             //shading_normal = tangent_normal;
-        } else {
-            matrix3x3 normal_matrix = rec.local_to_world_mat.convertTo3x3().invert().transpose();
-            shading_normal = unit_vector(normal_matrix * shading_normal);
         }
 
         bool type_of_normal = true;
@@ -116,10 +118,16 @@ public:
         getTriangleNormals(res_mesh_info, i0, i1, i2, n0, n1, n2);
         vec3 shading_normal = unit_vector(barycentricInterpolate(n0, n1, n2, rec.buv));
 
-        if (normal_map_tex) { // Apply normal map if specified
+         matrix3x3 local_to_world = rec.local_to_world_mat.convertTo3x3().invert().transpose();
+        shading_normal = unit_vector(local_to_world * shading_normal); // transform shading_normal to world space
+
+        if (normal_map_tex) {  // Apply normal map if specified
             // Tangent and bitangent calculation
             vec3 v0, v1, v2;
             getTriangleVertices(res_mesh_info, i0, i1, i2, v0, v1, v2);
+            v0 = rec.local_to_world_mat * v0;
+            v1 = rec.local_to_world_mat * v1;
+            v2 = rec.local_to_world_mat * v2;
 
             vec2 delta_uv1 = uv1 - uv0;
             vec2 delta_uv2 = uv2 - uv0;
@@ -128,26 +136,26 @@ public:
 
             //float r = 1.0f / (delta_uv1.x() * delta_uv2.y() - delta_uv1.y() * delta_uv2.x());
             float denom = delta_uv1.x() * delta_uv2.y() - delta_uv1.y() * delta_uv2.x();
-            if (std::abs(denom) < 1e-8f) denom = 1.0f; // prevent division by zero
+            if (std::abs(denom) < 1e-8f)
+                denom = 1.0f;  // prevent division by zero
             float r = 1.0f / denom;
 
             vec3 tangent = r * (delta_pos1 * delta_uv2.y() - delta_pos2 * delta_uv1.y());
             tangent = unit_vector(tangent);
-
             vec3 bitangent = unit_vector(cross(shading_normal, tangent));
             tangent = cross(bitangent, shading_normal);  // Re-orthogonalize
+            //assert(std::abs(dot(tangent, bitangent)) < 1e-3f && "Tangent and bitangent are not orthogonal!");
+            //assert(std::abs(dot(tangent, shading_normal)) < 1e-3f && "Tangent and normal are not orthogonal!");
+            //assert(std::abs(dot(bitangent, shading_normal)) < 1e-3f && "Bitangent and normal are not orthogonal!");
 
             vec3 normal_sample = normal_map_tex->value(uv[0], uv[1]);
             vec3 tangent_normal = unit_vector(2.0f * normal_sample - vec3(1.0f));  // [0,1] -> [-1,1]
 
             // Transform normal from tangent to world space
             matrix3x3 TBN(tangent, bitangent, shading_normal);
-            //tangent_normal = vec3(0, 0, 1);
+
             shading_normal = unit_vector(TBN * tangent_normal);
-        }
-        else {
-            matrix3x3 normal_matrix = rec.local_to_world_mat.convertTo3x3().invert().transpose();
-            shading_normal = unit_vector(normal_matrix * shading_normal);
+            //shading_normal = tangent_normal;
         }
 
         float roughness = roughness_tex_->value(uv[0], uv[1]).x();

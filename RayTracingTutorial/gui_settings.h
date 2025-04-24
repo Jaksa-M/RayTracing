@@ -14,7 +14,7 @@ struct GUISettings {
     bool debug_rays = false;
     bool freeze_camera = false;
     int block_size = 8;
-    bool multithreading = true;
+    bool multithreading = false;
 };
 
 #endif

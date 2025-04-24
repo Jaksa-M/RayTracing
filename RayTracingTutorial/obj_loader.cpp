@@ -54,7 +54,7 @@ bool ObjLoader::load(Context& context) {
         if (mat.bump_texname.empty() == false) {
             fs::path normal_map_texture_path = file_.parent_path() / mat.bump_texname;
             TextureLoader normal_map_tex_loader(normal_map_texture_path.string());
-            if (!normal_map_tex_loader.load()) {
+            if (!normal_map_tex_loader.load(false)) {
                 std::cerr << "ERROR: Could not load specular texture file '" << normal_map_texture_path << "'.\n";
             }
             TexDescription desc(normal_map_tex_loader.getImageWidth(), normal_map_tex_loader.getImageHeight(), normal_map_tex_loader.getFormat());

@@ -48,7 +48,7 @@ void SceneMaterialTesting::initialize() {
     TexDescription desc3(tex_loader3.getImageWidth(), tex_loader3.getImageHeight(), TexFormat::RGB8_UNORM);
 
     TextureLoader normal_map_tex_loader("Resources/textures/spnza_bricks_a_bump.png");
-    if (!normal_map_tex_loader.load()) {
+    if (!normal_map_tex_loader.load(false)) {
         std::cerr << "ERROR: Could not load texture file" << "\n ";
     }
     TexDescription desc_normal_map(normal_map_tex_loader.getImageWidth(), normal_map_tex_loader.getImageHeight(), normal_map_tex_loader.getFormat());
@@ -86,12 +86,12 @@ void SceneMaterialTesting::initialize() {
     matrix4x4 m2 = transformation::create_translation_matrix(vec3(2.0f, 1.0f, -0.99f)) * transformation::create_scaling_matrix(30.0f, 30.0f, 30.0f) *
                   transformation::create_rotation_matrix(0.0f, 0.0f, -90.0f * (3.14159f / 180.0f));
     plane_mesh2_->setTransformationMatrix(m2);
-    world_.add(plane_mesh2_);
+    //world_.add(plane_mesh2_);
 
     plane_mesh3_ = MeshUtils::GenerateTriangleRectangle(context, temp_mat, 2, 2);
     matrix4x4 m3 = transformation::create_translation_matrix(vec3(0.0f, -2.0f, -0.99f)) * transformation::create_scaling_matrix(30.0f, 30.0f, 30.0f);
     plane_mesh3_->setTransformationMatrix(m3);
-    world_.add(plane_mesh3_);
+    //world_.add(plane_mesh3_);
 
     /*auto cube_mat = std::make_shared<Lambertian>(white_tex);
     rect_prism_mesh1_ = MeshUtils::GenerateTriangleCube(context, cube_mat, 4);
