@@ -63,11 +63,11 @@ public:
             vec3 tangent = r * (delta_pos1 * delta_uv2.y() - delta_pos2 * delta_uv1.y());
             tangent = unit_vector(tangent);
             vec3 bitangent = unit_vector(cross(shading_normal, tangent));
-            tangent = cross(bitangent, shading_normal);  // Re-orthogonalize
+            tangent = cross(bitangent, shading_normal); // Re-orthogonalize
+
             //assert(std::abs(dot(tangent, bitangent)) < 1e-3f && "Tangent and bitangent are not orthogonal!");
             //assert(std::abs(dot(tangent, shading_normal)) < 1e-3f && "Tangent and normal are not orthogonal!");
             //assert(std::abs(dot(bitangent, shading_normal)) < 1e-3f && "Bitangent and normal are not orthogonal!");
-
 
             vec3 normal_sample = normal_map_tex->value(uv[0], uv[1]);
             vec3 tangent_normal = unit_vector(2.0f * normal_sample - vec3(1.0f));  // [0,1] -> [-1,1]
