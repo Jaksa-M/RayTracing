@@ -38,6 +38,7 @@ public:
     matrix3x3();
 
     matrix3x3(const matrix4x4& mat4); // Constructor that takes top-left 3x3 portion of a 4x4 matrix
+    matrix3x3(const vec3& col0, const vec3& col1, const vec3& col2); // Takes 3 vectors and store them as columns
 
     // Can't use [] for indexing because it only allows to take 1 argument.
     float& operator()(int row, int col);

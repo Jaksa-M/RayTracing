@@ -143,6 +143,12 @@ matrix3x3::matrix3x3(const matrix4x4& mat4) {
     }
 }
 
+matrix3x3::matrix3x3(const vec3& col0, const vec3& col1, const vec3& col2) {
+    data[0][0] = col0.x(); data[0][1] = col1.x(); data[0][2] = col2.x();
+    data[1][0] = col0.y(); data[1][1] = col1.y(); data[1][2] = col2.y();
+    data[2][0] = col0.z(); data[2][1] = col1.z(); data[2][2] = col2.z();
+}
+
 float& matrix3x3::operator()(int row, int col) { return data[row][col]; }
 
 const float& matrix3x3::operator()(int row, int col) const { return data[row][col]; }

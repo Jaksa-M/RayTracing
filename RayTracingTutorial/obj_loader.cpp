@@ -49,7 +49,19 @@ bool ObjLoader::load(Context& context) {
     for (auto& mat : reader.GetMaterials()) {
         std::shared_ptr<Material> material;
         std::shared_ptr<Texture> roughness_tex;
+        std::shared_ptr<Texture> normal_map_tex;
 
+        if (mat.bump_texname.empty() == false) {
+            fs::path normal_map_texture_path = file_.parent_path() / mat.bump_texname;
+            TextureLoader normal_map_tex_loader(normal_map_texture_path.string());
+            if (!normal_map_tex_loader.load(false)) {
+                std::cerr << "ERROR: Could not load specular texture file '" << normal_map_texture_path << "'.\n";
+            } 
+            else {
+                TexDescription desc(normal_map_tex_loader.getImageWidth(), normal_map_tex_loader.getImageHeight(), normal_map_tex_loader.getFormat());
+                normal_map_tex = std::make_shared<Texture>(normal_map_tex_loader.getData(), desc);
+            }
+        }
         if (mat.specular_texname.empty() == false) {
             fs::path specular_texture_path = file_.parent_path() / mat.specular_texname;
             TextureLoader spec_tex_loader(specular_texture_path.string());
@@ -74,9 +86,9 @@ bool ObjLoader::load(Context& context) {
             TexDescription desc(tex_loader.getImageWidth(), tex_loader.getImageHeight(), tex_loader.getFormat());
             std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader.getData(), desc);
             if (roughness_tex != nullptr) {
-                material = std::make_shared<Metal>(tex, roughness_tex);
+                material = std::make_shared<Metal>(tex, roughness_tex, normal_map_tex);
             } else {
-                material = std::make_shared<Lambertian>(tex);
+                material = std::make_shared<Lambertian>(tex, normal_map_tex);
             }
         } else {
             color col(mat.diffuse[0], mat.diffuse[1], mat.diffuse[2]);

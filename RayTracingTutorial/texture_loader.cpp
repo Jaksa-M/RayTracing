@@ -17,7 +17,7 @@ TextureLoader::~TextureLoader() {
     bdata_.clear();
 }
 
-bool TextureLoader::load() {
+bool TextureLoader::load(bool is_color) {
     int w, h, channels;
 
     bool is_float = stbi_is_hdr(file_path.c_str());
@@ -52,7 +52,7 @@ bool TextureLoader::load() {
         stbi_image_free(raw_data);
     }
 
-    format_ = decideFormat(channels, is_float);
+    format_ = decideFormat(channels, is_float, is_color);
 
     // Checking if we have roughness images, and converting them to R8_UNORM format to reduce memory and avoid gamma conversion.
     // This is because roughness images are greyscale (meaning they have only 1 channel).
@@ -77,7 +77,7 @@ TexFormat TextureLoader::getFormat() const {
     return format_;
 }
 
-TexFormat TextureLoader::decideFormat(int channels, bool is_float) {
+TexFormat TextureLoader::decideFormat(int channels, bool is_float, bool is_color) {
     if (is_float) {
         if (channels == 1) return TexFormat::R32_FLOAT;
         if (channels == 3) return TexFormat::RGB32_FLOAT;
@@ -86,8 +86,15 @@ TexFormat TextureLoader::decideFormat(int channels, bool is_float) {
     else {
         if (channels == 1) return TexFormat::R8_UNORM;
         // We can assume that if it's 8 bits jpg/png image, we use the gamma version
-        if (channels == 3) return TexFormat::RGB8_UNORM_SRGB;
-        if (channels == 4) return TexFormat::RGBA8_UNORM_SRGB;
+        // except in the case when image is not color (like normal map)
+        if (is_color) {
+            if (channels == 3) return TexFormat::RGB8_UNORM_SRGB;
+            if (channels == 4) return TexFormat::RGBA8_UNORM_SRGB;
+        } 
+        else {
+            if (channels == 3) return TexFormat::RGB8_UNORM;
+            if (channels == 4) return TexFormat::RGBA8_UNORM;
+        }
     }
 
     throw std::runtime_error("Unsupported texture format: channels = " + std::to_string(channels) + (is_float ? " (float)" : " (uint8)"));

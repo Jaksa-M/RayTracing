@@ -37,16 +37,34 @@ void SceneMaterialTesting::initialize() {
     // Loading texture from an image
     TextureLoader tex_loader2("Resources/textures/spnza_bricks_a_diff.png");
     if (!tex_loader2.load()) {
-        std::cerr << "ERROR: Could not load texture file"
-                  << "\n ";
+        std::cerr << "ERROR: Could not load texture file" << "\n ";
     }
+    TexDescription desc2(tex_loader2.getImageWidth(), tex_loader2.getImageHeight(), tex_loader2.getFormat());
 
     TextureLoader tex_loader3("Resources/textures/spnza_bricks_a_spec.png");
     if (!tex_loader3.load()) {
-        std::cerr << "ERROR: Could not load texture file"
-                  << "\n ";
+        std::cerr << "ERROR: Could not load texture file" << "\n ";
     }
     TexDescription desc3(tex_loader3.getImageWidth(), tex_loader3.getImageHeight(), TexFormat::RGB8_UNORM);
+
+    TextureLoader normal_map_tex_loader("Resources/textures/spnza_bricks_a_bump.png");
+    std::shared_ptr<Texture> normal_map_tex;
+    if (!normal_map_tex_loader.load(false)) {
+        std::cerr << "ERROR: Could not load texture file" << "\n ";
+    } else {
+        TexDescription desc_normal_map(normal_map_tex_loader.getImageWidth(), normal_map_tex_loader.getImageHeight(), normal_map_tex_loader.getFormat());
+        normal_map_tex = std::make_shared<Texture>(normal_map_tex_loader.getData(), desc_normal_map);
+    }
+    
+    std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader2.getData(), desc2);
+    std::shared_ptr<Texture> roughness_tex = std::make_shared<Texture>(tex_loader3.getData(), desc3);
+    std::span<unsigned char> pixels = roughness_tex->getData();
+    for (std::size_t i = 0; i < pixels.size(); i += getChannelCount(roughness_tex->getFormat())) {
+        pixels[i] = 255 - pixels[i];  // we only need to invert first color
+    }
+    //auto temp_mat = std::make_shared<Metal>(tex, roughness_tex, normal_map_tex);
+    //auto temp_mat = std::make_shared<Lambertian>(tex, normal_map_tex);
+    auto temp_mat = std::make_shared<Lambertian>(tex);
 
     std::shared_ptr<Texture> rough_tex = std::make_shared<Texture>(vec3(1, 0, 0));
     std::shared_ptr<Texture> rough_zero_tex = std::make_shared<Texture>(vec3(0, 0, 0));
@@ -59,15 +77,30 @@ void SceneMaterialTesting::initialize() {
     auto plane_mat = std::make_shared<Metal>(white_tex, rough_gradient_tex);
     //auto plane_mat = std::make_shared<Lambertian>(rough_zero_tex);
 
-    plane_mesh_ = MeshUtils::GenerateTriangleRectangle(context, plane_mat, 2, 2);
-    matrix4x4 m = transformation::create_translation_matrix(vec3(0.0f, 1.0f, -0.99f)) * transformation::create_scaling_matrix(30.0f, 30.0f, 30.0f);
+    plane_mesh_ = MeshUtils::GenerateTriangleRectangle(context, temp_mat, 2, 2);
+    matrix4x4 m = transformation::create_translation_matrix(vec3(0.0f, 1.0f, -0.99f)) * transformation::create_scaling_matrix(30.0f, 30.0f, 30.0f) *
+                  transformation::create_rotation_matrix(90.0f * (3.14159f / 180.0f), 0.0f, 0.0f);
+                  //transformation::create_rotation_matrix(180.0f * (3.14159f / 180.0f), 0.0f, 0.0f);
     plane_mesh_->setTransformationMatrix(m);
-    world_.add(plane_mesh_);
-    vec3 pixel00 = background_texture_->value(0, 0);
-    vec3 pixel01 = background_texture_->value(0, 1);
-    std::vector<std::uint8_t> buf = tex_loader.getData();
+    //world_.add(plane_mesh_);
 
-    auto cube_mat = std::make_shared<Lambertian>(white_tex);
+    plane_mesh2_ = MeshUtils::GenerateTriangleRectangle(context, temp_mat, 2, 2);
+    matrix4x4 m2 = transformation::create_translation_matrix(vec3(2.0f, 1.0f, -0.99f)) * transformation::create_scaling_matrix(30.0f, 30.0f, 30.0f) *
+                   transformation::create_rotation_matrix(90.0f * (3.14159f / 180.0f), 0.0f, 0.0f);
+    plane_mesh2_->setTransformationMatrix(m2);
+    world_.add(plane_mesh2_);
+
+    plane_mesh3_ = MeshUtils::GenerateTriangleRectangle(context, temp_mat, 2, 2);
+    matrix4x4 m3 = transformation::create_translation_matrix(vec3(0.0f, -2.0f, -0.99f)) * transformation::create_scaling_matrix(30.0f, 30.0f, 30.0f);
+    plane_mesh3_->setTransformationMatrix(m3);
+    //world_.add(plane_mesh3_);
+
+    /*sphere_mesh_ = MeshUtils::GenerateIcosphere(context, temp_mat, 8);
+    matrix4x4 m4 = transformation::create_translation_matrix(vec3(0.0f, -2.0f, -10.0f)) * transformation::create_scaling_matrix(5.0f, 5.0f, 5.0f);
+    sphere_mesh_->setTransformationMatrix(m4);
+    world_.add(sphere_mesh_);*/
+
+    /*auto cube_mat = std::make_shared<Lambertian>(white_tex);
     rect_prism_mesh1_ = MeshUtils::GenerateTriangleCube(context, cube_mat, 4);
     m = transformation::create_translation_matrix(vec3(0.0f, 3.0f, 0.0f));
     rect_prism_mesh1_->setTransformationMatrix(m);
@@ -76,7 +109,7 @@ void SceneMaterialTesting::initialize() {
     rect_prism_mesh2_ = std::make_shared<RTMesh>(context, rect_prism_mesh1_->getMeshHandle(), cube_mat);
     m = transformation::create_translation_matrix(vec3(2.0f, 2.0f, 3.0f));
     rect_prism_mesh2_->setTransformationMatrix(m);
-    world_.add(rect_prism_mesh2_);
+    world_.add(rect_prism_mesh2_);*/
 
     initShader();
 }

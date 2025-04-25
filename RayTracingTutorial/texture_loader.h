@@ -13,13 +13,13 @@ class TextureLoader {
     TextureLoader(const std::string& file_path);
     ~TextureLoader();
 
-    bool load();
+    bool load(bool is_color = true);
 
     std::vector<std::uint8_t> getData() const;
     std::uint32_t getImageWidth() const;
     std::uint32_t getImageHeight() const;
     TexFormat getFormat() const;
-    TexFormat decideFormat(int channels, bool is_float);
+    TexFormat decideFormat(int channels, bool is_float, bool is_color);
 
    private:
     std::string file_path;

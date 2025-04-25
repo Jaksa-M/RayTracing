@@ -76,7 +76,7 @@ void SceneCornellBox::initialize() {
 	rect_mesh_left_->setTransformationMatrix(m);
 
 	rect_mesh_right_ = std::make_shared<RTMesh>(context, rect_mesh_back_->getMeshHandle(), mat_green);
-	m = transformation::create_translation_matrix(vec3(0.99f, 1.f, 0.0f)) *
+	m = transformation::create_translation_matrix(vec3(0.99f, 1.0f, 0.0f)) *
 		transformation::create_rotation_matrix(0.0f, 0.0f, -90.0f * (3.14159f / 180.0f)) *
 		transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
 	rect_mesh_right_->setTransformationMatrix(m);
