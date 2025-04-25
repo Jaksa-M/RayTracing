@@ -36,7 +36,6 @@ void SceneMaterialTesting::initialize() {
 
     // Loading texture from an image
     TextureLoader tex_loader2("Resources/textures/spnza_bricks_a_diff.png");
-    //TextureLoader tex_loader2("Resources/textures/default_texture.jpg");
     if (!tex_loader2.load()) {
         std::cerr << "ERROR: Could not load texture file" << "\n ";
     }
@@ -49,14 +48,15 @@ void SceneMaterialTesting::initialize() {
     TexDescription desc3(tex_loader3.getImageWidth(), tex_loader3.getImageHeight(), TexFormat::RGB8_UNORM);
 
     TextureLoader normal_map_tex_loader("Resources/textures/spnza_bricks_a_bump.png");
+    std::shared_ptr<Texture> normal_map_tex;
     if (!normal_map_tex_loader.load(false)) {
         std::cerr << "ERROR: Could not load texture file" << "\n ";
+    } else {
+        TexDescription desc_normal_map(normal_map_tex_loader.getImageWidth(), normal_map_tex_loader.getImageHeight(), normal_map_tex_loader.getFormat());
+        normal_map_tex = std::make_shared<Texture>(normal_map_tex_loader.getData(), desc_normal_map);
     }
-    TexDescription desc_normal_map(normal_map_tex_loader.getImageWidth(), normal_map_tex_loader.getImageHeight(), normal_map_tex_loader.getFormat());
-    
     
     std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader2.getData(), desc2);
-    std::shared_ptr<Texture> normal_map_tex = std::make_shared<Texture>(normal_map_tex_loader.getData(), desc_normal_map);
     std::shared_ptr<Texture> roughness_tex = std::make_shared<Texture>(tex_loader3.getData(), desc3);
     std::span<unsigned char> pixels = roughness_tex->getData();
     for (std::size_t i = 0; i < pixels.size(); i += getChannelCount(roughness_tex->getFormat())) {

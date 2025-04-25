@@ -80,7 +80,6 @@ public:
 
         scattered = ray(rec.p + rec.face_normal * 0.0001f, scatter_direction);
         attenuation = tex_->value(uv[0], uv[1]);
-        //attenuation = shading_normal;  // used for shading normal view
         return true;
     }
 
@@ -154,8 +153,6 @@ public:
         scattered = ray(rec.p + rec.face_normal * 0.0001f, reflected);
 
         attenuation = albedo_tex_->value(uv[0], uv[1]);
-        //attenuation = shading_normal; // used for shading normal view
-        //attenuation = roughness; // used for roughness view
         return (dot(scattered.direction(), normal) > 0);
     }
 
