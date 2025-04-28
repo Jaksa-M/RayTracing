@@ -34,7 +34,8 @@ namespace fs = std::filesystem;
 
 struct IntersectResult {
     float t = float_max;  // Intersection distance
-    vec3 buv = vec3();   // short for barycentrics uv, vec3(alpha, beta, gamma)
+    // buv is short for barycentrics uv, vec3(alpha, beta, gamma), we currently store only beta and gamma and calculate alpha with those 2
+    vec2 buv = vec2();
     std::uint32_t closest_tri_index = ~0u;
 };
 

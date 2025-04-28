@@ -87,7 +87,7 @@ bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
         //ray_t = {0, std::numeric_limits<float>::max()};
 
         IntersectResult closest_intersection;
-
+        
         // Iterate over every triangle inside the mesh
         for (int i = 0; i < res_mesh_info_.indices.size(); i += 3) {
             point3 p1 = point3(res_mesh_info_.vertices[res_mesh_info_.indices[i] * 3], res_mesh_info_.vertices[res_mesh_info_.indices[i] * 3 + 1],

@@ -8,47 +8,34 @@
 #include "vec3.h"
 
 inline IntersectResult intersectTriangle(const ray& r, interval ray_t, const vec3& v0, const vec3& v1, const vec3& v2) {
-    const point3& p1 = v0;
-    const point3& p2 = v1;
-    const point3& p3 = v2;
+    // Moeller Trumbore ray triangle intersection algorithm
+    const float EPSILON = 1e-8f;
 
-    // Formula for intersecting with the plane is t = (c - p*n) / d*n
-    // denominator d is ray direction, p is ray origin, n is normal, c is constant
-    point3 triangle_normal = unit_vector(cross(p2 - p1, p3 - p1));
-    float c = dot(triangle_normal, p1);
-    float denominator = dot(triangle_normal, r.direction());
-    if (fabs(denominator) < 1e-8) return IntersectResult(); // same as return false
+    vec3 edge1 = v1 - v0;
+    vec3 edge2 = v2 - v0;
 
-    float t = (c - dot(triangle_normal, r.origin())) / denominator;
-    if (!ray_t.surrounds(t)) { // Check if the intersection is within the ray's valid range
-        return IntersectResult(); // same as return false
-    }
+    vec3 h = cross(r.direction(), edge2);
+    float a = dot(edge1, h);
 
-    // Plugging in t inside ray formula R(x) = P + td
-    point3 Q = r.at(t);
+    if (fabs(a) < EPSILON) return IntersectResult(); // Ray is parallel to the triangle
 
-    // Now we have to check if our intersection point is inside triangle
-    // Q is inside if following conditions are met in this order:
-    // [(B-A) x (Q-A)] * n >= 0
-    // [(C-B) x (Q-B)] * n >= 0
-    // [(A-C) x (Q-C)] * n >= 0
+    float f = 1.0f / a;
+    vec3 s = r.origin() - v0;
+    float u = f * dot(s, h);
 
-    if (dot(cross((p2 - p1), (Q - p1)), triangle_normal) < 0 ||
-        dot(cross((p3 - p2), (Q - p2)), triangle_normal) < 0 ||
-        dot(cross((p1 - p3), (Q - p3)), triangle_normal) < 0) {
-        return IntersectResult(); // same as return false
-    }
+    if (u < 0.0f || u > 1.0f) return IntersectResult(); // Same as return false
 
-    // Adding Barycentric coordinates
-    // alpha = ([(C-B) x (Q-B)] * n) / ([(B-A) x (C-A)] * n)
-    // beta = ([(A-C) x (Q-C)] * n) / ([(B-A) x (C-A)] * n)
-    // gamma = ([(B-A) x (Q-A)] * n) / ([(B-A) x (C-A)] * n)
-    const float area = dot(cross((p2 - p1), (p3 - p1)), triangle_normal);
-    float alpha = dot(cross((p3 - p2), (Q - p2)), triangle_normal) / area;
-    float beta = dot(cross((p1 - p3), (Q - p3)), triangle_normal) / area;
-    float gamma = dot(cross((p2 - p1), (Q - p1)), triangle_normal) / area;
+    vec3 q = cross(s, edge1);
+    float v = f * dot(r.direction(), q);
 
-    return { t, vec3(alpha, beta, gamma), 0 }; // same as return true
+    if (v < 0.0f || u + v > 1.0f) return IntersectResult();
+
+    float t = f * dot(edge2, q);
+    if (!ray_t.surrounds(t)) return IntersectResult();
+
+    // Barycentric coordinates: u, v, w = 1 - u - v
+
+    return {t, vec2(u, v), 0};
 }
 
 inline bool intersectAABB(const ray& r, float t, const vec3& bmin, const vec3& bmax, float& closest_side) {
@@ -117,12 +104,14 @@ inline vec3 transformDirection(const vec3& dir, const matrix3x3& m) {
     return unit_vector(transformed_dir);
 }
 
-inline vec3 barycentricInterpolate(const vec3& v0, const vec3& v1, const vec3& v2, const vec3& buv) {
-    return v0 * buv.x() + v1 * buv.y() + v2 * buv.z();
+inline vec3 barycentricInterpolate(const vec3& v0, const vec3& v1, const vec3& v2, const vec2& buv) {
+    float w = 1.0f - buv.x() - buv.y();
+    return v0 * w + v1 * buv.x() + v2 * buv.y();
 }
 
-inline vec2 barycentricInterpolate(const vec2& v0, const vec2& v1, const vec2& v2, const vec3& buv) {
-    return v0 * buv.x() + v1 * buv.y() + v2 * buv.z();
+inline vec2 barycentricInterpolate(const vec2& v0, const vec2& v1, const vec2& v2, const vec2& buv) {
+    float w = 1.0f - buv.x() - buv.y();
+    return v0 * w + v1 * buv.x() + v2 * buv.y();
 }
 
 //-----------------------Other objects intersections that are currently not being used-----------------------
