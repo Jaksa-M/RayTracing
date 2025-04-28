@@ -21,7 +21,7 @@ public:
     bool front_face;
     MeshHandle mesh_handle;
     std::uint32_t triangle_index;
-    vec3 buv;
+    vec2 buv;
     const MeshBufferManager* mesh_buf_manager;
     matrix4x4 local_to_world_mat;
     

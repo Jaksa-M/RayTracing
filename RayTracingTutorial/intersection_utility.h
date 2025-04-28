@@ -8,7 +8,7 @@
 #include "vec3.h"
 
 inline IntersectResult intersectTriangle(const ray& r, interval ray_t, const vec3& v0, const vec3& v1, const vec3& v2) {
-    // Möller–Trumbore ray triangle intersection algorithm
+    // Moeller–Trumbore ray triangle intersection algorithm
     const float EPSILON = 1e-8f;
 
     vec3 edge1 = v1 - v0;
@@ -34,9 +34,8 @@ inline IntersectResult intersectTriangle(const ray& r, interval ray_t, const vec
     if (!ray_t.surrounds(t)) return IntersectResult();
 
     // Barycentric coordinates: u, v, w = 1 - u - v
-    float w = 1.0f - u - v;
 
-    return {t, vec3(w, u, v), 0};
+    return {t, vec2(u, v), 0};
 }
 
 inline bool intersectAABB(const ray& r, float t, const vec3& bmin, const vec3& bmax, float& closest_side) {
@@ -105,12 +104,14 @@ inline vec3 transformDirection(const vec3& dir, const matrix3x3& m) {
     return unit_vector(transformed_dir);
 }
 
-inline vec3 barycentricInterpolate(const vec3& v0, const vec3& v1, const vec3& v2, const vec3& buv) {
-    return v0 * buv.x() + v1 * buv.y() + v2 * buv.z();
+inline vec3 barycentricInterpolate(const vec3& v0, const vec3& v1, const vec3& v2, const vec2& buv) {
+    float w = 1.0f - buv.x() - buv.y();
+    return v0 * w + v1 * buv.x() + v2 * buv.y();
 }
 
-inline vec2 barycentricInterpolate(const vec2& v0, const vec2& v1, const vec2& v2, const vec3& buv) {
-    return v0 * buv.x() + v1 * buv.y() + v2 * buv.z();
+inline vec2 barycentricInterpolate(const vec2& v0, const vec2& v1, const vec2& v2, const vec2& buv) {
+    float w = 1.0f - buv.x() - buv.y();
+    return v0 * w + v1 * buv.x() + v2 * buv.y();
 }
 
 //-----------------------Other objects intersections that are currently not being used-----------------------
