@@ -8,7 +8,7 @@
 #include "vec3.h"
 
 inline IntersectResult intersectTriangle(const ray& r, interval ray_t, const vec3& v0, const vec3& v1, const vec3& v2) {
-    // Moeller–Trumbore ray triangle intersection algorithm
+    // Moeller Trumbore ray triangle intersection algorithm
     const float EPSILON = 1e-8f;
 
     vec3 edge1 = v1 - v0;
