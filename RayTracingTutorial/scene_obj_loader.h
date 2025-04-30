@@ -3,6 +3,7 @@
 
 #include <memory.h>
 #include "RTMesh.h"
+#include "RTMeshTinyBVH.h"
 #include "mesh.h"
 #include "obj_loader.h"
 #include "scene.h"
@@ -29,6 +30,7 @@ class SceneObjLoader : public Scene {
     std::unique_ptr<BVHManager> bvh_manager_;
 
     std::vector<std::shared_ptr<RTMesh>> rt_meshes_;
+    std::vector<std::shared_ptr<RTMeshTinyBVH>> tinybvh_rt_meshes_;
     std::unique_ptr<ObjLoader> obj_loader_;
     std::shared_ptr<Texture> background_texture_;
     std::shared_ptr<Texture> erato_texture_;
