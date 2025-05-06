@@ -44,6 +44,8 @@ void SceneObjLoader::initialize() {
     auto start_time = std::chrono::high_resolution_clock::now(); // Start timing
 
     obj_loader_ = std::make_unique<ObjLoader>("Resources/erato/erato.obj");
+    //obj_loader_ = std::make_unique<ObjLoader>("Resources/crytek_sponza/sponza.obj");
+    //obj_loader_ = std::make_unique<ObjLoader>("Resources/CornellBox/CornellBox-Sphere.obj");
     if (!obj_loader_->load(context)) {
         std::cout << "ERROR: custom mesh failed to load" << std::endl;
     }
@@ -145,5 +147,6 @@ Camera& SceneObjLoader::getActiveCamera() {
 SceneObjLoader::~SceneObjLoader() {
     world_.clear();
     rt_meshes_.clear();
+    tinybvh_rt_meshes_.clear();
     bounding_boxes_.clear();
 }

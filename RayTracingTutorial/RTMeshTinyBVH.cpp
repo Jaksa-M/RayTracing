@@ -31,9 +31,9 @@ bool RTMeshTinyBVH::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const 
     // Create BVH-compatible ray
     tinybvh::bvhvec3 O = tinybvh::bvhvec3(changed_ray.origin().x(), changed_ray.origin().y(), changed_ray.origin().z());
     tinybvh::bvhvec3 D = tinybvh::bvhvec3(changed_ray.direction().x(), changed_ray.direction().y(), changed_ray.direction().z());
-    tinybvh::Ray bvh_ray(O, D, std::numeric_limits<float>::max());
+    tinybvh::Ray bvh_ray(O, D, 1e30f);
 
-    bool hit = bvh_->IsOccluded(bvh_ray);
+    //bool hit = bvh_->IsOccluded(bvh_ray);
 
     bvh_->Intersect(bvh_ray);
     if (bvh_ray.hit.t != 1e30f) { // ray hit something
@@ -51,8 +51,11 @@ bool RTMeshTinyBVH::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const 
         vec3 triangle_normal = unit_vector(cross(v1 - v0, v2 - v0));
         rec.set_face_normal(r, triangle_normal);
 
-        vec2 buv = vec2(bvh_ray.hit.u, bvh_ray.hit.v);
+        vec2 buv = vec2(bvh_ray.hit.v, 1 - bvh_ray.hit.u - bvh_ray.hit.v);
         rec.p = barycentricInterpolate(v0, v1, v2, buv);
+        /*tinybvh::bvhvec3 p = bvh_ray.O + bvh_ray.hit.t* bvh_ray.D;
+        rec.p = vec3(p.x, p.y, p.z);
+        rec.p = transformPoint(vec3(p.x, p.y, p.z), local_to_world_mat_);*/
 
         // Has to be in world space
         rec.t = (r.origin() - rec.p).length();
@@ -63,8 +66,8 @@ bool RTMeshTinyBVH::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const 
         rec.mesh_buf_manager = context_.mesh_buf_manager;
         rec.local_to_world_mat = local_to_world_mat_;
     }
-
-    return hit;
+    //return hit;
+    return bvh_ray.hit.t != 1e30f;
 }
 
 bool RTMeshTinyBVH::hit(const ray& r, interval ray_t, HitRecord& rec) const {

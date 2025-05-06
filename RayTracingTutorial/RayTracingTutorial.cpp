@@ -112,7 +112,7 @@ int main(int, char**) {
     std::unique_ptr<Statistics> statistics = std::make_unique<Statistics>();
 
     SceneType selected_scene_index = SceneType::OBJ_LOADER;
-    BVHTechnique chosen_technique_index = BVHTechnique::SAH;
+    BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
     MeshColor chosen_mesh_color = MeshColor::MATERIAL;
 
     Context context;

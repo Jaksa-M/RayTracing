@@ -42,7 +42,7 @@ public:
         matrix3x3 local_to_world = rec.local_to_world_mat.convertTo3x3().invert().transpose();
         shading_normal = unit_vector(local_to_world * shading_normal); // transform shading_normal to world space
 
-        if (normal_map_tex) {  // Apply normal map if specified
+        if (normal_map_tex) { // Apply normal map if specified
             // Tangent and bitangent calculation
             vec3 v0, v1, v2;
             getTriangleVertices(res_mesh_info, i0, i1, i2, v0, v1, v2);
@@ -80,6 +80,8 @@ public:
 
         scattered = ray(rec.p + rec.face_normal * 0.0001f, scatter_direction);
         attenuation = tex_->value(uv[0], uv[1]);
+        //attenuation = vec3(uv[0], uv[1], 0.0f);
+        //attenuation = shading_normal;
         return true;
     }
 
@@ -153,6 +155,7 @@ public:
         scattered = ray(rec.p + rec.face_normal * 0.0001f, reflected);
 
         attenuation = albedo_tex_->value(uv[0], uv[1]);
+        //attenuation = vec3(uv[0], uv[1], 0.0f);
         return (dot(scattered.direction(), normal) > 0);
     }
 
