@@ -199,7 +199,7 @@ bool ObjLoader::load(Context& context) {
                 }
             }
         }
-
+        vertex_normals.clear();
         if (vertex_normals.empty()) { // Case when index.normal_index = -1, we have to calculate vertex normals manually
             std::vector<vec3> temp_normals(vertices.size() / 3, vec3(0.0f));
             

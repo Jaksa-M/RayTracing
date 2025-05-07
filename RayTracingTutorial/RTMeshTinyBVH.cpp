@@ -39,9 +39,11 @@ bool RTMeshTinyBVH::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const 
     if (bvh_ray.hit.t != 1e30f) { // ray hit something
         rec.mat = mat_;
 
-        std::uint32_t i0 = res_mesh_info_.indices[bvh_ray.hit.prim * 3];
-        std::uint32_t i1 = res_mesh_info_.indices[bvh_ray.hit.prim * 3 + 1];
-        std::uint32_t i2 = res_mesh_info_.indices[bvh_ray.hit.prim * 3 + 2];
+        std::uint32_t triangle_index = bvh_ray.hit.prim * 3;
+
+        std::uint32_t i0 = res_mesh_info_.indices[triangle_index];
+        std::uint32_t i1 = res_mesh_info_.indices[triangle_index + 1];
+        std::uint32_t i2 = res_mesh_info_.indices[triangle_index + 2];
 
         vec3 v0, v1, v2;
         getTriangleVertices(res_mesh_info_, i0, i1, i2, v0, v1, v2);
@@ -62,7 +64,7 @@ bool RTMeshTinyBVH::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const 
 
         rec.mesh_handle = mesh_handle_;
         rec.buv = buv;
-        rec.triangle_index = bvh_ray.hit.prim * 3;
+        rec.triangle_index = triangle_index;
         rec.mesh_buf_manager = context_.mesh_buf_manager;
         rec.local_to_world_mat = local_to_world_mat_;
     }
