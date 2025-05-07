@@ -78,10 +78,9 @@ public:
         if (scatter_direction.near_zero())
             (type_of_normal == false) ? scatter_direction = rec.face_normal : scatter_direction = shading_normal;
 
+        // Adding offset to avoid self intersection because of rounding errors
         scattered = ray(rec.p + rec.face_normal * 0.0001f, scatter_direction);
         attenuation = tex_->value(uv[0], uv[1]);
-        //attenuation = vec3(uv[0], uv[1], 0.0f);
-        //attenuation = shading_normal;
         return true;
     }
 
@@ -155,7 +154,6 @@ public:
         scattered = ray(rec.p + rec.face_normal * 0.0001f, reflected);
 
         attenuation = albedo_tex_->value(uv[0], uv[1]);
-        //attenuation = vec3(uv[0], uv[1], 0.0f);
         return (dot(scattered.direction(), normal) > 0);
     }
 
