@@ -71,7 +71,7 @@ public:
             shading_normal = unit_vector(TBN * tangent_normal);
         }
 
-        bool type_of_normal = true;
+        bool type_of_normal = true; // TODO REMOVE ME
         vec3 normal = (type_of_normal == false) ? rec.face_normal : shading_normal;
         auto scatter_direction = unit_vector(normal + random_unit_vector());
         // Catch degenerate scatter direction

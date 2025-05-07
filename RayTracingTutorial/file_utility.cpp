@@ -14,8 +14,7 @@
 void loadPresetsFromFile(const std::string& file, std::vector<CameraPreset>& camera_presets) {
     std::ifstream file_stream(file);
     if (!file_stream) {
-        std::cerr << "Error: Could not open camera file " << file << std::endl;
-        exit(-1);
+        return;
     }
 
     camera_presets.clear();
@@ -80,6 +79,7 @@ void loadPresetsFromFile(const std::string& file, std::vector<CameraPreset>& cam
 }
 
 void addPresetToFile(const std::string& camera_file, CameraPreset& preset) {
+    std::filesystem::create_directories(std::filesystem::path(camera_file).parent_path());
     std::ofstream file(camera_file, std::ios::app);  // Append mode
     if (!file) {
         std::cerr << "Error: Could not open file " << camera_file << std::endl;

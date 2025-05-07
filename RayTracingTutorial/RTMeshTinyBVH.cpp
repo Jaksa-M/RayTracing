@@ -2,7 +2,6 @@
 
 #include "RTMeshTinyBVH.h"
 
-
 #include <GLFW/glfw3.h>
 #include <algorithm>
 #include <queue>
@@ -19,7 +18,26 @@
 
 RTMeshTinyBVH::RTMeshTinyBVH(Context& context, MeshHandle mesh_handle, std::shared_ptr<Material> mat)
     : context_(context), mesh_handle_(mesh_handle), mat_(mat) {
-    update();
+
+    // TODO WHY WAS THIS ON UPDATE?????
+
+    res_mesh_info_.vertices = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::Position);
+    res_mesh_info_.indices = context_.mesh_buf_manager->getIndices(mesh_handle_);
+    res_mesh_info_.vertex_normals = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::Normal);
+    res_mesh_info_.uv = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::UV);
+
+    // Build tinyBVH tree
+    bvh_vertices.clear();
+    bvh_vertices.reserve(res_mesh_info_.vertices.size() / 3);
+
+    for (size_t i = 0; i < res_mesh_info_.vertices.size(); i += 3) {
+        bvh_vertices.push_back(tinybvh::bvhvec4{
+            res_mesh_info_.vertices[i + 0], res_mesh_info_.vertices[i + 1], res_mesh_info_.vertices[i + 2],
+            0.0f  // last field is not used, it's just for alignment
+        });
+    }
+    bvh_ = std::make_unique<tinybvh::BVH>();
+    bvh_->Build(bvh_vertices.data(), res_mesh_info_.indices.data(), static_cast<uint32_t>(res_mesh_info_.indices.size() / 3));
 }
 
 bool RTMeshTinyBVH::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
@@ -31,12 +49,12 @@ bool RTMeshTinyBVH::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const 
     // Create BVH-compatible ray
     tinybvh::bvhvec3 O = tinybvh::bvhvec3(changed_ray.origin().x(), changed_ray.origin().y(), changed_ray.origin().z());
     tinybvh::bvhvec3 D = tinybvh::bvhvec3(changed_ray.direction().x(), changed_ray.direction().y(), changed_ray.direction().z());
-    tinybvh::Ray bvh_ray(O, D, 1e30f);
+    tinybvh::Ray bvh_ray(O, D);
 
     //bool hit = bvh_->IsOccluded(bvh_ray);
 
     bvh_->Intersect(bvh_ray);
-    if (bvh_ray.hit.t != 1e30f) { // ray hit something
+    if (bvh_ray.hit.t != BVH_FAR && bvh_ray.hit.t > 0.0f) {  // ray hit something
         rec.mat = mat_;
 
         std::uint32_t triangle_index = bvh_ray.hit.prim * 3;
@@ -67,16 +85,19 @@ bool RTMeshTinyBVH::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const 
         rec.triangle_index = triangle_index;
         rec.mesh_buf_manager = context_.mesh_buf_manager;
         rec.local_to_world_mat = local_to_world_mat_;
+
+        return rec.t < ray_t.max;
     }
-    //return hit;
-    return bvh_ray.hit.t != 1e30f;
+    return false;
 }
 
 bool RTMeshTinyBVH::hit(const ray& r, interval ray_t, HitRecord& rec) const {
+
+    //TODO WRONG BOUNDS!
     // Skipping bounds that can`t produce closer t (looking in world space, where multiple BVH's are)
-    float closest_side;  // not even used for root node, but have to leave it for correct function call
-    if (!intersectAABB(r, ray_t.max, aabb_min_, aabb_max_, closest_side) || closest_side > ray_t.max)
-        return false;
+    //float closest_side;  // not even used for root node, but have to leave it for correct function call
+    //if (!intersectAABB(r, ray_t.max, aabb_min_, aabb_max_, closest_side) || closest_side > ray_t.max)
+    //    return false;
 
     return hit_BVH(r, ray_t, rec);
 }
@@ -93,25 +114,7 @@ void RTMeshTinyBVH::setTransformationMatrix(const matrix4x4& mat) {
     transformAABB(aabb_min_, aabb_max_, local_to_world_mat_);  // transforms aabb from local to world space
 }
 
-void RTMeshTinyBVH::update() {
-    res_mesh_info_.vertices = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::Position);
-    res_mesh_info_.indices = context_.mesh_buf_manager->getIndices(mesh_handle_);
-    res_mesh_info_.vertex_normals = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::Normal);
-    res_mesh_info_.uv = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::UV);
-
-    // Build tinyBVH tree
-    bvh_vertices.clear();
-    bvh_vertices.reserve(res_mesh_info_.vertices.size() / 3);
-
-    for (size_t i = 0; i < res_mesh_info_.vertices.size(); i += 3) {
-        bvh_vertices.push_back(tinybvh::bvhvec4{
-            res_mesh_info_.vertices[i + 0], res_mesh_info_.vertices[i + 1], res_mesh_info_.vertices[i + 2],
-            0.0f  // last field is not used, it's just for alignment
-        });
-    }
-    bvh_ = std::make_unique<tinybvh::BVH>();
-    bvh_->Build(bvh_vertices.data(), res_mesh_info_.indices.data(), static_cast<uint32_t>(res_mesh_info_.indices.size() / 3));
-}
+void RTMeshTinyBVH::update() {}
 
 int RTMeshTinyBVH::getTriangleCount() const {
     return res_mesh_info_.indices.size() / 3;
