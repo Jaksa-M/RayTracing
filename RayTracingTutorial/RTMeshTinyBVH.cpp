@@ -2,9 +2,6 @@
 
 #include "RTMeshTinyBVH.h"
 
-#include <GLFW/glfw3.h>
-#include <algorithm>
-#include <queue>
 #include "bvh_manager.h"
 #include "context.h"
 #include "gui_settings.h"
@@ -15,6 +12,7 @@
 #include "ray.h"
 #include "transformations.h"
 #include "vec3.h"
+#include "matrix.h"
 
 RTMeshTinyBVH::RTMeshTinyBVH(Context& context, MeshHandle mesh_handle, std::shared_ptr<Material> mat)
     : context_(context), mesh_handle_(mesh_handle), mat_(mat)
@@ -22,20 +20,25 @@ RTMeshTinyBVH::RTMeshTinyBVH(Context& context, MeshHandle mesh_handle, std::shar
     update();
 
     // Build tinyBVH tree
-    bvh_vertices.clear();
-    bvh_vertices.reserve(res_mesh_info_.vertices.size() / 3);
+    bvh_vertices_.clear();
+    bvh_vertices_.reserve(res_mesh_info_.vertices.size() / 3);
 
     for (size_t i = 0; i < res_mesh_info_.vertices.size(); i += 3) {
-        bvh_vertices.push_back(tinybvh::bvhvec4{
+        bvh_vertices_.push_back(tinybvh::bvhvec4{
             res_mesh_info_.vertices[i + 0], res_mesh_info_.vertices[i + 1], res_mesh_info_.vertices[i + 2],
             0.0f  // last field is not used, it's just for alignment
         });
     }
     bvh_ = std::make_unique<tinybvh::BVH>();
-    bvh_->Build(bvh_vertices.data(), res_mesh_info_.indices.data(), static_cast<uint32_t>(res_mesh_info_.indices.size() / 3));
+    bvh_->Build(bvh_vertices_.data(), res_mesh_info_.indices.data(), static_cast<uint32_t>(res_mesh_info_.indices.size() / 3));
 }
 
-bool RTMeshTinyBVH::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
+bool RTMeshTinyBVH::hit(const ray& r, interval ray_t, HitRecord& rec) const {
+    // Skipping bounds that can`t produce closer t (looking in world space, where multiple BVH's are)
+    float closest_side;  // not even used for root node, but have to leave it for correct function call
+    if (!intersectAABB(r, ray_t.max, aabb_min_, aabb_max_, closest_side) || closest_side > ray_t.max)
+        return false;
+
     ray changed_ray = r;  // Create new ray that will be changing
     // Apply inversed transformation to the new ray.
     changed_ray.setOrigin(transformPoint(r.origin(), world_to_local_mat_));
@@ -47,7 +50,7 @@ bool RTMeshTinyBVH::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const 
     tinybvh::Ray bvh_ray(O, D);
 
     bvh_->Intersect(bvh_ray);
-    if (bvh_ray.hit.t != BVH_FAR) { // ray hit something
+    if (bvh_ray.hit.t != BVH_FAR) {  // ray hit something
         rec.mat = mat_;
 
         std::uint32_t triangle_index = bvh_ray.hit.prim * 3;
@@ -79,15 +82,6 @@ bool RTMeshTinyBVH::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const 
         return rec.t < ray_t.max;
     }
     return false;
-}
-
-bool RTMeshTinyBVH::hit(const ray& r, interval ray_t, HitRecord& rec) const {
-    // Skipping bounds that can`t produce closer t (looking in world space, where multiple BVH's are)
-    float closest_side;  // not even used for root node, but have to leave it for correct function call
-    if (!intersectAABB(r, ray_t.max, aabb_min_, aabb_max_, closest_side) || closest_side > ray_t.max)
-        return false;
-
-    return hit_BVH(r, ray_t, rec);
 }
 
 MeshHandle RTMeshTinyBVH::getMeshHandle() const {

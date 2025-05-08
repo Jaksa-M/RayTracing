@@ -15,6 +15,8 @@
 #include "context.h"
 #include <chrono> // Time
 #include "texture_loader.h"
+#include "RTMesh.h"
+#include "RTMeshTinyBVH.h"
 
 SceneObjLoader::SceneObjLoader() {}
 
@@ -57,13 +59,13 @@ void SceneObjLoader::initialize() {
     for (std::uint32_t i = 0; i < meshes.size(); i++) {
         if (materials.empty() == false) {
             if (context.settings->use_tiny_bvh) {
-                tinybvh_rt_meshes_.push_back(std::make_shared<RTMeshTinyBVH>(context, meshes[i], materials[materials_indices[i]]));
+                rt_meshes_.push_back(std::make_shared<RTMeshTinyBVH>(context, meshes[i], materials[materials_indices[i]]));
             } else {
                 rt_meshes_.push_back(std::make_shared<RTMesh>(context, meshes[i], materials[materials_indices[i]]));
             }
         } else { // if there are no materials specified in obj file
             if (context.settings->use_tiny_bvh) {
-                tinybvh_rt_meshes_.push_back(std::make_shared<RTMeshTinyBVH>(context, meshes[i], mat_green));
+                rt_meshes_.push_back(std::make_shared<RTMeshTinyBVH>(context, meshes[i], mat_green));
             } else {
                 rt_meshes_.push_back(std::make_shared<RTMesh>(context, meshes[i], mat_green));
             }
@@ -74,16 +76,9 @@ void SceneObjLoader::initialize() {
     matrix4x4 m = transformation::create_scaling_matrix(0.3f, 0.3f, 0.3f); // erato
     //matrix4x4 m = transformation::create_scaling_matrix(0.01f, 0.01f, 0.01f); // crytek_sponza
 
-    if (context.settings->use_tiny_bvh) {
-        for (std::uint32_t i = 0; i < tinybvh_rt_meshes_.size(); i++) {
-            tinybvh_rt_meshes_[i]->setTransformationMatrix(m);
-            world_.add(tinybvh_rt_meshes_[i]);
-        }
-    } else {
-        for (std::uint32_t i = 0; i < rt_meshes_.size(); i++) {
-            rt_meshes_[i]->setTransformationMatrix(m);
-            world_.add(rt_meshes_[i]);
-        }
+    for (std::uint32_t i = 0; i < rt_meshes_.size(); i++) {
+        rt_meshes_[i]->setTransformationMatrix(m);
+        world_.add(rt_meshes_[i]);
     }
     
     auto end_time = std::chrono::high_resolution_clock::now();  // End timing
@@ -148,6 +143,5 @@ Camera& SceneObjLoader::getActiveCamera() {
 SceneObjLoader::~SceneObjLoader() {
     world_.clear();
     rt_meshes_.clear();
-    tinybvh_rt_meshes_.clear();
     bounding_boxes_.clear();
 }
