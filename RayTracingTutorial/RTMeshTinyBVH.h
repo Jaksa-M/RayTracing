@@ -3,7 +3,6 @@
 
 #include "hittable.h"
 #include <memory>
-#include "bvh_builder.h"
 #include "camera.h"
 #include "types.h"
 #include "mesh_buffer_manager.h"
