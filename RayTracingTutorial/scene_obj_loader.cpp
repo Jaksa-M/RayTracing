@@ -43,9 +43,9 @@ void SceneObjLoader::initialize() {
 
     auto start_time = std::chrono::high_resolution_clock::now(); // Start timing
 
-    //obj_loader_ = std::make_unique<ObjLoader>("Resources/erato/erato.obj");
+    obj_loader_ = std::make_unique<ObjLoader>("Resources/erato/erato.obj");
     //obj_loader_ = std::make_unique<ObjLoader>("Resources/teapot/teapot.obj");
-    obj_loader_ = std::make_unique<ObjLoader>("Resources/crytek_sponza/sponza.obj");
+    //obj_loader_ = std::make_unique<ObjLoader>("Resources/crytek_sponza/sponza.obj");
     //obj_loader_ = std::make_unique<ObjLoader>("Resources/CornellBox/CornellBox-Sphere.obj");
     if (!obj_loader_->load(context)) {
         std::cout << "ERROR: custom mesh failed to load" << std::endl;
@@ -71,8 +71,8 @@ void SceneObjLoader::initialize() {
     }
     //matrix4x4 m = transformation::create_scaling_matrix(0.02f, 0.02f, 0.02f); // teapot
     //matrix4x4 m = transformation::create_scaling_matrix(1.0f, 1.0f, 1.0f); // sponza
-    //matrix4x4 m = transformation::create_scaling_matrix(0.3f, 0.3f, 0.3f); // erato
-    matrix4x4 m = transformation::create_scaling_matrix(0.01f, 0.01f, 0.01f); // crytek_sponza
+    matrix4x4 m = transformation::create_scaling_matrix(0.3f, 0.3f, 0.3f); // erato
+    //matrix4x4 m = transformation::create_scaling_matrix(0.01f, 0.01f, 0.01f); // crytek_sponza
 
     if (context.settings->use_tiny_bvh) {
         for (std::uint32_t i = 0; i < tinybvh_rt_meshes_.size(); i++) {

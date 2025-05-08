@@ -47,7 +47,7 @@ bool RTMeshTinyBVH::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const 
     tinybvh::Ray bvh_ray(O, D);
 
     bvh_->Intersect(bvh_ray);
-    if (bvh_ray.hit.t != BVH_FAR && bvh_ray.hit.t > 0.0f) { // ray hit something
+    if (bvh_ray.hit.t != BVH_FAR) { // ray hit something
         rec.mat = mat_;
 
         std::uint32_t triangle_index = bvh_ray.hit.prim * 3;
