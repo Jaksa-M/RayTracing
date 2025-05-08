@@ -18,7 +18,8 @@ bool hittable_list::hit(const ray& r, interval ray_t, HitRecord& rec) const {
     temp_rec.t = std::numeric_limits<float>::max();
 
     for (const auto& object : objects_) {
-        if (object->hit(r, interval(ray_t.min, closest_so_far), temp_rec)) {
+        if (object->hit(r, interval(ray_t.min, closest_so_far), temp_rec) && temp_rec.t < closest_so_far) {
+        //if (object->hit(r, interval(ray_t.min, closest_so_far), temp_rec)) {
             // Reducing the ray_t.max if there is closer object in world space (to reduce unnecessary checks)
             hit_anything = true;
             closest_so_far = temp_rec.t;

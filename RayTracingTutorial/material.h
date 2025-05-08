@@ -42,7 +42,7 @@ public:
         matrix3x3 local_to_world = rec.local_to_world_mat.convertTo3x3().invert().transpose();
         shading_normal = unit_vector(local_to_world * shading_normal); // transform shading_normal to world space
 
-        if (normal_map_tex) {  // Apply normal map if specified
+        if (normal_map_tex) { // Apply normal map if specified
             // Tangent and bitangent calculation
             vec3 v0, v1, v2;
             getTriangleVertices(res_mesh_info, i0, i1, i2, v0, v1, v2);
@@ -71,13 +71,14 @@ public:
             shading_normal = unit_vector(TBN * tangent_normal);
         }
 
-        bool type_of_normal = true;
+        bool type_of_normal = true; // TODO REMOVE ME
         vec3 normal = (type_of_normal == false) ? rec.face_normal : shading_normal;
         auto scatter_direction = unit_vector(normal + random_unit_vector());
         // Catch degenerate scatter direction
         if (scatter_direction.near_zero())
             (type_of_normal == false) ? scatter_direction = rec.face_normal : scatter_direction = shading_normal;
 
+        // Adding offset to avoid self intersection because of rounding errors
         scattered = ray(rec.p + rec.face_normal * 0.0001f, scatter_direction);
         attenuation = tex_->value(uv[0], uv[1]);
         return true;

@@ -237,7 +237,10 @@ bool ObjLoader::load(Context& context) {
         attributes.push_back(Attribute(AttributeType::UV, uv));
 
         std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
-        context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
+
+        if (!context.settings->use_tiny_bvh) {
+            context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
+        }
         meshes_.push_back(mesh_handle);
     }
     return true;

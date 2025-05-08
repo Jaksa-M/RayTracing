@@ -34,6 +34,9 @@
     <Filter Include="External Libraries\stb_image">
       <UniqueIdentifier>{465f1a90-b903-4dc5-a4db-077b085e24da}</UniqueIdentifier>
     </Filter>
+    <Filter Include="External Libraries\tinybvh">
+      <UniqueIdentifier>{aa245ad3-c077-4d56-a8b4-0c8e1a1b02da}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RayTracingTutorial.cpp">
@@ -124,6 +127,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="scene_material_testing.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RTMeshTinyBVH.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -277,6 +283,12 @@
     </ClInclude>
     <ClInclude Include="main_utility.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RTMeshTinyBVH.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExternalLibraries\tinybvh\tiny_bvh.h">
+      <Filter>External Libraries\tinybvh</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

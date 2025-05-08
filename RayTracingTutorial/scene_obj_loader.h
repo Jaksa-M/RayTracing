@@ -2,7 +2,7 @@
 #define SCENE_OBJ_LOADER_H
 
 #include <memory.h>
-#include "RTMesh.h"
+#include "hittable.h"
 #include "mesh.h"
 #include "obj_loader.h"
 #include "scene.h"
@@ -28,7 +28,7 @@ class SceneObjLoader : public Scene {
     std::unique_ptr<MeshBufferManager> mesh_buf_manager_;
     std::unique_ptr<BVHManager> bvh_manager_;
 
-    std::vector<std::shared_ptr<RTMesh>> rt_meshes_;
+    std::vector<std::shared_ptr<hittable>> rt_meshes_;
     std::unique_ptr<ObjLoader> obj_loader_;
     std::shared_ptr<Texture> background_texture_;
     std::shared_ptr<Texture> erato_texture_;
