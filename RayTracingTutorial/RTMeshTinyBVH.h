@@ -2,21 +2,19 @@
 #define RT_MESH_TINY_BVH_H
 
 #include "hittable.h"
-#include <span>
 #include <memory>
 #include "bvh_builder.h"
 #include "camera.h"
 #include "types.h"
 #include "mesh_buffer_manager.h"
-#include "tinybvh/tiny_bvh.h"
 
 struct Context;
 class matrix4x4;
-//namespace tinybvh { struct BVH; }
 
 class RTMeshTinyBVH : public hittable {
    public:
     RTMeshTinyBVH(Context& context, MeshHandle mesh_handle, std::shared_ptr<Material> mat);
+    ~RTMeshTinyBVH();
 
     std::string object_type() const override { return "cube triangle mesh"; }
 
@@ -39,8 +37,10 @@ class RTMeshTinyBVH : public hittable {
     vec3 aabb_max_;
 
     ResolvedMeshInfo res_mesh_info_;
-    std::unique_ptr<tinybvh::BVH> bvh_;
-    std::vector<tinybvh::bvhvec4> bvh_vertices_;
+
+    // PIMPL - a way to forward declare and avoid having "#include tinybvh.h" in .h file
+    class Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 #endif

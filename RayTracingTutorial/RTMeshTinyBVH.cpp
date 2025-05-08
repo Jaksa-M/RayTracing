@@ -1,7 +1,7 @@
 #define TINYBVH_IMPLEMENTATION
 
 #include "RTMeshTinyBVH.h"
-
+#include "tinybvh/tiny_bvh.h"
 #include "bvh_manager.h"
 #include "context.h"
 #include "gui_settings.h"
@@ -14,24 +14,33 @@
 #include "vec3.h"
 #include "matrix.h"
 
+class RTMeshTinyBVH::Impl {
+   public:
+    std::unique_ptr<tinybvh::BVH> bvh_;
+    std::vector<tinybvh::bvhvec4> bvh_vertices_;
+};
+
 RTMeshTinyBVH::RTMeshTinyBVH(Context& context, MeshHandle mesh_handle, std::shared_ptr<Material> mat)
     : context_(context), mesh_handle_(mesh_handle), mat_(mat)
 {
+    impl_ = std::make_unique<Impl>();
     update();
 
     // Build tinyBVH tree
-    bvh_vertices_.clear();
-    bvh_vertices_.reserve(res_mesh_info_.vertices.size() / 3);
+    impl_->bvh_vertices_.clear();
+    impl_->bvh_vertices_.reserve(res_mesh_info_.vertices.size() / 3);
 
     for (size_t i = 0; i < res_mesh_info_.vertices.size(); i += 3) {
-        bvh_vertices_.push_back(tinybvh::bvhvec4{
+        impl_->bvh_vertices_.push_back(tinybvh::bvhvec4{
             res_mesh_info_.vertices[i + 0], res_mesh_info_.vertices[i + 1], res_mesh_info_.vertices[i + 2],
             0.0f  // last field is not used, it's just for alignment
         });
     }
-    bvh_ = std::make_unique<tinybvh::BVH>();
-    bvh_->Build(bvh_vertices_.data(), res_mesh_info_.indices.data(), static_cast<uint32_t>(res_mesh_info_.indices.size() / 3));
+    impl_->bvh_ = std::make_unique<tinybvh::BVH>();
+    impl_->bvh_->Build(impl_->bvh_vertices_.data(), res_mesh_info_.indices.data(), static_cast<uint32_t>(res_mesh_info_.indices.size() / 3));
 }
+
+RTMeshTinyBVH::~RTMeshTinyBVH() {}
 
 bool RTMeshTinyBVH::hit(const ray& r, interval ray_t, HitRecord& rec) const {
     // Skipping bounds that can`t produce closer t (looking in world space, where multiple BVH's are)
@@ -49,7 +58,7 @@ bool RTMeshTinyBVH::hit(const ray& r, interval ray_t, HitRecord& rec) const {
     tinybvh::bvhvec3 D = tinybvh::bvhvec3(changed_ray.direction().x(), changed_ray.direction().y(), changed_ray.direction().z());
     tinybvh::Ray bvh_ray(O, D);
 
-    bvh_->Intersect(bvh_ray);
+    impl_->bvh_->Intersect(bvh_ray);
     if (bvh_ray.hit.t != BVH_FAR) {  // ray hit something
         rec.mat = mat_;
 
@@ -91,8 +100,8 @@ MeshHandle RTMeshTinyBVH::getMeshHandle() const {
 void RTMeshTinyBVH::setTransformationMatrix(const matrix4x4& mat) {
     hittable::setTransformationMatrix(mat);  // Call base class function
 
-    aabb_min_ = vec3(bvh_->aabbMin.x, bvh_->aabbMin.y, bvh_->aabbMin.z);
-    aabb_max_ = vec3(bvh_->aabbMax.x, bvh_->aabbMax.y, bvh_->aabbMax.z);
+    aabb_min_ = vec3(impl_->bvh_->aabbMin.x, impl_->bvh_->aabbMin.y, impl_->bvh_->aabbMin.z);
+    aabb_max_ = vec3(impl_->bvh_->aabbMax.x, impl_->bvh_->aabbMax.y, impl_->bvh_->aabbMax.z);
     transformAABB(aabb_min_, aabb_max_, local_to_world_mat_);  // transforms aabb from local to world space
 }
 
