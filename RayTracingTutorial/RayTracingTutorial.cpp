@@ -411,6 +411,7 @@ int main(int, char**) {
         Camera& cam = active_scene->getActiveCamera();
         cam.render(active_scene->getWorld(), image_data_acc, *(context.settings));
 
+
         // Filling image_data
         image_data.resize(display_w * display_h * 3);
         convertAccumulatedToImageData(image_data, image_data_acc, display_w, display_h);

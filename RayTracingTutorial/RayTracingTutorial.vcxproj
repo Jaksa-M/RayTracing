@@ -101,6 +101,7 @@
     <ClCompile Include="ExternalLibraries\imgui\imgui_widgets.cpp" />
     <ClCompile Include="file_utility.cpp" />
     <ClCompile Include="hittable_list.cpp" />
+    <ClCompile Include="hittable_list_tinybvh.cpp" />
     <ClCompile Include="interval.cpp" />
     <ClCompile Include="matrix.cpp" />
     <ClCompile Include="mesh.cpp" />
@@ -145,6 +146,7 @@
     <ClInclude Include="gui_settings.h" />
     <ClInclude Include="hittable.h" />
     <ClInclude Include="hittable_list.h" />
+    <ClInclude Include="hittable_list_tinybvh.h" />
     <ClInclude Include="interval.h" />
     <ClInclude Include="main_utility.h" />
     <ClInclude Include="material.h" />

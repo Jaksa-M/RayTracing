@@ -3,25 +3,20 @@
 
 #include "hittable.h"
 
-class hittable_list : public hittable {
-public:
-    std::vector<std::shared_ptr<hittable>> objects_;
+class HittableList : public Hittable {
+   public:
+    std::vector<std::shared_ptr<Hittable>> objects;
 
-    hittable_list();
-    hittable_list(std::shared_ptr<hittable> object);
+    HittableList();
+    HittableList(std::shared_ptr<Hittable> object);
 
     void clear();
 
-    void add(std::shared_ptr<hittable> object);
+    void add(std::shared_ptr<Hittable> object);
 
     bool hit(const ray& r, interval ray_t, HitRecord& rec) const override;
 
-    void update() {
-        for (int i = 0; i < objects_.size(); i++) {
-            objects_[i]->update();
-        }
-    }
-
+    void update();
 };
 
 #endif

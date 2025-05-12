@@ -15,7 +15,7 @@
 #include "matrix.h"
 
 class RTMeshTinyBVH::Impl {
-   public:
+public:
     std::unique_ptr<tinybvh::BVH> bvh_;
     std::vector<tinybvh::bvhvec4> bvh_vertices_;
 };
@@ -59,7 +59,7 @@ bool RTMeshTinyBVH::hit(const ray& r, interval ray_t, HitRecord& rec) const {
     tinybvh::Ray bvh_ray(O, D);
 
     impl_->bvh_->Intersect(bvh_ray);
-    if (bvh_ray.hit.t != BVH_FAR) {  // ray hit something
+    if (bvh_ray.hit.t != BVH_FAR) { // ray hit something
         rec.mat = mat_;
 
         std::uint32_t triangle_index = bvh_ray.hit.prim * 3;
@@ -98,7 +98,7 @@ MeshHandle RTMeshTinyBVH::getMeshHandle() const {
 }
 
 void RTMeshTinyBVH::setTransformationMatrix(const matrix4x4& mat) {
-    hittable::setTransformationMatrix(mat);  // Call base class function
+    Hittable::setTransformationMatrix(mat);  // Call base class function
 
     aabb_min_ = vec3(impl_->bvh_->aabbMin.x, impl_->bvh_->aabbMin.y, impl_->bvh_->aabbMin.z);
     aabb_max_ = vec3(impl_->bvh_->aabbMax.x, impl_->bvh_->aabbMax.y, impl_->bvh_->aabbMax.z);
@@ -114,4 +114,43 @@ void RTMeshTinyBVH::update() {
 
 int RTMeshTinyBVH::getTriangleCount() const {
     return res_mesh_info_.indices.size() / 3;
+}
+
+bool RTMeshTinyBVH::fillHitRecord(const ray& r, tinybvh::Ray& tinybvh_ray, HitRecord& rec) {
+    if (tinybvh_ray.hit.t != BVH_FAR) {  // ray hit something
+        rec.mat = mat_;
+
+        std::uint32_t triangle_index = tinybvh_ray.hit.prim * 3;
+
+        std::uint32_t i0 = res_mesh_info_.indices[triangle_index];
+        std::uint32_t i1 = res_mesh_info_.indices[triangle_index + 1];
+        std::uint32_t i2 = res_mesh_info_.indices[triangle_index + 2];
+
+        vec3 v0, v1, v2;
+        getTriangleVertices(res_mesh_info_, i0, i1, i2, v0, v1, v2);
+        v0 = local_to_world_mat_ * v0;
+        v1 = local_to_world_mat_ * v1;
+        v2 = local_to_world_mat_ * v2;
+        vec3 triangle_normal = unit_vector(cross(v1 - v0, v2 - v0));
+        rec.set_face_normal(r, triangle_normal);
+
+        vec2 buv = vec2(tinybvh_ray.hit.v, 1 - tinybvh_ray.hit.u - tinybvh_ray.hit.v);
+        rec.p = barycentricInterpolate(v0, v1, v2, buv);
+
+        // Has to be in world space
+        rec.t = (r.origin() - rec.p).length();
+
+        rec.mesh_handle = mesh_handle_;
+        rec.buv = buv;
+        rec.triangle_index = triangle_index;
+        rec.mesh_buf_manager = context_.mesh_buf_manager;
+        rec.local_to_world_mat = local_to_world_mat_;
+
+        return true;
+    }
+    return false;
+}
+
+tinybvh::BVH* RTMeshTinyBVH::getBVH() {
+    return impl_->bvh_.get();
 }

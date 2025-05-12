@@ -45,9 +45,9 @@ void SceneObjLoader::initialize() {
 
     auto start_time = std::chrono::high_resolution_clock::now(); // Start timing
 
-    obj_loader_ = std::make_unique<ObjLoader>("Resources/erato/erato.obj");
+    //obj_loader_ = std::make_unique<ObjLoader>("Resources/erato/erato.obj");
     //obj_loader_ = std::make_unique<ObjLoader>("Resources/teapot/teapot.obj");
-    //obj_loader_ = std::make_unique<ObjLoader>("Resources/crytek_sponza/sponza.obj");
+    obj_loader_ = std::make_unique<ObjLoader>("Resources/crytek_sponza/sponza.obj");
     //obj_loader_ = std::make_unique<ObjLoader>("Resources/CornellBox/CornellBox-Sphere.obj");
     if (!obj_loader_->load(context)) {
         std::cout << "ERROR: custom mesh failed to load" << std::endl;
@@ -73,12 +73,20 @@ void SceneObjLoader::initialize() {
     }
     //matrix4x4 m = transformation::create_scaling_matrix(0.02f, 0.02f, 0.02f); // teapot
     //matrix4x4 m = transformation::create_scaling_matrix(1.0f, 1.0f, 1.0f); // sponza
-    matrix4x4 m = transformation::create_scaling_matrix(0.3f, 0.3f, 0.3f); // erato
-    //matrix4x4 m = transformation::create_scaling_matrix(0.01f, 0.01f, 0.01f); // crytek_sponza
+    //matrix4x4 m = transformation::create_scaling_matrix(0.3f, 0.3f, 0.3f); // erato
+    matrix4x4 m = transformation::create_scaling_matrix(0.01f, 0.01f, 0.01f); // crytek_sponza
 
-    for (std::uint32_t i = 0; i < rt_meshes_.size(); i++) {
-        rt_meshes_[i]->setTransformationMatrix(m);
-        world_.add(rt_meshes_[i]);
+    if (context.settings->use_tiny_bvh) {
+        for (std::uint32_t i = 0; i < rt_meshes_.size(); i++) {
+            rt_meshes_[i]->setTransformationMatrix(m);
+            tinybvh_world_.add(std::dynamic_pointer_cast<RTMeshTinyBVH>(rt_meshes_[i]));
+        }
+        tinybvh_world_.buildTLAS();
+    } else {
+        for (std::uint32_t i = 0; i < rt_meshes_.size(); i++) {
+            rt_meshes_[i]->setTransformationMatrix(m);
+            world_.add(rt_meshes_[i]);
+        }
     }
     
     auto end_time = std::chrono::high_resolution_clock::now();  // End timing
@@ -86,10 +94,19 @@ void SceneObjLoader::initialize() {
 
     std::cout << "Execution time: " << elapsed.count() << " seconds" << std::endl;
 
-    context.statistics->rt_mesh_cnt = world_.objects_.size();
+    if (context.settings->use_tiny_bvh) {
+        context.statistics->rt_mesh_cnt = tinybvh_world_.objects.size();
 
-    for (int i = 0; i < world_.objects_.size(); i++) {
-        context.statistics->triangle_cnt += world_.objects_[i]->getTriangleCount();
+        for (int i = 0; i < tinybvh_world_.objects.size(); i++) {
+            context.statistics->triangle_cnt += tinybvh_world_.objects[i]->getTriangleCount();
+        }
+    }
+    else {
+        context.statistics->rt_mesh_cnt = world_.objects.size();
+
+        for (int i = 0; i < world_.objects.size(); i++) {
+            context.statistics->triangle_cnt += world_.objects[i]->getTriangleCount();
+        }
     }
 
     initShader();
@@ -98,12 +115,14 @@ void SceneObjLoader::initialize() {
 void SceneObjLoader::update(int display_w, int display_h) {
     if (prev_BVH_technique_ != context.settings->BVH_technique) {
         world_.clear();
+        tinybvh_world_.clear();
         initialize();
     }
     cameras_[active_camera_]->image_width = display_w;
     cameras_[active_camera_]->image_height = display_h;
     // Update RTMesh vertices/indices/uvs/normals once per frame
-    world_.update();
+    if (context.settings->use_tiny_bvh) tinybvh_world_.update();
+    else world_.update();
 }
 
 void SceneObjLoader::initShader() {
@@ -112,10 +131,10 @@ void SceneObjLoader::initShader() {
 
 void SceneObjLoader::drawBVH() {
     if (context.settings->selected_option != -1) {
-        bounding_boxes_.resize(world_.objects_.size());
+        bounding_boxes_.resize(world_.objects.size());
 
-        for (int i = 0; i < world_.objects_.size(); i++) {  // Drawing BVH tree or leaves
-            auto& object = world_.objects_[i];
+        for (int i = 0; i < world_.objects.size(); i++) {  // Drawing BVH tree or leaves
+            auto& object = world_.objects[i];
             RTMesh* rtMesh = dynamic_cast<RTMesh*>(object.get());
 
             if (rtMesh) {                                      // If the cast succeeds, the object is of type RTMesh

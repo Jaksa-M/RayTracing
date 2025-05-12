@@ -109,10 +109,10 @@ void SceneCornellBox::initShader() {
 
 void SceneCornellBox::drawBVH() {
 	if (context.settings->selected_option != -1) {
-		bounding_boxes_.resize(world_.objects_.size());
+		bounding_boxes_.resize(world_.objects.size());
 
-		for (int i = 0; i < world_.objects_.size(); i++) { // Drawing BVH tree or leaves
-			auto& object = world_.objects_[i];
+		for (int i = 0; i < world_.objects.size(); i++) { // Drawing BVH tree or leaves
+			auto& object = world_.objects[i];
 			RTMesh* rtMesh = dynamic_cast<RTMesh*>(object.get());
 
 			if (rtMesh) { // If the cast succeeds, the object is of type RTMesh

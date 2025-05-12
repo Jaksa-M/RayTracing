@@ -12,8 +12,8 @@
 
 struct Context;
 
-class RTMesh: public hittable {
-public:
+class RTMesh : public Hittable {
+   public:
     RTMesh(Context& context, MeshHandle mesh_handle, std::shared_ptr<Material> mat);
 
     std::string object_type() const override { return "cube triangle mesh"; }
