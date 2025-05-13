@@ -37,6 +37,8 @@ class SceneObjLoader : public Scene {
     std::vector<std::unique_ptr<Mesh>> bounding_boxes_; // 1 bounding box for each object that will get translated while drawing
 
     BVHTechnique prev_BVH_technique_; // Used for checking whether BVH techique has changed
+
+    void add_mesh(MeshHandle mesh_handle, std::shared_ptr<Material> material, matrix4x4& m);
 };
 
 #endif

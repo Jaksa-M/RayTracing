@@ -3,20 +3,26 @@
 
 #include "hittable.h"
 
-class HittableList : public Hittable {
+class HittableList {
    public:
-    std::vector<std::shared_ptr<Hittable>> objects;
-
     HittableList();
     HittableList(std::shared_ptr<Hittable> object);
 
-    void clear();
+    virtual void clear();
 
-    void add(std::shared_ptr<Hittable> object);
+    virtual void add(std::shared_ptr<Hittable> object) = 0;
 
-    bool hit(const ray& r, interval ray_t, HitRecord& rec) const override;
+    virtual bool hit(const ray& r, interval ray_t, HitRecord& rec) const = 0;
 
-    void update();
+    virtual void update();
+
+    virtual int getSize() const;
+    virtual int getTriangleCount() const;
+    virtual std::shared_ptr<Hittable> getObject(int index) const;
+
+   protected:
+    std::vector<std::shared_ptr<Hittable>> objects_;
+
 };
 
 #endif

@@ -3,7 +3,8 @@
 #include <cmath>
 #include <memory>
 #include "hittable.h"
-#include "hittable_list.h"
+#include "hittable_list_custom_bvh.h"
+#include "hittable_list_tinybvh.h"
 #include "camera.h"
 #include "camera_controller.h"
 #include "material.h"
@@ -21,6 +22,9 @@
 SceneObjLoader::SceneObjLoader() {}
 
 void SceneObjLoader::initialize() {
+    if (context.settings->use_tiny_bvh) world_ = std::make_unique<HittableListTinybvh>();
+    else world_ = std::make_unique<HittableListCustomBVH>();
+    
     // Initialization of cameras
     std::unique_ptr<Camera> cam1 = std::make_unique<Camera>("initial cam");
     std::unique_ptr<Camera> cam2 = std::make_unique<Camera>("side cam", vec3(0.0f, 3.0f, 0.0f));
@@ -53,60 +57,40 @@ void SceneObjLoader::initialize() {
         std::cout << "ERROR: custom mesh failed to load" << std::endl;
     }
 
-    std::span<MeshHandle> meshes = obj_loader_->getMeshes();
-    std::span<const std::shared_ptr<Material>> materials = obj_loader_->getMaterials();
-    std::span<const int> materials_indices = obj_loader_->getMaterialsIndices();
-    for (std::uint32_t i = 0; i < meshes.size(); i++) {
-        if (materials.empty() == false) {
-            if (context.settings->use_tiny_bvh) {
-                rt_meshes_.push_back(std::make_shared<RTMeshTinyBVH>(context, meshes[i], materials[materials_indices[i]]));
-            } else {
-                rt_meshes_.push_back(std::make_shared<RTMesh>(context, meshes[i], materials[materials_indices[i]]));
-            }
-        } else { // if there are no materials specified in obj file
-            if (context.settings->use_tiny_bvh) {
-                rt_meshes_.push_back(std::make_shared<RTMeshTinyBVH>(context, meshes[i], mat_green));
-            } else {
-                rt_meshes_.push_back(std::make_shared<RTMesh>(context, meshes[i], mat_green));
-            }
-        }
-    }
     //matrix4x4 m = transformation::create_scaling_matrix(0.02f, 0.02f, 0.02f); // teapot
     //matrix4x4 m = transformation::create_scaling_matrix(1.0f, 1.0f, 1.0f); // sponza
     //matrix4x4 m = transformation::create_scaling_matrix(0.3f, 0.3f, 0.3f); // erato
     matrix4x4 m = transformation::create_scaling_matrix(0.01f, 0.01f, 0.01f); // crytek_sponza
 
-    if (context.settings->use_tiny_bvh) {
-        for (std::uint32_t i = 0; i < rt_meshes_.size(); i++) {
-            rt_meshes_[i]->setTransformationMatrix(m);
-            tinybvh_world_.add(std::dynamic_pointer_cast<RTMeshTinyBVH>(rt_meshes_[i]));
-        }
-        tinybvh_world_.buildTLAS();
-    } else {
-        for (std::uint32_t i = 0; i < rt_meshes_.size(); i++) {
-            rt_meshes_[i]->setTransformationMatrix(m);
-            world_.add(rt_meshes_[i]);
+    std::span<MeshHandle> meshes = obj_loader_->getMeshes();
+    std::span<const std::shared_ptr<Material>> materials = obj_loader_->getMaterials();
+    std::span<const int> materials_indices = obj_loader_->getMaterialsIndices();
+    for (std::uint32_t i = 0; i < meshes.size(); i++) {
+        if (materials.empty() == false) {
+            add_mesh(meshes[i], materials[materials_indices[i]], m);
+        } else { // if there are no materials specified in obj file
+            add_mesh(meshes[i], mat_green, m);
         }
     }
+
+    if (context.settings->use_tiny_bvh) {
+        static_cast<HittableListTinybvh*>(world_.get())->buildTLAS();
+    }
     
-    auto end_time = std::chrono::high_resolution_clock::now();  // End timing
+    auto end_time = std::chrono::high_resolution_clock::now(); // End timing
     std::chrono::duration<double> elapsed = end_time - start_time;
 
     std::cout << "Execution time: " << elapsed.count() << " seconds" << std::endl;
 
     if (context.settings->use_tiny_bvh) {
-        context.statistics->rt_mesh_cnt = tinybvh_world_.objects.size();
-
-        for (int i = 0; i < tinybvh_world_.objects.size(); i++) {
-            context.statistics->triangle_cnt += tinybvh_world_.objects[i]->getTriangleCount();
-        }
+        HittableListTinybvh* tinybvh_world = static_cast<HittableListTinybvh*>(world_.get());
+        context.statistics->rt_mesh_cnt = tinybvh_world->getSize();
+        context.statistics->triangle_cnt = tinybvh_world->getTriangleCount();
     }
     else {
-        context.statistics->rt_mesh_cnt = world_.objects.size();
-
-        for (int i = 0; i < world_.objects.size(); i++) {
-            context.statistics->triangle_cnt += world_.objects[i]->getTriangleCount();
-        }
+        HittableList* world = static_cast<HittableList*>(world_.get());
+        context.statistics->rt_mesh_cnt = world->getSize();
+        context.statistics->triangle_cnt = world->getTriangleCount();
     }
 
     initShader();
@@ -114,15 +98,14 @@ void SceneObjLoader::initialize() {
 
 void SceneObjLoader::update(int display_w, int display_h) {
     if (prev_BVH_technique_ != context.settings->BVH_technique) {
-        world_.clear();
-        tinybvh_world_.clear();
+        world_->clear();
         initialize();
     }
     cameras_[active_camera_]->image_width = display_w;
     cameras_[active_camera_]->image_height = display_h;
     // Update RTMesh vertices/indices/uvs/normals once per frame
-    if (context.settings->use_tiny_bvh) tinybvh_world_.update();
-    else world_.update();
+    if (context.settings->use_tiny_bvh) world_->update();
+    else world_->update();
 }
 
 void SceneObjLoader::initShader() {
@@ -131,16 +114,16 @@ void SceneObjLoader::initShader() {
 
 void SceneObjLoader::drawBVH() {
     if (context.settings->selected_option != -1) {
-        bounding_boxes_.resize(world_.objects.size());
+        bounding_boxes_.resize(world_->getSize());
 
-        for (int i = 0; i < world_.objects.size(); i++) {  // Drawing BVH tree or leaves
-            auto& object = world_.objects[i];
+        for (int i = 0; i < world_->getSize(); i++) { // Drawing BVH tree or leaves
+            std::shared_ptr<Hittable> object = world_->getObject(i);
             RTMesh* rtMesh = dynamic_cast<RTMesh*>(object.get());
 
-            if (rtMesh) {                                      // If the cast succeeds, the object is of type RTMesh
-                if (context.settings->selected_option == 0) {  // Drawing whole tree
+            if (rtMesh) { // If the cast succeeds, the object is of type RTMesh
+                if (context.settings->selected_option == 0) { // Drawing whole tree
                     rtMesh->drawBVHTree(bounding_boxes_, i, shader_prog_, *cameras_[active_camera_]);
-                } else if (context.settings->selected_option == 1) {  // Drawing only leaves
+                } else if (context.settings->selected_option == 1) { // Drawing only leaves
                     rtMesh->drawBVHLeaves(bounding_boxes_, i, shader_prog_, *cameras_[active_camera_]);
                 }
             }
@@ -149,18 +132,27 @@ void SceneObjLoader::drawBVH() {
 }
 
 Camera& SceneObjLoader::getActiveCamera() {
-    Camera& camera = Scene::getActiveCamera();
-
-    //// Assign the background to new camera (if not already assigned)
-    //if (camera.getBackgroundTexture() != nullptr) {
-    //    camera.setBackgroundTexture(background_texture_);
-    //}
-
-    return camera;  // Return the result
+    return Scene::getActiveCamera();
 }
 
 SceneObjLoader::~SceneObjLoader() {
-    world_.clear();
+    world_->clear();
     rt_meshes_.clear();
     bounding_boxes_.clear();
+}
+
+void SceneObjLoader::add_mesh(MeshHandle mesh_handle, std::shared_ptr<Material> material, matrix4x4& m) {
+    if (context.settings->use_tiny_bvh) {
+        std::shared_ptr<RTMeshTinyBVH> mesh = std::make_shared<RTMeshTinyBVH>(context, mesh_handle, material);
+        rt_meshes_.push_back(mesh);
+        mesh->setTransformationMatrix(m);
+        HittableListTinybvh* tinybvh_world = static_cast<HittableListTinybvh*>(world_.get());
+        tinybvh_world->add(std::move(mesh));
+    } else {
+        std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(context, mesh_handle, material);
+        rt_meshes_.push_back(mesh);
+        mesh->setTransformationMatrix(m);
+        HittableList* world = static_cast<HittableList*>(world_.get());
+        world->add(std::move(mesh));
+    }
 }

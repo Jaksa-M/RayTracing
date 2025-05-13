@@ -135,6 +135,9 @@
     <ClCompile Include="hittable_list_tinybvh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="hittable_list_custom_bvh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vec3.h">
@@ -294,6 +297,9 @@
       <Filter>External Libraries\tinybvh</Filter>
     </ClInclude>
     <ClInclude Include="hittable_list_tinybvh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="hittable_list_custom_bvh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

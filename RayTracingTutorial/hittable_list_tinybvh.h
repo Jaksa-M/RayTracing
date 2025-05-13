@@ -1,24 +1,19 @@
 #ifndef HITTABLE_LIST_TINYBVH_H
 #define HITTABLE_LIST_TINYBVH_H
 
-#include "hittable.h"
+#include "hittable_list.h"
 #include <memory>
 
 class RTMeshTinyBVH;
 
-class HittableListTinybvh : public Hittable {
-   public:
-    std::vector<std::shared_ptr<RTMeshTinyBVH>> objects;
-
+class HittableListTinybvh: public HittableList {
+public:
     HittableListTinybvh();
     ~HittableListTinybvh();
 
-    void add(std::shared_ptr<RTMeshTinyBVH> object, const matrix4x4& transform = {});
+    void add(std::shared_ptr<Hittable> object) override;
     bool hit(const ray& r, interval ray_t, HitRecord& rec) const override;
     void buildTLAS();
-
-    void update() override;
-    void clear();
 
 private:
     class Impl;

@@ -2,7 +2,6 @@
 #define SCENE_H
 
 #include "hittable_list.h"
-#include "hittable_list_tinybvh.h"
 #include "camera.h"
 #include "camera_controller.h"
 #include "context.h"
@@ -28,9 +27,10 @@ public:
 
 	virtual void drawBVH() {}
 
-    virtual Hittable& getWorld() {
-		if (context.settings->use_tiny_bvh) return tinybvh_world_;
-		else return world_;
+    virtual HittableList& getWorld() {
+		/*if (context.settings->use_tiny_bvh) return tinybvh_world_;
+		else return world_;*/
+        return *world_.get();
 	};
 
 	virtual void setActiveCamera(int index) { active_camera_ = index; }
@@ -38,8 +38,7 @@ public:
 	virtual const std::vector<std::unique_ptr<Camera>>& getCameras() const { return cameras_; };
 	
 protected:
-    HittableList world_;
-	HittableListTinybvh tinybvh_world_;
+    std::unique_ptr<HittableList> world_;
     std::vector<std::unique_ptr<Camera>> cameras_;
     int active_camera_;
 };

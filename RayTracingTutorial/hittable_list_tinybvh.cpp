@@ -17,13 +17,13 @@ HittableListTinybvh::HittableListTinybvh() {
 
 HittableListTinybvh::~HittableListTinybvh() {}
 
-void HittableListTinybvh::add(std::shared_ptr<RTMeshTinyBVH> mesh, const matrix4x4& transform) {
-    objects.push_back(mesh);
+void HittableListTinybvh::add(std::shared_ptr<Hittable> object) {
+    objects_.push_back(object);
 
     tinybvh::BLASInstance instance;
 
-    // Settong up transform matrix
-    const matrix4x4& mat = mesh->getLocalToWorldMatrix();
+    // Setting up transform matrix that tinybvh internally uses
+    const matrix4x4& mat = object->getLocalToWorldMatrix();
     for (int col = 0; col < 4; col++) {
         for (int row = 0; row < 4; row++) {
             instance.transform[col * 4 + row] = mat(row, col); // column-major order
@@ -33,7 +33,7 @@ void HittableListTinybvh::add(std::shared_ptr<RTMeshTinyBVH> mesh, const matrix4
     instance.blasIdx = static_cast<uint32_t>(impl_->blas_ptrs_.size());
 
     impl_->instances_.push_back(instance);
-    impl_->blas_ptrs_.push_back(mesh->getBVH());
+    impl_->blas_ptrs_.push_back(static_cast<RTMeshTinyBVH*>(object.get())->getBVH());
 }
 
 void HittableListTinybvh::buildTLAS() {
@@ -52,14 +52,9 @@ bool HittableListTinybvh::hit(const ray& r, interval ray_t, HitRecord& rec) cons
     int instance_id = tinybvh_ray.hit.inst;
     if (instance_id < 0) return false;
 
-    const auto& mesh = objects[instance_id];
-    if (mesh->fillHitRecord(r, tinybvh_ray, rec)) return rec.t < ray_t.max;
+    const auto& object = objects_[instance_id];
+
+    if (static_cast<RTMeshTinyBVH*>(object.get())->fillHitRecord(r, tinybvh_ray, rec)) 
+        return rec.t < ray_t.max;
     else return false;
 }
-
-void HittableListTinybvh::update() {
-    for (auto& mesh : objects)
-        mesh->update();
-}
-
-void HittableListTinybvh::clear() { objects.clear(); }
