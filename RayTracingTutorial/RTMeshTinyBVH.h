@@ -2,6 +2,7 @@
 #define RT_MESH_TINY_BVH_H
 
 #include "hittable.h"
+#include "ray.h"
 #include <memory>
 #include "camera.h"
 #include "types.h"
@@ -10,7 +11,12 @@
 struct Context;
 class matrix4x4;
 
-class RTMeshTinyBVH : public hittable {
+namespace tinybvh {
+class BVH;
+class Ray;
+}
+
+class RTMeshTinyBVH : public Hittable {
    public:
     RTMeshTinyBVH(Context& context, MeshHandle mesh_handle, std::shared_ptr<Material> mat);
     ~RTMeshTinyBVH();
@@ -24,6 +30,9 @@ class RTMeshTinyBVH : public hittable {
 
     void update() override;
     int getTriangleCount() const override;
+
+    bool fillHitRecord(const ray& r, tinybvh::Ray& tinybvh_ray, HitRecord& rec) const;
+    tinybvh::BVH* getBVH();
 
    private:
     Context& context_;

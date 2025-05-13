@@ -42,7 +42,7 @@ void Camera::setInitalValues() {
     shader_prog_ = std::make_unique<Shader>("ShaderFiles/shader_bounding_box.vs.txt", "ShaderFiles/shader_bounding_box.fs.txt");
 }
 
-void Camera::render(const hittable_list& world, std::vector<vec4>& image_data_acc, GUISettings& settings) {
+void Camera::render(const HittableList& world, std::vector<vec4>& image_data_acc, GUISettings& settings) {
     this->settings_ = settings;
     initialize();
 
@@ -189,7 +189,7 @@ vec3 Camera::sample_square() const {
     return vec3(random_double() - 0.5f, random_double() - 0.5f, 0.0f);
 }
 
-color Camera::ray_color(const ray& r, int depth, const hittable_list& world) {
+color Camera::ray_color(const ray& r, int depth, const HittableList& world) {
     // If we've exceeded the ray bounce limit, no more light is gathered.
     if (depth <= 0) return color(0.0f, 0.0f, 0.0f);
 

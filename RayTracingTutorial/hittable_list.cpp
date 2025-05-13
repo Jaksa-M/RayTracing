@@ -2,30 +2,29 @@
 #include "interval.h"
 #include <vector>
 
-hittable_list::hittable_list() {}
-hittable_list::hittable_list(std::shared_ptr<hittable> object) { add(object); }
+HittableList::HittableList() {}
+HittableList::HittableList(std::shared_ptr<Hittable> object) {}
 
-void hittable_list::clear() { objects_.clear(); }
+void HittableList::clear() { objects_.clear(); }
 
-void hittable_list::add(std::shared_ptr<hittable> object) {
-    objects_.push_back(object);
+void HittableList::update() {
+    for (int i = 0; i < objects_.size(); i++) {
+        objects_[i]->update();
+    }
 }
 
-bool hittable_list::hit(const ray& r, interval ray_t, HitRecord& rec) const {
-    HitRecord temp_rec;
-    bool hit_anything = false;
-    auto closest_so_far = ray_t.max;
-    temp_rec.t = std::numeric_limits<float>::max();
+int HittableList::getSize() const {
+    return objects_.size();
+}
 
-    for (const auto& object : objects_) {
-        if (object->hit(r, interval(ray_t.min, closest_so_far), temp_rec) && temp_rec.t < closest_so_far) {
-        //if (object->hit(r, interval(ray_t.min, closest_so_far), temp_rec)) {
-            // Reducing the ray_t.max if there is closer object in world space (to reduce unnecessary checks)
-            hit_anything = true;
-            closest_so_far = temp_rec.t;
-            rec = temp_rec;
-        }
+int HittableList::getTriangleCount() const {
+    int size = 0;
+    for (int i = 0; i < objects_.size(); i++) {
+        size += objects_[i]->getTriangleCount();
     }
+    return size;
+}
 
-    return hit_anything;
+std::shared_ptr<Hittable> HittableList::getObject(int index) const {
+    return objects_[index];
 }

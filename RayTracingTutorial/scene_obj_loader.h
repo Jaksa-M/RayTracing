@@ -28,7 +28,7 @@ class SceneObjLoader : public Scene {
     std::unique_ptr<MeshBufferManager> mesh_buf_manager_;
     std::unique_ptr<BVHManager> bvh_manager_;
 
-    std::vector<std::shared_ptr<hittable>> rt_meshes_;
+    std::vector<std::shared_ptr<Hittable>> rt_meshes_;
     std::unique_ptr<ObjLoader> obj_loader_;
     std::shared_ptr<Texture> background_texture_;
     std::shared_ptr<Texture> erato_texture_;
@@ -37,6 +37,8 @@ class SceneObjLoader : public Scene {
     std::vector<std::unique_ptr<Mesh>> bounding_boxes_; // 1 bounding box for each object that will get translated while drawing
 
     BVHTechnique prev_BVH_technique_; // Used for checking whether BVH techique has changed
+
+    void addMesh(MeshHandle mesh_handle, std::shared_ptr<Material> material, matrix4x4& m);
 };
 
 #endif

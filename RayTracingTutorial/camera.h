@@ -22,7 +22,7 @@ public:
     Camera(std::string name, vec3 center);
     Camera(const Camera& other);
     void setInitalValues();
-    void render(const hittable_list& world, std::vector<vec4>& image_data_acc, GUISettings& settings);
+    void render(const HittableList& world, std::vector<vec4>& image_data_acc, GUISettings& settings);
 
     void drawRays();
 
@@ -79,7 +79,7 @@ private:
 
     vec3 sample_square() const;
 
-    color ray_color(const ray& r, int depth, const hittable_list& world);
+    color ray_color(const ray& r, int depth, const HittableList& world);
 };
 
 #endif

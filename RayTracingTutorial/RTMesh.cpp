@@ -214,7 +214,7 @@ MeshHandle RTMesh::getMeshHandle() const {
 }
 
 void RTMesh::setTransformationMatrix(const matrix4x4& mat) {
-    hittable::setTransformationMatrix(mat);  // Call base class function
+    Hittable::setTransformationMatrix(mat);  // Call base class function
 
     const BVHNode& node = bvh_nodes_[0];
 

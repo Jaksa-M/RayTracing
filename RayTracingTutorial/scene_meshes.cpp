@@ -3,7 +3,7 @@
 #include <cmath>
 #include <memory>
 #include "hittable.h"
-#include "hittable_list.h"
+#include "hittable_list_custom_bvh.h"
 #include "camera.h"
 #include "material.h"
 #include "matrix.h"
@@ -13,7 +13,7 @@
 #include <GLFW/glfw3.h>
 
 SceneMeshes::SceneMeshes() {
-
+    world_ = std::make_unique<HittableListCustomBVH>();
 }
 
 void SceneMeshes::initialize() {

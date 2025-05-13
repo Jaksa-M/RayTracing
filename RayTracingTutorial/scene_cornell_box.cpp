@@ -3,7 +3,7 @@
 #include <cmath>
 #include <memory>
 #include "hittable.h"
-#include "hittable_list.h"
+#include "hittable_list_custom_bvh.h"
 #include "camera.h"
 #include "material.h"
 #include "matrix.h"
@@ -17,6 +17,8 @@
 SceneCornellBox::SceneCornellBox() {}
 
 void SceneCornellBox::initialize() {
+    world_ = std::make_unique<HittableListCustomBVH>();
+
     // Initialization of cameras
     std::unique_ptr<Camera> cam1 = std::make_unique<Camera>("initial cam");
     cam1->setInitalValues();
@@ -81,26 +83,26 @@ void SceneCornellBox::initialize() {
 		transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
 	rect_mesh_right_->setTransformationMatrix(m);
 
-	world_.add(rect_prism_mesh_);
-	world_.add(cube_mesh_);
-	world_.add(rect_mesh_top_);
-	world_.add(rect_mesh_bottom_);
-	world_.add(rect_mesh_left_);
-	world_.add(rect_mesh_right_);
-	world_.add(rect_mesh_back_);
+	world_->add(rect_prism_mesh_);
+    world_->add(cube_mesh_);
+    world_->add(rect_mesh_top_);
+    world_->add(rect_mesh_bottom_);
+    world_->add(rect_mesh_left_);
+    world_->add(rect_mesh_right_);
+    world_->add(rect_mesh_back_);
 
 	initShader();
 }
 
 void SceneCornellBox::update(int display_w, int display_h) {
 	if (prev_BVH_technique_ != context.settings->BVH_technique) {
-		world_.clear();
+        world_->clear();
 		initialize();
 	}
     cameras_[active_camera_]->image_width = display_w;
     cameras_[active_camera_]->image_height = display_h;
 	// Update RTMesh vertices/indices/uvs/normals once per frame
-    world_.update();
+    world_->update();
 }
 
 void SceneCornellBox::initShader() {
@@ -109,10 +111,10 @@ void SceneCornellBox::initShader() {
 
 void SceneCornellBox::drawBVH() {
 	if (context.settings->selected_option != -1) {
-		bounding_boxes_.resize(world_.objects_.size());
+        bounding_boxes_.resize(world_->getSize());
 
-		for (int i = 0; i < world_.objects_.size(); i++) { // Drawing BVH tree or leaves
-			auto& object = world_.objects_[i];
+		for (int i = 0; i < world_->getSize(); i++) {  // Drawing BVH tree or leaves
+            std::shared_ptr<Hittable> object = world_->getObject(i);
 			RTMesh* rtMesh = dynamic_cast<RTMesh*>(object.get());
 
 			if (rtMesh) { // If the cast succeeds, the object is of type RTMesh

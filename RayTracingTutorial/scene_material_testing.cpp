@@ -3,7 +3,7 @@
 #include <cmath>
 #include <memory>
 #include "hittable.h"
-#include "hittable_list.h"
+#include "hittable_list_custom_bvh.h"
 #include "camera.h"
 #include "material.h"
 #include "matrix.h"
@@ -17,6 +17,8 @@
 SceneMaterialTesting::SceneMaterialTesting() {}
 
 void SceneMaterialTesting::initialize() {
+    world_ = std::make_unique<HittableListCustomBVH>();
+
     // Initialization of cameras
     std::unique_ptr<Camera> cam1 = std::make_unique<Camera>("initial cam");
     cam1->setInitalValues();
@@ -88,7 +90,7 @@ void SceneMaterialTesting::initialize() {
     matrix4x4 m2 = transformation::create_translation_matrix(vec3(2.0f, 1.0f, -0.99f)) * transformation::create_scaling_matrix(30.0f, 30.0f, 30.0f) *
                    transformation::create_rotation_matrix(90.0f * (3.14159f / 180.0f), 0.0f, 0.0f);
     plane_mesh2_->setTransformationMatrix(m2);
-    world_.add(plane_mesh2_);
+    world_->add(plane_mesh2_);
 
     plane_mesh3_ = MeshUtils::GenerateTriangleRectangle(context, temp_mat, 2, 2);
     matrix4x4 m3 = transformation::create_translation_matrix(vec3(0.0f, -2.0f, -0.99f)) * transformation::create_scaling_matrix(30.0f, 30.0f, 30.0f);
@@ -116,13 +118,13 @@ void SceneMaterialTesting::initialize() {
 
 void SceneMaterialTesting::update(int display_w, int display_h) {
     if (prev_BVH_technique_ != context.settings->BVH_technique) {
-        world_.clear();
+        world_->clear();
         initialize();
     }
     cameras_[active_camera_]->image_width = display_w;
     cameras_[active_camera_]->image_height = display_h;
     // Update RTMesh vertices/indices/uvs/normals/bvhNodes once per frame
-    world_.update();
+    world_->update();
 }
 
 void SceneMaterialTesting::initShader() {
@@ -131,10 +133,10 @@ void SceneMaterialTesting::initShader() {
 
 void SceneMaterialTesting::drawBVH() {
     if (context.settings->selected_option != -1) {
-        bounding_boxes_.resize(world_.objects_.size());
+        bounding_boxes_.resize(world_->getSize());
 
-        for (int i = 0; i < world_.objects_.size(); i++) {  // Drawing BVH tree or leaves
-            auto& object = world_.objects_[i];
+        for (int i = 0; i < world_->getSize(); i++) {  // Drawing BVH tree or leaves
+            std::shared_ptr<Hittable> object = world_->getObject(i);
             RTMesh* rtMesh = dynamic_cast<RTMesh*>(object.get());
 
             if (rtMesh) {                                      // If the cast succeeds, the object is of type RTMesh

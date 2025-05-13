@@ -32,9 +32,9 @@ public:
     }
 };
 
-class hittable {
+class Hittable {
 public:
-    virtual ~hittable() = default;
+    virtual ~Hittable() = default;
 
     virtual std::string object_type() const { return "hittable"; }
 
@@ -45,6 +45,10 @@ public:
     virtual void update() {}
 
     virtual int getTriangleCount() const { return 0; };
+
+    virtual const matrix4x4& getLocalToWorldMatrix() const { 
+        return local_to_world_mat_;
+    }
 
     virtual void setTransformationMatrix(const matrix4x4& mat) {
         local_to_world_mat_ = mat;
