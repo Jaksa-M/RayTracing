@@ -31,7 +31,7 @@ class RTMeshTinyBVH : public Hittable {
     void update() override;
     int getTriangleCount() const override;
 
-    bool fillHitRecord(const ray& r, tinybvh::Ray& tinybvh_ray, HitRecord& rec);
+    bool fillHitRecord(const ray& r, tinybvh::Ray& tinybvh_ray, HitRecord& rec) const;
     tinybvh::BVH* getBVH();
 
    private:

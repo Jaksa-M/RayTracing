@@ -56,41 +56,11 @@ bool RTMeshTinyBVH::hit(const ray& r, interval ray_t, HitRecord& rec) const {
     // Create BVH-compatible ray
     tinybvh::bvhvec3 O = tinybvh::bvhvec3(changed_ray.origin().x(), changed_ray.origin().y(), changed_ray.origin().z());
     tinybvh::bvhvec3 D = tinybvh::bvhvec3(changed_ray.direction().x(), changed_ray.direction().y(), changed_ray.direction().z());
-    tinybvh::Ray bvh_ray(O, D);
+    tinybvh::Ray tinybvh_ray(O, D);
 
-    impl_->bvh_->Intersect(bvh_ray);
-    if (bvh_ray.hit.t != BVH_FAR) { // ray hit something
-        rec.mat = mat_;
-
-        std::uint32_t triangle_index = bvh_ray.hit.prim * 3;
-
-        std::uint32_t i0 = res_mesh_info_.indices[triangle_index];
-        std::uint32_t i1 = res_mesh_info_.indices[triangle_index + 1];
-        std::uint32_t i2 = res_mesh_info_.indices[triangle_index + 2];
-
-        vec3 v0, v1, v2;
-        getTriangleVertices(res_mesh_info_, i0, i1, i2, v0, v1, v2);
-        v0 = local_to_world_mat_ * v0;
-        v1 = local_to_world_mat_ * v1;
-        v2 = local_to_world_mat_ * v2;
-        vec3 triangle_normal = unit_vector(cross(v1 - v0, v2 - v0));
-        rec.set_face_normal(r, triangle_normal);
-
-        vec2 buv = vec2(bvh_ray.hit.v, 1 - bvh_ray.hit.u - bvh_ray.hit.v);
-        rec.p = barycentricInterpolate(v0, v1, v2, buv);
-
-        // Has to be in world space
-        rec.t = (r.origin() - rec.p).length();
-
-        rec.mesh_handle = mesh_handle_;
-        rec.buv = buv;
-        rec.triangle_index = triangle_index;
-        rec.mesh_buf_manager = context_.mesh_buf_manager;
-        rec.local_to_world_mat = local_to_world_mat_;
-
-        return rec.t < ray_t.max;
-    }
-    return false;
+    impl_->bvh_->Intersect(tinybvh_ray);
+    if (fillHitRecord(r, tinybvh_ray, rec)) return rec.t < ray_t.max;
+    else return false;
 }
 
 MeshHandle RTMeshTinyBVH::getMeshHandle() const {
@@ -116,7 +86,7 @@ int RTMeshTinyBVH::getTriangleCount() const {
     return res_mesh_info_.indices.size() / 3;
 }
 
-bool RTMeshTinyBVH::fillHitRecord(const ray& r, tinybvh::Ray& tinybvh_ray, HitRecord& rec) {
+bool RTMeshTinyBVH::fillHitRecord(const ray& r, tinybvh::Ray& tinybvh_ray, HitRecord& rec) const {
     if (tinybvh_ray.hit.t != BVH_FAR) {  // ray hit something
         rec.mat = mat_;
 

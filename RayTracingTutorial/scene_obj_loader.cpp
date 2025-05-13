@@ -67,9 +67,9 @@ void SceneObjLoader::initialize() {
     std::span<const int> materials_indices = obj_loader_->getMaterialsIndices();
     for (std::uint32_t i = 0; i < meshes.size(); i++) {
         if (materials.empty() == false) {
-            add_mesh(meshes[i], materials[materials_indices[i]], m);
+            addMesh(meshes[i], materials[materials_indices[i]], m);
         } else { // if there are no materials specified in obj file
-            add_mesh(meshes[i], mat_green, m);
+            addMesh(meshes[i], mat_green, m);
         }
     }
 
@@ -82,7 +82,7 @@ void SceneObjLoader::initialize() {
 
     std::cout << "Execution time: " << elapsed.count() << " seconds" << std::endl;
 
-    if (context.settings->use_tiny_bvh) {
+    /*if (context.settings->use_tiny_bvh) {
         HittableListTinybvh* tinybvh_world = static_cast<HittableListTinybvh*>(world_.get());
         context.statistics->rt_mesh_cnt = tinybvh_world->getSize();
         context.statistics->triangle_cnt = tinybvh_world->getTriangleCount();
@@ -91,7 +91,7 @@ void SceneObjLoader::initialize() {
         HittableList* world = static_cast<HittableList*>(world_.get());
         context.statistics->rt_mesh_cnt = world->getSize();
         context.statistics->triangle_cnt = world->getTriangleCount();
-    }
+    }*/
 
     initShader();
 }
@@ -141,7 +141,7 @@ SceneObjLoader::~SceneObjLoader() {
     bounding_boxes_.clear();
 }
 
-void SceneObjLoader::add_mesh(MeshHandle mesh_handle, std::shared_ptr<Material> material, matrix4x4& m) {
+void SceneObjLoader::addMesh(MeshHandle mesh_handle, std::shared_ptr<Material> material, matrix4x4& m) {
     if (context.settings->use_tiny_bvh) {
         std::shared_ptr<RTMeshTinyBVH> mesh = std::make_shared<RTMeshTinyBVH>(context, mesh_handle, material);
         rt_meshes_.push_back(mesh);

@@ -28,8 +28,6 @@ public:
 	virtual void drawBVH() {}
 
     virtual HittableList& getWorld() {
-		/*if (context.settings->use_tiny_bvh) return tinybvh_world_;
-		else return world_;*/
         return *world_.get();
 	};
 

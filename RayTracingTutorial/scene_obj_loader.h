@@ -38,7 +38,7 @@ class SceneObjLoader : public Scene {
 
     BVHTechnique prev_BVH_technique_; // Used for checking whether BVH techique has changed
 
-    void add_mesh(MeshHandle mesh_handle, std::shared_ptr<Material> material, matrix4x4& m);
+    void addMesh(MeshHandle mesh_handle, std::shared_ptr<Material> material, matrix4x4& m);
 };
 
 #endif
