@@ -12,6 +12,7 @@
 #include "transformations.h"
 #include "intersection_utility.h"
 #include "vec3.h"
+#include <stack>
 
 RTMesh::RTMesh(Context& context, MeshHandle mesh_handle, std::shared_ptr<Material> mat)
     : context_(context), mesh_handle_(mesh_handle), mat_(mat) {
@@ -33,7 +34,19 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
 
     IntersectResult intersect_result;
     float closest_hit_t = std::numeric_limits<float>::max();
+
+    // Start timing
+    auto start_time = std::chrono::high_resolution_clock::now();
+
     intersectBVH(changed_ray, ray_t, intersect_result, 0, closest_hit_t);
+
+    // End timing
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = duration_cast<std::chrono::microseconds>(end_time - start_time);
+    context_.time_measurement->total_bvh_time += duration;
+    context_.time_measurement->total_bvh_calls++;
+    if (duration < context_.time_measurement->min_bvh_time) context_.time_measurement->min_bvh_time = duration;
+    if (duration > context_.time_measurement->max_bvh_time) context_.time_measurement->max_bvh_time = duration;
 
     if (closest_hit_t != std::numeric_limits<float>::max()) {
         rec.mat = mat_;
@@ -235,54 +248,112 @@ int RTMesh::getTriangleCount() const {
     return res_mesh_info_.indices.size() / 3;
 }
 
-void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, float& closest_hit_t) const {
-    const BVHNode& node = bvh_nodes_[nodeIdx];
+//void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, float& closest_hit_t) const {
+//    const BVHNode& node = bvh_nodes_[nodeIdx];
+//
+//    if (node.isLeaf() == true) {
+//        for (std::uint32_t i = 0; i < node.triangle_cnt; i++) {
+//            std::uint32_t triangle_index = node.first_triangle_index * 3 + i * 3;
+//
+//            vec3 v0, v1, v2;
+//            std::uint32_t i0 = res_mesh_info_.indices[triangle_index];
+//            std::uint32_t i1 = res_mesh_info_.indices[triangle_index + 1];
+//            std::uint32_t i2 = res_mesh_info_.indices[triangle_index + 2];
+//            getTriangleVertices(res_mesh_info_, i0, i1, i2, v0, v1, v2);
+//
+//            IntersectResult intersect_res = intersectTriangle(r, ray_t, v0, v1, v2);
+//            if (intersect_res.t < ray_t.max) {
+//                if (intersect_res.t < closest_hit_t) {  // Update only if this hit is closer
+//                    intersect_res.closest_tri_index = triangle_index;
+//                    intersect_result = intersect_res;
+//                    closest_hit_t = intersect_res.t;  // Update the closest intersection distance
+//                }
+//            }
+//        }
+//        return;
+//    }
+//
+//    float closest_side_left;
+//    float closest_side_right;
+//    const BVHNode* node_left = &bvh_nodes_[node.left_child];
+//    const BVHNode* node_right = &bvh_nodes_[node.right_child];
+//    bool left_check =
+//        intersectAABB(r, intersect_result.t, node_left->aabbMin, node_left->aabbMax, closest_side_left);
+//    bool right_check =
+//        intersectAABB(r, intersect_result.t, node_right->aabbMin, node_right->aabbMax, closest_side_right);
+//
+//    std::uint32_t left_child = node.left_child;
+//    std::uint32_t right_child = node.right_child;
+//
+//    if (closest_side_right < closest_side_left) {  // If closest side of node.right is smaller than closest side of node.left, then swap them
+//        std::swap(node_left, node_right);
+//        std::swap(left_check, right_check);
+//        std::swap(closest_side_left, closest_side_right);
+//        std::swap(left_child, right_child);
+//    }
+//
+//    if (left_check == true && closest_side_left < closest_hit_t) {
+//        intersectBVH(r, ray_t, intersect_result, left_child, closest_hit_t);
+//    }
+//    if (right_check == true && closest_side_right < closest_hit_t) {
+//        intersectBVH(r, ray_t, intersect_result, right_child, closest_hit_t);
+//    }
+//}
 
-    if (node.isLeaf() == true) {
-        for (std::uint32_t i = 0; i < node.triangle_cnt; i++) {
-            std::uint32_t triangle_index = node.first_triangle_index * 3 + i * 3;
+void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t node_idx, float& closest_hit_t) const {
+    constexpr int MAX_STACK_SIZE = 64;
+    std::uint32_t node_stack[MAX_STACK_SIZE];
+    int stack_top = 0;
 
-            vec3 v0, v1, v2;
-            std::uint32_t i0 = res_mesh_info_.indices[triangle_index];
-            std::uint32_t i1 = res_mesh_info_.indices[triangle_index + 1];
-            std::uint32_t i2 = res_mesh_info_.indices[triangle_index + 2];
-            getTriangleVertices(res_mesh_info_, i0, i1, i2, v0, v1, v2);
+    node_stack[stack_top++] = node_idx;
 
-            IntersectResult intersect_res = intersectTriangle(r, ray_t, v0, v1, v2);
-            if (intersect_res.t < ray_t.max) {
-                if (intersect_res.t < closest_hit_t) {  // Update only if this hit is closer
+    while (stack_top > 0) {
+        std::uint32_t nodeIdx = node_stack[--stack_top];
+        const BVHNode& node = bvh_nodes_[nodeIdx];
+
+        // If the node is a leaf, test all its triangles
+        if (node.isLeaf()) {
+            for (std::uint32_t i = 0; i < node.triangle_cnt; i++) {
+                std::uint32_t triangle_index = node.first_triangle_index * 3 + i * 3;
+
+                vec3 v0, v1, v2;
+                std::uint32_t i0 = res_mesh_info_.indices[triangle_index];
+                std::uint32_t i1 = res_mesh_info_.indices[triangle_index + 1];
+                std::uint32_t i2 = res_mesh_info_.indices[triangle_index + 2];
+                getTriangleVertices(res_mesh_info_, i0, i1, i2, v0, v1, v2);
+
+                IntersectResult intersect_res = intersectTriangle(r, ray_t, v0, v1, v2);
+                if (intersect_res.t < ray_t.max && intersect_res.t < closest_hit_t) {
                     intersect_res.closest_tri_index = triangle_index;
                     intersect_result = intersect_res;
-                    closest_hit_t = intersect_res.t;  // Update the closest intersection distance
+                    closest_hit_t = intersect_res.t;
                 }
             }
+            continue;
         }
-        return;
-    }
 
-    float closest_side_left;
-    float closest_side_right;
-    const BVHNode* node_left = &bvh_nodes_[node.left_child];
-    const BVHNode* node_right = &bvh_nodes_[node.right_child];
-    bool left_check =
-        intersectAABB(r, intersect_result.t, node_left->aabbMin, node_left->aabbMax, closest_side_left);
-    bool right_check =
-        intersectAABB(r, intersect_result.t, node_right->aabbMin, node_right->aabbMax, closest_side_right);
+        float closest_side_left;
+        float closest_side_right;
+        const BVHNode* node_left = &bvh_nodes_[node.left_child];
+        const BVHNode* node_right = &bvh_nodes_[node.right_child];
+        bool left_check = intersectAABB(r, intersect_result.t, node_left->aabbMin, node_left->aabbMax, closest_side_left);
+        bool right_check = intersectAABB(r, intersect_result.t, node_right->aabbMin, node_right->aabbMax, closest_side_right);
 
-    std::uint32_t left_child = node.left_child;
-    std::uint32_t right_child = node.right_child;
+        std::uint32_t left_child = node.left_child;
+        std::uint32_t right_child = node.right_child;
 
-    if (closest_side_right < closest_side_left) {  // If closest side of node.right is smaller than closest side of node.left, then swap them
-        std::swap(node_left, node_right);
-        std::swap(left_check, right_check);
-        std::swap(closest_side_left, closest_side_right);
-        std::swap(left_child, right_child);
-    }
+        if (closest_side_right < closest_side_left) {
+            std::swap(node_left, node_right);
+            std::swap(left_check, right_check);
+            std::swap(closest_side_left, closest_side_right);
+            std::swap(left_child, right_child);
+        }
 
-    if (left_check == true && closest_side_left < closest_hit_t) {
-        intersectBVH(r, ray_t, intersect_result, left_child, closest_hit_t);
-    }
-    if (right_check == true && closest_side_right < closest_hit_t) {
-        intersectBVH(r, ray_t, intersect_result, right_child, closest_hit_t);
+        if (right_check && closest_side_right < closest_hit_t && stack_top < MAX_STACK_SIZE) {
+            node_stack[stack_top++] = right_child;
+        }
+        if (left_check && closest_side_left < closest_hit_t && stack_top < MAX_STACK_SIZE) {
+            node_stack[stack_top++] = left_child;
+        }
     }
 }
