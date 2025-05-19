@@ -6,6 +6,7 @@
 #include "matrix.h"
 #include "ray.h"
 #include "vec3.h"
+#include "bvh_builder.h"
 
 inline IntersectResult intersectTriangle(const ray& r, interval ray_t, const vec3& v0, const vec3& v1, const vec3& v2) {
     // Moeller Trumbore ray triangle intersection algorithm
@@ -58,6 +59,53 @@ inline bool intersectAABB(const ray& r, float t, const vec3& bmin, const vec3& b
 
     closest_side = tmin;
     return tmax >= tmin && tmin < t && tmax > 0;
+}
+
+//inline void slabTestTwoNodes(const vec3& dir_inv, float t, const BVHNode* child1, const BVHNode* child2, float rox, float roy, float roz, float& dist1,
+//                             float& dist2, bool posX, bool posY, bool posZ) {
+//    float tx1a = (posX ? child1->aabbMin.x() : child1->aabbMax.x()) * dir_inv.x() - rox;
+//    float ty1a = (posY ? child1->aabbMin.y() : child1->aabbMax.y()) * dir_inv.y() - roy;
+//    float tz1a = (posZ ? child1->aabbMin.z() : child1->aabbMax.z()) * dir_inv.z() - roz;
+//    float tx1b = (posX ? child2->aabbMin.x() : child2->aabbMax.x()) * dir_inv.x() - rox;
+//    float ty1b = (posY ? child2->aabbMin.y() : child2->aabbMax.y()) * dir_inv.y() - roy;
+//    float tz1b = (posZ ? child2->aabbMin.z() : child2->aabbMax.z()) * dir_inv.z() - roz;
+//
+//    float tx2a = (posX ? child1->aabbMax.x() : child1->aabbMin.x()) * dir_inv.x() - rox;
+//    float ty2a = (posY ? child1->aabbMax.y() : child1->aabbMin.y()) * dir_inv.y() - roy;
+//    float tz2a = (posZ ? child1->aabbMax.z() : child1->aabbMin.z()) * dir_inv.z() - roz;
+//    float tx2b = (posX ? child2->aabbMax.x() : child2->aabbMin.x()) * dir_inv.x() - rox;
+//    float ty2b = (posY ? child2->aabbMax.y() : child2->aabbMin.y()) * dir_inv.y() - roy;
+//    float tz2b = (posZ ? child2->aabbMax.z() : child2->aabbMin.z()) * dir_inv.z() - roz;
+//
+//    float tmina = std::max(std::max(tx1a, ty1a), std::max(tz1a, 0.0f));
+//    float tminb = std::max(std::max(tx1b, ty1b), std::max(tz1b, 0.0f));
+//    float tmaxa = std::min(std::min(tx2a, ty2a), std::min(tz2a, t));
+//    float tmaxb = std::min(std::min(tx2b, ty2b), std::min(tz2b, t));
+//
+//    if (tmaxa >= tmina)
+//        dist1 = tmina;
+//    if (tmaxb >= tminb)
+//        dist2 = tminb;
+//}
+
+inline void slabTestTwoNodes(const vec3& dir_inv, float t, const BVHNode* c1, const BVHNode* c2, float rox, float roy, float roz, float& d1,
+                             float& d2, bool posX, bool posY, bool posZ) {
+    auto slabTest = [&](const BVHNode* n, float& dist) {
+        float tx_min = ((posX ? n->aabbMin.x() : n->aabbMax.x()) * dir_inv.x()) - rox;
+        float tx_max = ((posX ? n->aabbMax.x() : n->aabbMin.x()) * dir_inv.x()) - rox;
+        float ty_min = ((posY ? n->aabbMin.y() : n->aabbMax.y()) * dir_inv.y()) - roy;
+        float ty_max = ((posY ? n->aabbMax.y() : n->aabbMin.y()) * dir_inv.y()) - roy;
+        float tz_min = ((posZ ? n->aabbMin.z() : n->aabbMax.z()) * dir_inv.z()) - roz;
+        float tz_max = ((posZ ? n->aabbMax.z() : n->aabbMin.z()) * dir_inv.z()) - roz;
+
+        float tmin = std::max(std::max(tx_min, ty_min), std::max(tz_min, 0.0f));
+        float tmax = std::min(std::min(tx_max, ty_max), std::min(tz_max, t));
+
+        dist = (tmax >= tmin) ? tmin : infinity;
+    };
+
+    slabTest(c1, d1);
+    slabTest(c2, d2);
 }
 
 inline void transformAABB(vec3& pmin, vec3& pmax, const matrix4x4& transform) {

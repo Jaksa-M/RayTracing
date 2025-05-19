@@ -300,6 +300,63 @@ int RTMesh::getTriangleCount() const {
 //    }
 //}
 
+//void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t node_idx, float& closest_hit_t) const {
+//    constexpr int MAX_STACK_SIZE = 64;
+//    std::uint32_t node_stack[MAX_STACK_SIZE];
+//    int stack_top = 0;
+//
+//    node_stack[stack_top++] = node_idx;
+//
+//    while (stack_top > 0) {
+//        std::uint32_t nodeIdx = node_stack[--stack_top];
+//        const BVHNode& node = bvh_nodes_[nodeIdx];
+//
+//        // If the node is a leaf, test all its triangles
+//        if (node.isLeaf()) {
+//            for (std::uint32_t i = 0; i < node.triangle_cnt; i++) {
+//                std::uint32_t triangle_index = node.first_triangle_index * 3 + i * 3;
+//
+//                vec3 v0, v1, v2;
+//                std::uint32_t i0 = res_mesh_info_.indices[triangle_index];
+//                std::uint32_t i1 = res_mesh_info_.indices[triangle_index + 1];
+//                std::uint32_t i2 = res_mesh_info_.indices[triangle_index + 2];
+//                getTriangleVertices(res_mesh_info_, i0, i1, i2, v0, v1, v2);
+//
+//                IntersectResult intersect_res = intersectTriangle(r, ray_t, v0, v1, v2);
+//                if (intersect_res.t < ray_t.max && intersect_res.t < closest_hit_t) {
+//                    intersect_res.closest_tri_index = triangle_index;
+//                    intersect_result = intersect_res;
+//                    closest_hit_t = intersect_res.t;
+//                }
+//            }
+//            continue;
+//        }
+//
+//        float closest_side_left;
+//        float closest_side_right;
+//        const BVHNode* node_left = &bvh_nodes_[node.left_child];
+//        const BVHNode* node_right = &bvh_nodes_[node.right_child];
+//        bool left_check = intersectAABB(r, intersect_result.t, node_left->aabbMin, node_left->aabbMax, closest_side_left);
+//        bool right_check = intersectAABB(r, intersect_result.t, node_right->aabbMin, node_right->aabbMax, closest_side_right);
+//
+//        std::uint32_t left_child = node.left_child;
+//        std::uint32_t right_child = node.right_child;
+//
+//        if (closest_side_right < closest_side_left) {
+//            std::swap(node_left, node_right);
+//            std::swap(left_check, right_check);
+//            std::swap(closest_side_left, closest_side_right);
+//            std::swap(left_child, right_child);
+//        }
+//
+//        if (right_check && closest_side_right < closest_hit_t && stack_top < MAX_STACK_SIZE) {
+//            node_stack[stack_top++] = right_child;
+//        }
+//        if (left_check && closest_side_left < closest_hit_t && stack_top < MAX_STACK_SIZE) {
+//            node_stack[stack_top++] = left_child;
+//        }
+//    }
+//}
 void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t node_idx, float& closest_hit_t) const {
     constexpr int MAX_STACK_SIZE = 64;
     std::uint32_t node_stack[MAX_STACK_SIZE];
@@ -307,11 +364,25 @@ void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& interse
 
     node_stack[stack_top++] = node_idx;
 
+    const vec3 dir = r.direction();
+    const vec3 ori = r.origin();
+    vec3 dir_inv(1.0f / dir.x(), 1.0f / dir.y(), 1.0f / dir.z());
+
+    // Precompute origin * direction for slab test optimization
+    float rox = ori.x() * dir_inv.x();
+    float roy = ori.y() * dir_inv.y();
+    float roz = ori.z() * dir_inv.z();
+
+    // Determine ray direction signs
+    bool posX = dir_inv.x() >= 0;
+    bool posY = dir_inv.y() >= 0;
+    bool posZ = dir_inv.z() >= 0;
+
     while (stack_top > 0) {
         std::uint32_t nodeIdx = node_stack[--stack_top];
         const BVHNode& node = bvh_nodes_[nodeIdx];
 
-        // If the node is a leaf, test all its triangles
+        // Leaf node: test triangles
         if (node.isLeaf()) {
             for (std::uint32_t i = 0; i < node.triangle_cnt; i++) {
                 std::uint32_t triangle_index = node.first_triangle_index * 3 + i * 3;
@@ -332,27 +403,31 @@ void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& interse
             continue;
         }
 
-        float closest_side_left;
-        float closest_side_right;
         const BVHNode* node_left = &bvh_nodes_[node.left_child];
         const BVHNode* node_right = &bvh_nodes_[node.right_child];
-        bool left_check = intersectAABB(r, intersect_result.t, node_left->aabbMin, node_left->aabbMax, closest_side_left);
-        bool right_check = intersectAABB(r, intersect_result.t, node_right->aabbMin, node_right->aabbMax, closest_side_right);
-
         std::uint32_t left_child = node.left_child;
         std::uint32_t right_child = node.right_child;
 
-        if (closest_side_right < closest_side_left) {
+        float dist_left = infinity;
+        float dist_right = infinity;
+
+        slabTestTwoNodes(dir_inv, intersect_result.t, node_left, node_right, rox, roy, roz, dist_left, dist_right, posX, posY, posZ);
+
+        bool left_check = dist_left < intersect_result.t;
+        bool right_check = dist_right < intersect_result.t;
+
+        // Sort children based on distance to prioritize closer node
+        if (dist_right < dist_left) {
             std::swap(node_left, node_right);
             std::swap(left_check, right_check);
-            std::swap(closest_side_left, closest_side_right);
+            std::swap(dist_left, dist_right);
             std::swap(left_child, right_child);
         }
 
-        if (right_check && closest_side_right < closest_hit_t && stack_top < MAX_STACK_SIZE) {
+        if (right_check && dist_right < closest_hit_t && stack_top < MAX_STACK_SIZE) {
             node_stack[stack_top++] = right_child;
         }
-        if (left_check && closest_side_left < closest_hit_t && stack_top < MAX_STACK_SIZE) {
+        if (left_check && dist_left < closest_hit_t && stack_top < MAX_STACK_SIZE) {
             node_stack[stack_top++] = left_child;
         }
     }
