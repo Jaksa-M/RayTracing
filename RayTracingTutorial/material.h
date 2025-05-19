@@ -15,6 +15,8 @@ public:
     virtual bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered) const {
         return false;
     }
+
+    virtual color emitted(const HitRecord& rec) const { return color(0, 0, 0); }
 };
 
 
@@ -161,6 +163,33 @@ private:
     std::shared_ptr<Texture> albedo_tex_;
     std::shared_ptr<Texture> roughness_tex_;
     std::shared_ptr<Texture> normal_map_tex;
+};
+
+class Emissive : public Material {
+public:
+    Emissive(std::shared_ptr<Texture> tex) : tex_(tex) {}
+    Emissive(const color& emit) : tex_(std::make_shared<Texture>(emit)) {}
+
+    bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered) const override {
+        return false; // Emissive materials don't scatter rays, they emit light
+    }
+
+    color emitted(const HitRecord& rec) const override {
+        ResolvedMeshInfo res_mesh_info = rec.mesh_buf_manager->getResolvedMesh(rec.mesh_handle);
+
+        std::uint32_t i0 = res_mesh_info.indices[rec.triangle_index];
+        std::uint32_t i1 = res_mesh_info.indices[rec.triangle_index + 1];
+        std::uint32_t i2 = res_mesh_info.indices[rec.triangle_index + 2];
+
+        vec2 uv0, uv1, uv2;
+        getTriangleUVs(res_mesh_info, i0, i1, i2, uv0, uv1, uv2);
+        vec2 uv = barycentricInterpolate(uv0, uv1, uv2, rec.buv);
+
+        return tex_->value(uv[0], uv[1]);
+    }
+
+private:
+    std::shared_ptr<Texture> tex_;
 };
 
 #endif

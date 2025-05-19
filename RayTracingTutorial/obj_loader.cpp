@@ -85,14 +85,27 @@ bool ObjLoader::load(Context& context) {
             }
             TexDescription desc(tex_loader.getImageWidth(), tex_loader.getImageHeight(), tex_loader.getFormat());
             std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader.getData(), desc);
-            if (roughness_tex != nullptr) {
+
+            // Check for emissive color
+            color emission(mat.emission[0], mat.emission[1], mat.emission[2]);
+            if (emission.length_squared() > 0.0001f) {
+                material = std::make_shared<Emissive>(emission);  // You need to define this class
+            }
+            else if (roughness_tex != nullptr) {
                 material = std::make_shared<Metal>(tex, roughness_tex, normal_map_tex);
             } else {
                 material = std::make_shared<Lambertian>(tex, normal_map_tex);
             }
         } else {
-            color col(mat.diffuse[0], mat.diffuse[1], mat.diffuse[2]);
-            material = std::make_shared<Lambertian>(col);
+            color emission(mat.emission[0], mat.emission[1], mat.emission[2]);
+            if (emission.length_squared() > 0.0001f) {
+                material = std::make_shared<Emissive>(emission);  // Diffuse-only emissive material
+            } else {
+                color col(mat.diffuse[0], mat.diffuse[1], mat.diffuse[2]);
+                material = std::make_shared<Lambertian>(col);
+            }
+            /*color col(mat.diffuse[0], mat.diffuse[1], mat.diffuse[2]);
+            material = std::make_shared<Lambertian>(col);*/
         }
         materials_.push_back(material);
     }
