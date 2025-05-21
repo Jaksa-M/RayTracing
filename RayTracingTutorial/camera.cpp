@@ -216,11 +216,9 @@ color Camera::ray_color(const ray& r, int depth, const HittableList& world) {
                         }
                     }
                     return color_from_emission + attenuation * ray_color(scattered, depth - 1, world);
-                    //return attenuation * ray_color(scattered, depth - 1, world);
                     //return attenuation; // used for roughness view
                 }
                 return color_from_emission;
-                //return color(0.0f, 0.0f, 0.0f);
             }
             // No object hit -> Use texture as background
             unit_direction = unit_vector(r.direction());

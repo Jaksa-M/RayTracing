@@ -93,9 +93,9 @@ bool ObjLoader::load(Context& context) {
             }
         } 
         else {
-            vec3 emission(mat.emission[0], mat.emission[1], mat.emission[2]);
-            if (emission.length_squared() > 0.0001f) {
-                emissive_tex = std::make_shared<Texture>(emission);
+            vec3 emission_color(mat.emission[0], mat.emission[1], mat.emission[2]);
+            if (emission_color.length_squared() > 0.0001f) {
+                emissive_tex = std::make_shared<Texture>(emission_color);
             }
         }
         if (!mat.diffuse_texname.empty()) {
@@ -119,7 +119,7 @@ bool ObjLoader::load(Context& context) {
             vec3 diffuse_color(mat.diffuse[0], mat.diffuse[1], mat.diffuse[2]);
             if (diffuse_color.length_squared() > 0.0001f) { // diffuse color is specified
                 diffuse_tex = std::make_shared<Texture>(diffuse_color);
-                if (emissive_tex) material = std::make_shared<Lambertian>(diffuse_tex, emissive_tex);
+                if (emissive_tex) material = std::make_shared<Lambertian>(diffuse_tex, nullptr, emissive_tex);
                 else material = std::make_shared<Lambertian>(diffuse_tex);
             }
             else if (emissive_tex) {
@@ -128,8 +128,6 @@ bool ObjLoader::load(Context& context) {
             else { // If both emissive and diffuse don't exist, we create Lambertian with color(0,0,0)
                 material = std::make_shared<Lambertian>(vec3(0.0f, 0.0f, 0.0f));
             }
-            /*color col(mat.diffuse[0], mat.diffuse[1], mat.diffuse[2]);
-            material = std::make_shared<Lambertian>(col);*/
         }
         materials_.push_back(material);
     }
