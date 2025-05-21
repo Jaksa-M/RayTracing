@@ -113,7 +113,7 @@ int main(int, char**) {
     std::unique_ptr<TimeMeasurement> time_measurement = std::make_unique<TimeMeasurement>();
 
     SceneType selected_scene_index = SceneType::OBJ_LOADER;
-    BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
+    BVHTechnique chosen_technique_index = BVHTechnique::SAH;
     MeshColor chosen_mesh_color = MeshColor::MATERIAL;
 
     Context context;

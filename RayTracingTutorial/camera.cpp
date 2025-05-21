@@ -215,8 +215,7 @@ color Camera::ray_color(const ray& r, int depth, const HittableList& world) {
                             rays_to_trace_intersection_.back().second = true;
                         }
                     }
-                    color color_from_scatter = attenuation * ray_color(scattered, depth - 1, world);
-                    return color_from_emission + color_from_scatter;
+                    return color_from_emission + attenuation * ray_color(scattered, depth - 1, world);
                     //return attenuation * ray_color(scattered, depth - 1, world);
                     //return attenuation; // used for roughness view
                 }
