@@ -5,7 +5,6 @@
 #include "vec3.h"
 #include <span>
 #include <filesystem>
-#include <chrono>
 
 using MeshHandle = std::size_t;
 
@@ -83,13 +82,6 @@ struct TexDescription {
     std::uint32_t image_width;
     std::uint32_t image_height;
     TexFormat format;
-};
-
-struct TimeMeasurement {
-    std::chrono::microseconds total_bvh_time{0};
-    size_t total_bvh_calls = 0;
-    std::chrono::microseconds min_bvh_time{std::chrono::microseconds::max()};
-    std::chrono::microseconds max_bvh_time{0};
 };
 
 #endif

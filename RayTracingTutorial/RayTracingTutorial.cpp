@@ -110,10 +110,9 @@ int main(int, char**) {
     std::unique_ptr<MeshBufferManager> mesh_buf_manager = std::make_unique<MeshBufferManager>();
     std::unique_ptr<BVHManager> bvh_manager = std::make_unique<BVHManager>(gui_settings.get());
     std::unique_ptr<Statistics> statistics = std::make_unique<Statistics>();
-    std::unique_ptr<TimeMeasurement> time_measurement = std::make_unique<TimeMeasurement>();
 
     SceneType selected_scene_index = SceneType::OBJ_LOADER;
-    BVHTechnique chosen_technique_index = BVHTechnique::SAH;
+    BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
     MeshColor chosen_mesh_color = MeshColor::MATERIAL;
 
     Context context;
@@ -122,7 +121,6 @@ int main(int, char**) {
     context.mesh_buf_manager = mesh_buf_manager.get();
     context.bvh_manager = bvh_manager.get();
     context.statistics = statistics.get();
-    context.time_measurement = time_measurement.get();
 
     std::unique_ptr<Scene> active_scene;
 
@@ -453,8 +451,7 @@ int main(int, char**) {
         // Reseting accumulating buffer every frame to better view rotation... etc
         if (reset_accumulated == true) active_scene->getActiveCamera().setCameraMoved(true);
     }
-    printMeasuredTime(context.time_measurement->total_bvh_time, context.time_measurement->total_bvh_calls, context.time_measurement->min_bvh_time,
-                      context.time_measurement->max_bvh_time);
+
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
