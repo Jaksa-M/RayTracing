@@ -194,7 +194,6 @@ color Camera::ray_color(const ray& r, int depth, const HittableList& world) {
     if (depth <= 0) return color(0.0f, 0.0f, 0.0f);
 
     HitRecord rec;
-    //rec.t_ = std::numeric_limits<float>::max();
 
     // Variables can't be declared inside switch case
     vec3 unit_direction;
@@ -208,6 +207,7 @@ color Camera::ray_color(const ray& r, int depth, const HittableList& world) {
             if (world.hit(r, interval(0.001f, float_max), rec)) {
                 ray scattered;
                 color attenuation;
+                color color_from_emission = rec.mat->emitted(rec);
                 if (rec.mat->scatter(r, rec, attenuation, scattered)) {
                     if (settings_.debug_rays == true) {
                         std::scoped_lock lock(mutex_render_);
@@ -215,10 +215,10 @@ color Camera::ray_color(const ray& r, int depth, const HittableList& world) {
                             rays_to_trace_intersection_.back().second = true;
                         }
                     }
-                    return attenuation * ray_color(scattered, depth - 1, world);
+                    return color_from_emission + attenuation * ray_color(scattered, depth - 1, world);
                     //return attenuation; // used for roughness view
                 }
-                return color(0.0f, 0.0f, 0.0f);
+                return color_from_emission;
             }
             // No object hit -> Use texture as background
             unit_direction = unit_vector(r.direction());

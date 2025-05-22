@@ -15,14 +15,16 @@ public:
     virtual bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered) const {
         return false;
     }
+
+    virtual vec3 emitted(const HitRecord& rec) const { return vec3(0, 0, 0); }
 };
 
 
 class Lambertian : public Material {
 public:
     Lambertian(const color& albedo) : tex_(std::make_shared<Texture>(albedo)) {}
-    Lambertian(std::shared_ptr<Texture> tex, std::shared_ptr<Texture> normal_map_tex = nullptr) :
-        tex_(tex), normal_map_tex(normal_map_tex) {}
+    Lambertian(std::shared_ptr<Texture> tex, std::shared_ptr<Texture> normal_map_tex = nullptr, std::shared_ptr<Texture> emissive_tex = nullptr) :
+        tex_(tex), normal_map_tex_(normal_map_tex), emissive_tex_(emissive_tex) {}
     
     bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered) const override {
         ResolvedMeshInfo res_mesh_info = rec.mesh_buf_manager->getResolvedMesh(rec.mesh_handle);
@@ -42,7 +44,7 @@ public:
         matrix3x3 local_to_world = rec.local_to_world_mat.convertTo3x3().invert().transpose();
         shading_normal = unit_vector(local_to_world * shading_normal); // transform shading_normal to world space
 
-        if (normal_map_tex) { // Apply normal map if specified
+        if (normal_map_tex_) { // Apply normal map if specified
             // Tangent and bitangent calculation
             vec3 v0, v1, v2;
             getTriangleVertices(res_mesh_info, i0, i1, i2, v0, v1, v2);
@@ -63,7 +65,7 @@ public:
             tangent = unit_vector(tangent);
             vec3 bitangent = unit_vector(cross(shading_normal, tangent));
 
-            vec3 normal_sample = normal_map_tex->value(uv[0], uv[1]);
+            vec3 normal_sample = normal_map_tex_->value(uv[0], uv[1]);
             vec3 tangent_normal = unit_vector(2.0f * normal_sample - vec3(1.0f)); // [0,1] -> [-1,1]
 
             // Transform normal from tangent to world space
@@ -84,16 +86,34 @@ public:
         return true;
     }
 
+    vec3 emitted(const HitRecord& rec) const override {
+        if (!emissive_tex_) return vec3(0.0f);
+
+        ResolvedMeshInfo res_mesh_info = rec.mesh_buf_manager->getResolvedMesh(rec.mesh_handle);
+
+        std::uint32_t i0 = res_mesh_info.indices[rec.triangle_index];
+        std::uint32_t i1 = res_mesh_info.indices[rec.triangle_index + 1];
+        std::uint32_t i2 = res_mesh_info.indices[rec.triangle_index + 2];
+
+        vec2 uv0, uv1, uv2;
+        getTriangleUVs(res_mesh_info, i0, i1, i2, uv0, uv1, uv2);
+        vec2 uv = barycentricInterpolate(uv0, uv1, uv2, rec.buv);
+
+        return emissive_tex_->value(uv[0], uv[1]);
+    }
+
 private:
     std::shared_ptr<Texture> tex_;
-    std::shared_ptr<Texture> normal_map_tex;
+    std::shared_ptr<Texture> normal_map_tex_;
+    std::shared_ptr<Texture> emissive_tex_;
 };
 
 
 class Metal : public Material {
 public:
-    Metal(std::shared_ptr<Texture> albedo_tex, std::shared_ptr<Texture> roughness_tex, std::shared_ptr<Texture> normal_map_tex = nullptr) :
-        albedo_tex_(albedo_tex), roughness_tex_(roughness_tex), normal_map_tex(normal_map_tex) {}
+    Metal(std::shared_ptr<Texture> albedo_tex, std::shared_ptr<Texture> roughness_tex, std::shared_ptr<Texture> normal_map_tex = nullptr,
+            std::shared_ptr<Texture> emissive_tex = nullptr) :
+        albedo_tex_(albedo_tex), roughness_tex_(roughness_tex), normal_map_tex_(normal_map_tex), emissive_tex_(emissive_tex) {}
 
     bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered) const override {
         ResolvedMeshInfo res_mesh_info = rec.mesh_buf_manager->getResolvedMesh(rec.mesh_handle);
@@ -110,10 +130,10 @@ public:
         getTriangleNormals(res_mesh_info, i0, i1, i2, n0, n1, n2);
         vec3 shading_normal = unit_vector(barycentricInterpolate(n0, n1, n2, rec.buv));
 
-         matrix3x3 local_to_world = rec.local_to_world_mat.convertTo3x3().invert().transpose();
+        matrix3x3 local_to_world = rec.local_to_world_mat.convertTo3x3().invert().transpose();
         shading_normal = unit_vector(local_to_world * shading_normal); // transform shading_normal to world space
 
-        if (normal_map_tex) { // Apply normal map if specified
+        if (normal_map_tex_) { // Apply normal map if specified
             // Tangent and bitangent calculation
             vec3 v0, v1, v2;
             getTriangleVertices(res_mesh_info, i0, i1, i2, v0, v1, v2);
@@ -134,7 +154,7 @@ public:
             tangent = unit_vector(tangent);
             vec3 bitangent = unit_vector(cross(shading_normal, tangent));
 
-            vec3 normal_sample = normal_map_tex->value(uv[0], uv[1]);
+            vec3 normal_sample = normal_map_tex_->value(uv[0], uv[1]);
             vec3 tangent_normal = unit_vector(2.0f * normal_sample - vec3(1.0f)); // [0,1] -> [-1,1]
 
             // Transform normal from tangent to world space
@@ -157,10 +177,54 @@ public:
         return (dot(scattered.direction(), normal) > 0);
     }
 
+    vec3 emitted(const HitRecord& rec) const override {
+        if (!emissive_tex_) return vec3(0.0f);
+
+        ResolvedMeshInfo res_mesh_info = rec.mesh_buf_manager->getResolvedMesh(rec.mesh_handle);
+
+        std::uint32_t i0 = res_mesh_info.indices[rec.triangle_index];
+        std::uint32_t i1 = res_mesh_info.indices[rec.triangle_index + 1];
+        std::uint32_t i2 = res_mesh_info.indices[rec.triangle_index + 2];
+
+        vec2 uv0, uv1, uv2;
+        getTriangleUVs(res_mesh_info, i0, i1, i2, uv0, uv1, uv2);
+        vec2 uv = barycentricInterpolate(uv0, uv1, uv2, rec.buv);
+
+        return emissive_tex_->value(uv[0], uv[1]);
+    }
+
 private:
     std::shared_ptr<Texture> albedo_tex_;
     std::shared_ptr<Texture> roughness_tex_;
-    std::shared_ptr<Texture> normal_map_tex;
+    std::shared_ptr<Texture> normal_map_tex_;
+    std::shared_ptr<Texture> emissive_tex_;
+};
+
+class Emissive : public Material {
+public:
+    Emissive(std::shared_ptr<Texture> tex) : tex_(tex) {}
+    Emissive(const color& emit) : tex_(std::make_shared<Texture>(emit)) {}
+
+    bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered) const override {
+        return false; // Emissive materials don't scatter rays, they emit light
+    }
+
+    vec3 emitted(const HitRecord& rec) const override {
+        ResolvedMeshInfo res_mesh_info = rec.mesh_buf_manager->getResolvedMesh(rec.mesh_handle);
+
+        std::uint32_t i0 = res_mesh_info.indices[rec.triangle_index];
+        std::uint32_t i1 = res_mesh_info.indices[rec.triangle_index + 1];
+        std::uint32_t i2 = res_mesh_info.indices[rec.triangle_index + 2];
+
+        vec2 uv0, uv1, uv2;
+        getTriangleUVs(res_mesh_info, i0, i1, i2, uv0, uv1, uv2);
+        vec2 uv = barycentricInterpolate(uv0, uv1, uv2, rec.buv);
+
+        return tex_->value(uv[0], uv[1]);
+    }
+
+private:
+    std::shared_ptr<Texture> tex_;
 };
 
 #endif
