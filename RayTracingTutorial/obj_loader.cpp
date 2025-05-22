@@ -50,8 +50,10 @@ bool ObjLoader::load(Context& context) {
         std::shared_ptr<Material> material;
         std::shared_ptr<Texture> roughness_tex;
         std::shared_ptr<Texture> normal_map_tex;
+        std::shared_ptr<Texture> emissive_tex;
+        std::shared_ptr<Texture> diffuse_tex;
 
-        if (mat.bump_texname.empty() == false) {
+        if (!mat.bump_texname.empty()) {
             fs::path normal_map_texture_path = file_.parent_path() / mat.bump_texname;
             TextureLoader normal_map_tex_loader(normal_map_texture_path.string());
             if (!normal_map_tex_loader.load(false)) {
@@ -62,22 +64,41 @@ bool ObjLoader::load(Context& context) {
                 normal_map_tex = std::make_shared<Texture>(normal_map_tex_loader.getData(), desc);
             }
         }
-        if (mat.specular_texname.empty() == false) {
+        if (!mat.specular_texname.empty()) {
             fs::path specular_texture_path = file_.parent_path() / mat.specular_texname;
             TextureLoader spec_tex_loader(specular_texture_path.string());
             if (!spec_tex_loader.load()) {
                 std::cerr << "ERROR: Could not load specular texture file '" << specular_texture_path << "'.\n";
-            }
-            TexDescription desc(spec_tex_loader.getImageWidth(), spec_tex_loader.getImageHeight(), spec_tex_loader.getFormat());
-            roughness_tex = std::make_shared<Texture>(spec_tex_loader.getData(), desc);
+            } 
+            else {
+                TexDescription desc(spec_tex_loader.getImageWidth(), spec_tex_loader.getImageHeight(), spec_tex_loader.getFormat());
+                roughness_tex = std::make_shared<Texture>(spec_tex_loader.getData(), desc);
 
-            // We need to invert R pixel for correct roughness
-            std::span<unsigned char> pixels = roughness_tex->getData();
-            for (std::size_t i = 0; i < pixels.size(); i += getChannelCount(roughness_tex->getFormat())) {
-                pixels[i] = 255 - pixels[i]; // we only need to invert first color
+                // We need to invert R pixel for correct roughness
+                std::span<unsigned char> pixels = roughness_tex->getData();
+                for (std::size_t i = 0; i < pixels.size(); i += getChannelCount(roughness_tex->getFormat())) {
+                    pixels[i] = 255 - pixels[i];  // we only need to invert first color
+                }
             }
         }
-        if (mat.diffuse_texname.empty() == false) {
+        if (!mat.emissive_texname.empty()) {
+            fs::path emissive_texture_path = file_.parent_path() / mat.emissive_texname;
+            TextureLoader emissive_tex_loader(emissive_texture_path.string());
+            if (!emissive_tex_loader.load(false)) {
+                std::cerr << "ERROR: Could not load emissive texture file '" << emissive_texture_path << "'.\n";
+            }
+            else {
+                TexDescription desc(emissive_tex_loader.getImageWidth(), emissive_tex_loader.getImageHeight(), emissive_tex_loader.getFormat());
+                emissive_tex = std::make_shared<Texture>(emissive_tex_loader.getData(), desc);
+            }
+        } 
+        else {
+            vec3 emission_color(mat.emission[0], mat.emission[1], mat.emission[2]);
+            if (emission_color.length_squared() > 0.0001f) {
+                emissive_tex = std::make_shared<Texture>(emission_color);
+            }
+        }
+        if (!mat.diffuse_texname.empty()) {
             fs::path texture_path = file_.parent_path() / mat.diffuse_texname;
             TextureLoader tex_loader(texture_path.string());
             if (!tex_loader.load()) {
@@ -85,14 +106,28 @@ bool ObjLoader::load(Context& context) {
             }
             TexDescription desc(tex_loader.getImageWidth(), tex_loader.getImageHeight(), tex_loader.getFormat());
             std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader.getData(), desc);
+
             if (roughness_tex != nullptr) {
-                material = std::make_shared<Metal>(tex, roughness_tex, normal_map_tex);
-            } else {
-                material = std::make_shared<Lambertian>(tex, normal_map_tex);
+                if (emissive_tex) material = std::make_shared<Metal>(tex, roughness_tex, normal_map_tex, emissive_tex);
+                else material = std::make_shared<Metal>(tex, roughness_tex, normal_map_tex);
+            } 
+            else {
+                if (emissive_tex) material = std::make_shared<Lambertian>(tex, normal_map_tex, emissive_tex);
+                else material = std::make_shared<Lambertian>(tex, normal_map_tex);
             }
         } else {
-            color col(mat.diffuse[0], mat.diffuse[1], mat.diffuse[2]);
-            material = std::make_shared<Lambertian>(col);
+            vec3 diffuse_color(mat.diffuse[0], mat.diffuse[1], mat.diffuse[2]);
+            if (diffuse_color.length_squared() > 0.0001f) { // diffuse color is specified
+                diffuse_tex = std::make_shared<Texture>(diffuse_color);
+                if (emissive_tex) material = std::make_shared<Lambertian>(diffuse_tex, nullptr, emissive_tex);
+                else material = std::make_shared<Lambertian>(diffuse_tex);
+            }
+            else if (emissive_tex) {
+                material = std::make_shared<Emissive>(emissive_tex);
+            } 
+            else { // If both emissive and diffuse don't exist, we create Lambertian with color(0,0,0)
+                material = std::make_shared<Lambertian>(vec3(0.0f, 0.0f, 0.0f));
+            }
         }
         materials_.push_back(material);
     }
