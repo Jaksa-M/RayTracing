@@ -6,6 +6,10 @@
 #include <vector>
 #include <chrono>
 
+// for rightMouseClick function
+#include "hittable.h"
+#include "camera.h"
+
 inline vec3 gammaToLinear(vec3& color) {
     return vec3(std::pow(color.x(), 2.2f), std::pow(color.y(), 2.2f), std::pow(color.z(), 2.2f));
 }

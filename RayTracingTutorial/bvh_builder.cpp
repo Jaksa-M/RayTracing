@@ -7,10 +7,7 @@
 
 BVHBuilder::BVHBuilder(std::span<const float> vertices, std::span<std::uint32_t> indices,
     std::span<const Triangle> triangles, std::span<std::uint32_t> triangle_indices):
-    vertices_(vertices), indices_(indices), triangles_(triangles), triangle_indices_(triangle_indices)
-{
-
-}
+    vertices_(vertices), indices_(indices), triangles_(triangles), triangle_indices_(triangle_indices) {}
 
 std::vector<BVHNode> BVHBuilder::buildBVH() {
     std::uint32_t N = static_cast<std::uint32_t>(indices_.size() / 3);
@@ -51,6 +48,8 @@ std::vector<BVHNode> BVHBuilder::buildBVHSAH() {
     subdivideSAH(0);
 
     reorderIndices();
+
+    bvh_nodes_.resize(nodes_used_); // Trim unused nodes
     return bvh_nodes_;
 }
 
@@ -148,7 +147,7 @@ void BVHBuilder::subdivideSAH(std::uint32_t node_index) {
     float best_cost = float_max; // Maximum value for float, it is taken from math_constants.h file
     for (int axis = 0; axis < 3; axis++) { // Iterate over every axis
         for (std::uint32_t i = 0; i < node.triangle_cnt; i++) { // Iterate over every triangle inside current node
-            const Triangle& triangle = triangles_[triangle_indices_[node.left_child + i]];
+            const Triangle& triangle = triangles_[triangle_indices_[node.first_triangle_index + i]];
             float val = triangle.centroid[axis];
             float cost = evaluateSAH(node, axis, val);
             if (cost < best_cost) {
@@ -195,15 +194,15 @@ void BVHBuilder::subdivideSAH(std::uint32_t node_index) {
     bvh_nodes_[right_child_index].triangle_cnt = node.triangle_cnt - leftCount;
 
     // We also use this variable to know if it is leaf node or not. Leaf nodes have primCount > 0.
-    // So every time node gets split into children, primCount for that node becomes 0.
+    // So every time node gets split into children, triangle_cnt for that node becomes 0.
     node.triangle_cnt = 0;
 
     createBoundBox(left_child_index);
     createBoundBox(right_child_index);
 
     // Recursive call, first visit left child, than right
-    subdivide(left_child_index);
-    subdivide(right_child_index);
+    subdivideSAH(left_child_index);
+    subdivideSAH(right_child_index);
 }
 
 float BVHBuilder::evaluateSAH(BVHNode& node, int axis, float pos) {
@@ -214,7 +213,7 @@ float BVHBuilder::evaluateSAH(BVHNode& node, int axis, float pos) {
 
     // Determine triangle counts and bounds for this split candidate
     for (std::uint32_t i = 0; i < node.triangle_cnt; i++) {
-        const Triangle& triangle = triangles_[triangle_indices_[node.left_child + i]];
+        const Triangle& triangle = triangles_[triangle_indices_[node.first_triangle_index + i]];
         if (triangle.centroid[axis] < pos) {
             leftCount++;
             left_box_min.setX(std::min({ left_box_min.x(), triangle.v0.x(), triangle.v1.x(), triangle.v2.x() }));

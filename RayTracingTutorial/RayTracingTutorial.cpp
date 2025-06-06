@@ -113,7 +113,7 @@ int main(int, char**) {
     std::unique_ptr<TimeMeasurement> time_measurement = std::make_unique<TimeMeasurement>();
 
     SceneType selected_scene_index = SceneType::OBJ_LOADER;
-    BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
+    BVHTechnique chosen_technique_index = BVHTechnique::SAH;
     MeshColor chosen_mesh_color = MeshColor::MATERIAL;
 
     Context context;
@@ -275,6 +275,20 @@ int main(int, char**) {
                     cameras[selected_camera_index]->recalculateYawPitch(yaw, pitch);
                     cam_controller->setYawPitch(yaw, pitch);
                     active_scene->getActiveCamera().setCameraMoved(true);
+                }
+
+                if (!io.WantCaptureMouse) {
+                    static bool was_right_mouse_down = false;
+
+                    // Detect if button is pressed now but not in previous frame
+                    bool is_right_mouse_down = ImGui::IsMouseDown(1);
+                    if (is_right_mouse_down && !was_right_mouse_down) {
+                        ray r = (*cameras[selected_camera_index]).createRayFromMousePos(io.MousePos.x, io.MousePos.y);
+                        //Hittable* object =
+                        active_scene->rayCast(r);
+                        //printf(object->getName());
+                    }
+                    was_right_mouse_down = is_right_mouse_down;
                 }
             }
 

@@ -13,7 +13,7 @@
 struct Context;
 
 class RTMesh : public Hittable {
-   public:
+public:
     RTMesh(Context& context, MeshHandle mesh_handle, std::shared_ptr<Material> mat);
 
     std::string object_type() const override { return "cube triangle mesh"; }
@@ -32,6 +32,8 @@ class RTMesh : public Hittable {
     void update() override;
     int getTriangleCount() const override;
 
+    void intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, float& closest_hit_t) const;
+
 private:
     Context& context_;
 
@@ -44,7 +46,5 @@ private:
     
     ResolvedMeshInfo res_mesh_info_;
     std::span<const BVHNode> bvh_nodes_;
-    
-    void intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, float& closest_hit_t) const;
 };
 #endif

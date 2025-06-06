@@ -53,6 +53,8 @@ public:
 
     void applyPreset(CameraPreset preset);
 
+    ray createRayFromMousePos(float mouse_x, float mouse_y);
+
 private:
     std::string name_;
     GUISettings settings_;

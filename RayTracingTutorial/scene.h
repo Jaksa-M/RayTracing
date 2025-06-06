@@ -34,6 +34,16 @@ public:
 	virtual void setActiveCamera(int index) { active_camera_ = index; }
 	virtual Camera& getActiveCamera() { return *cameras_[active_camera_]; };
 	virtual const std::vector<std::unique_ptr<Camera>>& getCameras() const { return cameras_; };
+
+	virtual void rayCast(ray& r) {
+        // Fire the ray in that direction and intersect with BVH
+        std::cout << "Firing ray from: " << r.origin() << " in direction: " << r.direction() << std::endl;
+
+        HitRecord rec;
+        if (world_->hit(r, interval(0.001f, float_max), rec)) {
+            std::cout << "Succesfully hit at: " << rec.t << std::endl;
+        }
+	}
 	
 protected:
     std::unique_ptr<HittableList> world_;
