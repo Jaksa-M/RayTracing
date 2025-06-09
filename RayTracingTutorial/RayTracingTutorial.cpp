@@ -284,8 +284,7 @@ int main(int, char**) {
                     bool is_right_mouse_down = ImGui::IsMouseDown(1);
                     if (is_right_mouse_down && !was_right_mouse_down) {
                         ray r = (*cameras[selected_camera_index]).createRayFromMousePos(io.MousePos.x, io.MousePos.y);
-                        //Hittable* object =
-                        active_scene->rayCast(r);
+                        std::size_t mesh_handle = active_scene->rayCast(r);
                         //printf(object->getName());
                     }
                     was_right_mouse_down = is_right_mouse_down;

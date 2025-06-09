@@ -6,7 +6,6 @@
 #include "matrix.h"
 #include "ray.h"
 #include "vec3.h"
-#include "bvh_builder.h"
 
 inline IntersectResult intersectTriangle(const ray& r, interval ray_t, const vec3& v0, const vec3& v1, const vec3& v2) {
     // Moeller Trumbore ray triangle intersection algorithm
