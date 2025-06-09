@@ -110,9 +110,10 @@ int main(int, char**) {
     std::unique_ptr<MeshBufferManager> mesh_buf_manager = std::make_unique<MeshBufferManager>();
     std::unique_ptr<BVHManager> bvh_manager = std::make_unique<BVHManager>(gui_settings.get());
     std::unique_ptr<Statistics> statistics = std::make_unique<Statistics>();
+    std::unique_ptr<TimeMeasurement> time_measurement = std::make_unique<TimeMeasurement>();
 
     SceneType selected_scene_index = SceneType::OBJ_LOADER;
-    BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
+    BVHTechnique chosen_technique_index = BVHTechnique::SAH;
     MeshColor chosen_mesh_color = MeshColor::MATERIAL;
 
     Context context;
@@ -121,6 +122,7 @@ int main(int, char**) {
     context.mesh_buf_manager = mesh_buf_manager.get();
     context.bvh_manager = bvh_manager.get();
     context.statistics = statistics.get();
+    context.time_measurement = time_measurement.get();
 
     std::unique_ptr<Scene> active_scene;
 
@@ -273,6 +275,19 @@ int main(int, char**) {
                     cameras[selected_camera_index]->recalculateYawPitch(yaw, pitch);
                     cam_controller->setYawPitch(yaw, pitch);
                     active_scene->getActiveCamera().setCameraMoved(true);
+                }
+
+                if (!io.WantCaptureMouse) {
+                    static bool was_right_mouse_down = false;
+
+                    // Detect if button is pressed now but not in previous frame
+                    bool is_right_mouse_down = ImGui::IsMouseDown(1);
+                    if (is_right_mouse_down && !was_right_mouse_down) {
+                        ray r = (*cameras[selected_camera_index]).createRayFromMousePos(io.MousePos.x, io.MousePos.y);
+                        std::size_t mesh_handle = active_scene->rayCast(r);
+                        //printf(object->getName());
+                    }
+                    was_right_mouse_down = is_right_mouse_down;
                 }
             }
 
@@ -451,7 +466,8 @@ int main(int, char**) {
         // Reseting accumulating buffer every frame to better view rotation... etc
         if (reset_accumulated == true) active_scene->getActiveCamera().setCameraMoved(true);
     }
-
+    printMeasuredTime(context.time_measurement->total_bvh_time, context.time_measurement->total_bvh_calls, context.time_measurement->min_bvh_time,
+                      context.time_measurement->max_bvh_time);
     // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();

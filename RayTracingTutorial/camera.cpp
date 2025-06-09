@@ -94,7 +94,7 @@ void Camera::render(const HittableList& world, std::vector<vec4>& image_data_acc
             std::uint32_t start_y = block_id.second * block_size;
 
             // This will all be called for every frame (like a while loop that executes every frame)
-            auto offset = sample_square();
+            vec3 offset = sample_square();
             for (std::uint32_t j = start_y; j < std::min(start_y + block_size, std::uint32_t(image_height)); j++) {
                 //int flipped_j = image_height_ - j - 1;  // Flip the row index
                 int flipped_j = j;
@@ -155,15 +155,15 @@ void Camera::initialize() {
     float viewport_width = viewport_height * (float(image_width) / image_height);
 
     // Calculate the vectors across the horizontal and down the vertical viewport edges.
-    auto viewport_u = camera_right_ * viewport_width;
-    auto viewport_v = camera_up_ * viewport_height;
+    vec3 viewport_u = camera_right_ * viewport_width;
+    vec3 viewport_v = camera_up_ * viewport_height;
 
     // Calculate the horizontal and vertical delta vectors from pixel to pixel.
     pixel_delta_u_ = viewport_u / static_cast<float>(image_width);
     pixel_delta_v_ = viewport_v / static_cast<float>(image_height);
 
     // Calculate the location of the upper left pixel.
-    auto viewport_upper_left = center_ - camera_direction_ * focal_length_ - viewport_u / 2.0f - viewport_v / 2.0f;
+    vec3 viewport_upper_left = center_ - camera_direction_ * focal_length_ - viewport_u / 2.0f - viewport_v / 2.0f;
     pixel00_loc_ = viewport_upper_left + 0.5f * (pixel_delta_u_ + pixel_delta_v_);
 
     view_matrix_ = transformation::makeViewMatrix(camera_direction_, camera_right_, -camera_up_, center_);
@@ -173,12 +173,12 @@ void Camera::initialize() {
 ray Camera::get_ray(int i, int j, vec3 offset) const {
     // Construct a camera ray originating from the origin and directed at randomly sampled point around the pixel location i, j.
 
-    auto pixel_sample = pixel00_loc_
+    vec3 pixel_sample = pixel00_loc_
         + ((i + offset.x()) * pixel_delta_u_)
         + ((j + offset.y()) * pixel_delta_v_);
 
-    auto ray_origin = center_;
-    auto ray_direction = pixel_sample - ray_origin;
+    vec3 ray_origin = center_;
+    vec3 ray_direction = pixel_sample - ray_origin;
 
     //return ray(ray_origin, ray_direction);
     return ray(ray_origin, unit_vector(ray_direction));
@@ -393,4 +393,19 @@ void Camera::applyPreset(CameraPreset preset) {
     camera_up_ = preset.up;
     center_ = preset.pos;
     focal_length_ = preset.focal_len;
+}
+
+ray Camera::createRayFromMousePos(float mouse_x, float mouse_y) {
+    float u = mouse_x / image_width;
+    float v = mouse_y / image_height;
+    float pixel_x = u * image_width;
+    float pixel_y = (1.0f - v) * image_height;  // flip Y
+
+    // Compute the sampled point on the view plane
+    vec3 pixel_sample = pixel00_loc_ + (pixel_x * pixel_delta_u_) + (pixel_y * pixel_delta_v_);
+
+    vec3 ray_origin = center_;
+    vec3 ray_direction = pixel_sample - ray_origin;
+
+    return ray(ray_origin, unit_vector(ray_direction));
 }

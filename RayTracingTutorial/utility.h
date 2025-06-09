@@ -4,6 +4,11 @@
 #include "vec3.h"
 #include "interval.h"
 #include <vector>
+#include <chrono>
+
+// for rightMouseClick function
+#include "hittable.h"
+#include "camera.h"
 
 inline vec3 gammaToLinear(vec3& color) {
     return vec3(std::pow(color.x(), 2.2f), std::pow(color.y(), 2.2f), std::pow(color.z(), 2.2f));
@@ -61,6 +66,15 @@ inline void convertAccumulatedToFloatImage(std::span<vec3> image_data_float, con
 
         image_data_float[i] = vec3(r, g, b);
     }
+}
+
+inline void printMeasuredTime(std::chrono::microseconds total_bvh_time, size_t total_bvh_calls, std::chrono::microseconds min_bvh_time,
+                            std::chrono::microseconds max_bvh_time) {
+    std::cout << "  Calls: " << total_bvh_calls << "\n";
+    std::cout << "  Total Time: " << total_bvh_time.count() / 1000.0 << " ms\n";
+    std::cout << "  Average Time: " << (total_bvh_calls ? (total_bvh_time.count() / 1000.0) / total_bvh_calls : 0.0) << " ms\n";
+    std::cout << "  Min Time: " << min_bvh_time.count() / 1000.0 << " ms\n";
+    std::cout << "  Max Time: " << max_bvh_time.count() / 1000.0 << " ms\n";
 }
 
 #endif
