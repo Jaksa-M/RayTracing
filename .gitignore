@@ -5,11 +5,11 @@ RayTracingTutorial/imgui.ini
 x64/
 
 # Some files that I only need on my PC
-RayTracingTutorial/Cameras/saved_presets.txt
-RayTracingTutorial/Resources/sponza/sponza_split.obj
-RayTracingTutorial/Resources/sponza/sponza_split2.obj
-RayTracingTutorial/Resources/sponza/sponza2.obj
-RayTracingTutorial/Resources/erato/erato.obj
+Cameras/saved_presets.txt
+Resources/sponza/sponza_split.obj
+Resources/sponza/sponza_split2.obj
+Resources/sponza/sponza2.obj
+Resources/erato/erato.obj
 
-RayTracingTutorial/Screenshots/
-RayTracingTutorial/Resources/CornellBox/
+Screenshots/
+Resources/CornellBox/

@@ -150,7 +150,7 @@ int main(int, char**) {
     bool screenshot_button_pressed = false;
 
     std::unique_ptr<CameraController> cam_controller;
-    std::string camera_file = "Cameras/saved_presets.txt";
+    std::string camera_file = "../Cameras/saved_presets.txt";
     std::vector<CameraPreset> camera_presets;
 
     loadPresetsFromFile(camera_file, camera_presets);
