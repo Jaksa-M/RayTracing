@@ -45,10 +45,10 @@ void addMesh(MeshHandle mesh_handle, std::shared_ptr<Material> material, matrix4
 }
 
 void saveAndCompare(std::string file_name, const std::vector<std::unique_ptr<Camera>>& cameras, const std::unique_ptr<HittableList>& world,
-                    Context& context) {
+                    Context& context, bool delete_files) {
     std::vector<vec4> image_data_acc(DISPLAY_W * DISPLAY_H, vec4(0.0f));  // Accumulated image buffer
 
-    // Call render 200 times
+    // Call render 20 times
     for (int i = 0; i < 20; i++) {
         cameras[0]->render(*world.get(), image_data_acc, *context.settings);
     }
@@ -60,29 +60,40 @@ void saveAndCompare(std::string file_name, const std::vector<std::unique_ptr<Cam
     // Save final screenshot
     saveImage(file_name, image_data_float, DISPLAY_W, DISPLAY_H, false);
 
-    /*if (!compareWithExpectedImage(file_name)) {
+    if (!compareWithExpectedImage(file_name, 10, 0.01f)) {
         FAIL() << "Image comparison failed for file: " << file_name;
-    }*/
+    }
+
+    if (delete_files) {
+        // Delete the test image after successful comparison
+        std::string result_path = "../TestResults/" + file_name + ".png";
+        std::error_code ec;
+        if (!fs::remove(result_path, ec)) {
+            std::cerr << "Warning: Failed to delete temporary image: " << result_path << "\n"
+                      << "Reason: " << ec.message() << std::endl;
+        }
+    }
 }
 
-void applyImageComparisonTests(std::string file_name, Context& context, std::vector<std::unique_ptr<Camera>>& cameras, std::unique_ptr<HittableList> & world) {
-    saveAndCompare(file_name + "_test", cameras, world, context);
+void applyImageComparisonTests(std::string file_name, Context& context, std::vector<std::unique_ptr<Camera>>& cameras, 
+                    std::unique_ptr<HittableList> & world, bool delete_files) {
+    saveAndCompare(file_name + "_test", cameras, world, context, delete_files);
 
     // Test shading normal
     context.settings->mesh_color = MeshColor::SHADING_NORMAL;
-    saveAndCompare(file_name + "_shading_normal_test", cameras, world, context);
+    saveAndCompare(file_name + "_shading_normal_test", cameras, world, context, delete_files);
 
     // Test uv
     context.settings->mesh_color = MeshColor::UV;
-    saveAndCompare(file_name + "_uv_test", cameras, world, context);
+    saveAndCompare(file_name + "_uv_test", cameras, world, context, delete_files);
 
     // Test geometric normal
     context.settings->mesh_color = MeshColor::GEOMETRIC_NORMAL;
-    saveAndCompare(file_name + "_geometric_normal_test", cameras, world, context);
+    saveAndCompare(file_name + "_geometric_normal_test", cameras, world, context, delete_files);
 
     // Test depth
     context.settings->mesh_color = MeshColor::DEPTH;
-    saveAndCompare(file_name + "_depth_test", cameras, world, context);
+    saveAndCompare(file_name + "_depth_test", cameras, world, context, delete_files);
 }
 
 #endif

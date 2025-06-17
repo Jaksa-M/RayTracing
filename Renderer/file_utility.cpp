@@ -212,7 +212,10 @@ void saveImage(std::string file_name, std::span<const vec3> data, int width, int
     }
 }
 
-bool compareWithExpectedImage(const std::string& file_name) {
+bool compareWithExpectedImage(const std::string& file_name, int max_per_channel_diff, float max_allowed_error_ratio) {
+    // When comparing two images, each color channel (R,G,B) in a pixel is allowed to differ by max_per_channel_diff
+    // max_allowed_error_ratio = how many pixels are allowed to be different (for example, 0.1% would be ~480 pixels in a 1920x1080 image).
+
     std::string expected_path = "../ExpectedTestResults/" + file_name + ".png";
     std::string result_path = "../TestResults/" + file_name + ".png";
 
@@ -236,17 +239,28 @@ bool compareWithExpectedImage(const std::string& file_name) {
         return false;
     }
 
-    int pixel_count = w1 * h1 * 3;
+    int pixel_count = w1 * h1;
+    int error_pixel_count = 0;
+
     for (int i = 0; i < pixel_count; i++) {
-        if (img1[i] != img2[i]) {
-            std::cerr << "Mismatch at byte " << i << ": expected " << (int)img1[i] << ", got " << (int)img2[i] << std::endl;
-            stbi_image_free(img1);
-            stbi_image_free(img2);
-            return false;
+        int r1 = img1[i * 3 + 0], g1 = img1[i * 3 + 1], b1 = img1[i * 3 + 2];
+        int r2 = img2[i * 3 + 0], g2 = img2[i * 3 + 1], b2 = img2[i * 3 + 2];
+
+        if (std::abs(r1 - r2) > max_per_channel_diff || std::abs(g1 - g2) > max_per_channel_diff || std::abs(b1 - b2) > max_per_channel_diff) {
+            error_pixel_count++;
         }
     }
 
     stbi_image_free(img1);
     stbi_image_free(img2);
+
+    float error_ratio = static_cast<float>(error_pixel_count) / static_cast<float>(pixel_count);
+
+    if (error_ratio > max_allowed_error_ratio) {
+        std::cerr << "Image comparison failed: " << error_pixel_count << " pixels out of " << pixel_count << " (" << (error_ratio * 100.0f)
+                  << "%) differ more than allowed threshold.\n";
+        return false;
+    }
+
     return true;
 }
