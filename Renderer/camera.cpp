@@ -201,6 +201,9 @@ color Camera::ray_color(const ray& r, int depth, const HittableList& world) {
     float u, v;
     switch (settings_.mesh_color) {
         case MeshColor::MATERIAL:
+        case MeshColor::SHADING_NORMAL:
+        case MeshColor::UV:
+        case MeshColor::ROUGHNESS:
             // If we've exceeded the ray bounce limit, no more light is gathered.
             if (depth <= 0) return color(0.0f, 0.0f, 0.0f);
 
@@ -208,15 +211,19 @@ color Camera::ray_color(const ray& r, int depth, const HittableList& world) {
                 ray scattered;
                 color attenuation;
                 color color_from_emission = rec.mat->emitted(rec);
-                if (rec.mat->scatter(r, rec, attenuation, scattered)) {
+                if (rec.mat->scatter(r, rec, attenuation, scattered, settings_)) {
                     if (settings_.debug_rays == true) {
                         std::scoped_lock lock(mutex_render_);
                         if (rays_to_trace_intersection_.empty() == false) {
                             rays_to_trace_intersection_.back().second = true;
                         }
                     }
-                    return color_from_emission + attenuation * ray_color(scattered, depth - 1, world);
-                    //return attenuation; // used for roughness view
+                    
+                    if (settings_.mesh_color == MeshColor::MATERIAL) {
+                        return color_from_emission + attenuation * ray_color(scattered, depth - 1, world);
+                    } else {
+                        return attenuation; // used for uv/shading normal views
+                    }
                 }
                 return color_from_emission;
             }

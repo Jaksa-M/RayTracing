@@ -27,7 +27,8 @@ enum class MeshColor {
     GEOMETRIC_NORMAL,
     SHADING_NORMAL,
     DEPTH,
-    UV
+    UV,
+    ROUGHNESS
 };
 
 // Code types
