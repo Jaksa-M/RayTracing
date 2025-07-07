@@ -14,8 +14,9 @@
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{acd3fa6f-67c3-45ee-95c8-1b81931f5dfe}</ProjectGuid>
-    <RootNamespace>RayTracingTutorial</RootNamespace>
+    <RootNamespace>Editor</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>Editor</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -95,7 +96,7 @@
     <ClCompile Include="..\ExternalLibraries\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\ExternalLibraries\imgui\imgui_widgets.cpp" />
     <ClCompile Include="camera_controller.cpp" />
-    <ClCompile Include="RayTracingTutorial.cpp" />
+    <ClCompile Include="Editor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="ShaderFiles\shader.fs.txt" />

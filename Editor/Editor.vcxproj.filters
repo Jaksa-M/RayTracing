@@ -21,7 +21,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="RayTracingTutorial.cpp">
+    <ClCompile Include="Editor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="camera_controller.cpp">

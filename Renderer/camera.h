@@ -72,7 +72,7 @@ private:
     std::mutex mutex_render_;
 
     std::vector<std::pair<ray, bool>> rays_to_trace_intersection_; // second pair tells us if it's hit or miss
-    std::unique_ptr<Shader> shader_prog_;
+    std::shared_ptr<Shader> shader_prog_;
     std::shared_ptr<Texture> background_texture_;
 
     void initialize();

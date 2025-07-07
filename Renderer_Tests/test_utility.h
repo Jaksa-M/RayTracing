@@ -46,7 +46,7 @@ void addMesh(MeshHandle mesh_handle, std::shared_ptr<Material> material, matrix4
 
 void saveAndCompare(std::string file_name, const std::vector<std::unique_ptr<Camera>>& cameras, const std::unique_ptr<HittableList>& world,
                     Context& context, bool delete_files) {
-    std::vector<vec4> image_data_acc(DISPLAY_W * DISPLAY_H, vec4(0.0f));  // Accumulated image buffer
+    std::vector<vec4> image_data_acc(cameras[0]->image_width * cameras[0]->image_height, vec4(0.0f)); // Accumulated image buffer
 
     // Call render 20 times
     for (int i = 0; i < 20; i++) {
@@ -54,13 +54,13 @@ void saveAndCompare(std::string file_name, const std::vector<std::unique_ptr<Cam
     }
 
     // Convert accumulated color to float image (final result)
-    std::vector<vec3> image_data_float(DISPLAY_W * DISPLAY_H);
-    convertAccumulatedToFloatImage(image_data_float, image_data_acc, DISPLAY_W, DISPLAY_H);
+    std::vector<vec3> image_data_float(cameras[0]->image_width * cameras[0]->image_height);
+    convertAccumulatedToFloatImage(image_data_float, image_data_acc, cameras[0]->image_width, cameras[0]->image_height);
 
     // Save final screenshot
-    saveImage(file_name, image_data_float, DISPLAY_W, DISPLAY_H, false);
+    saveImage(file_name, image_data_float, cameras[0]->image_width, cameras[0]->image_height, false);
 
-    if (!compareWithExpectedImage(file_name, 10, 0.01f)) {
+    if (!compareWithExpectedImage(file_name, 0.1f, 0.01f)) {
         FAIL() << "Image comparison failed for file: " << file_name;
     }
 

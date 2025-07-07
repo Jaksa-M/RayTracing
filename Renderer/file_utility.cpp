@@ -1,11 +1,12 @@
+#include "pch.h"
+
 #include "file_utility.h"
-#include <GLFW/glfw3.h>
+
 #include <ctime>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include "camera.h"
-#include "pch.h"
 #include "utility.h"
 #include "vec3.h"
 
@@ -219,8 +220,8 @@ void saveImage(std::string file_name, std::span<const vec3> data, int width, int
     }
 }
 
-bool compareWithExpectedImage(const std::string& file_name, int max_per_channel_diff, float max_allowed_error_ratio) {
-    // When comparing two images, each color channel (R,G,B) in a pixel is allowed to differ by max_per_channel_diff
+bool compareWithExpectedImage(const std::string& file_name, float max_per_channel_diff, float max_allowed_error_ratio) {
+    // When comparing two images, each color channel (R,G,B) in a pixel is allowed to differ by max_per_channel_diff percent
     // max_allowed_error_ratio = how many pixels are allowed to be different (for example, 0.1% would be ~480 pixels in a 1920x1080 image).
 
     std::string expected_path = "../ExpectedTestResults/" + file_name + ".png";
@@ -253,7 +254,15 @@ bool compareWithExpectedImage(const std::string& file_name, int max_per_channel_
         int r1 = img1[i * 3 + 0], g1 = img1[i * 3 + 1], b1 = img1[i * 3 + 2];
         int r2 = img2[i * 3 + 0], g2 = img2[i * 3 + 1], b2 = img2[i * 3 + 2];
 
-        if (std::abs(r1 - r2) > max_per_channel_diff || std::abs(g1 - g2) > max_per_channel_diff || std::abs(b1 - b2) > max_per_channel_diff) {
+        // Normalizing difference so we can support check for more than 1 image format.
+        // Interval is now not from 0-255, it is 0-1. For example if another format has different interval we can still
+        // make it normalized and the check will remain the same.
+        float normalization_multiplier = 1.0f / 255.0f;
+        float r_diff = std::abs(r1 - r2) * normalization_multiplier;
+        float g_diff = std::abs(g1 - g2) * normalization_multiplier;
+        float b_diff = std::abs(b1 - b2) * normalization_multiplier;
+
+        if (r_diff > max_per_channel_diff || g_diff > max_per_channel_diff || b_diff > max_per_channel_diff) {
             error_pixel_count++;
         }
     }

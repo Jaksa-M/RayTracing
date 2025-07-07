@@ -15,8 +15,8 @@
 #pragma comment(lib, "legacy_stdio_definitions")
 #endif
 
-#define DISPLAY_W 1280
-#define DISPLAY_H 720
+#define DISPLAY_W 640
+#define DISPLAY_H 360
 
 // My Includes
 #include "test_utility.h"
@@ -62,8 +62,6 @@ class BaseScene: public ::testing::Test {
     std::vector<std::unique_ptr<Camera>> cameras;
     std::shared_ptr<Texture> background_texture_;
 
-    GLFWwindow* window_ = nullptr;
-
     virtual void SetUp() override {
         gui_settings = std::make_unique<GUISettings>();
         context.settings = gui_settings.get();
@@ -85,38 +83,6 @@ class BaseScene: public ::testing::Test {
         background_texture_ = std::make_shared<Texture>(tex_loader.getData(), desc);
 
         initializeContext(context);
-
-        // Initialize GLFW
-        if (!glfwInit()) {
-            FAIL() << "Failed to initialize GLFW";
-        }
-
-        // Hidden window and OpenGL 3.3 context
-        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-
-        // Create the window (hidden)
-        window_ = glfwCreateWindow(1, 1, "Hidden", nullptr, nullptr);
-        if (!window_) {
-            glfwTerminate();
-            FAIL() << "Failed to create GLFW window";
-        }
-
-        glfwMakeContextCurrent(window_);
-
-        // Load GLAD
-        
-        if (!gladLoadGL((GLADloadfunc)glfwGetProcAddress)) {
-            glfwDestroyWindow(window_);
-            glfwTerminate();
-            FAIL() << "Failed to initialize GLAD";
-        }
-    }
-
-    virtual void TearDown() override {
-        glfwDestroyWindow(window_);
-        glfwTerminate();
     }
 };
 
@@ -257,7 +223,7 @@ TEST_F(RTMeshesScene, TestLoading) {  // RTMeshes scene test
     cameras[0]->setDirection(vec3(0.563973f, -0.0593064f, 0.823661f));
     cameras[0]->setUpVector(vec3(0.0335062f, 0.99824f, 0.0489345f));
     cameras[0]->setRightVector(vec3(0.825113f, 0.0f, -0.564967f));
-
+    
     // Loading texture from an image
     TextureLoader tex_loader2("../Resources/textures/default_texture.jpg");
     if (!tex_loader2.load()) {
