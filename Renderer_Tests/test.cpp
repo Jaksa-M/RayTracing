@@ -35,7 +35,6 @@
 #include "RTMesh.h"
 #include "RTMeshTinyBVH.h"
 #include "types.h"
-#include "file_utility.h"
 #include "vec3.h"
 #include "utility.h"
 #include "mesh_utils.h"

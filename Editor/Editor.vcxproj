@@ -95,9 +95,9 @@
     <ClCompile Include="..\ExternalLibraries\imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="..\ExternalLibraries\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\ExternalLibraries\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="..\Renderer\file_utility.cpp" />
     <ClCompile Include="camera_controller.cpp" />
     <ClCompile Include="Editor.cpp" />
+    <ClCompile Include="file_utility.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="ShaderFiles\shader.fs.txt" />
@@ -113,8 +113,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Renderer\file_utility.h" />
     <ClInclude Include="camera_controller.h" />
+    <ClInclude Include="file_utility.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

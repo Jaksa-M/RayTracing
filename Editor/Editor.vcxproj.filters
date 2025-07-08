@@ -45,7 +45,7 @@
     <ClCompile Include="..\ExternalLibraries\imgui\imgui_widgets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\Renderer\file_utility.cpp">
+    <ClCompile Include="file_utility.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -73,7 +73,7 @@
     <ClInclude Include="camera_controller.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\Renderer\file_utility.h">
+    <ClInclude Include="file_utility.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
