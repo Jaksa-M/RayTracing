@@ -3,7 +3,6 @@
 
 #include <string>
 #include <span>
-#include "vec3.h"
 #include "types.h"
 
 void saveImage(std::string file_name, std::span<const vec3> data, int width, int height, bool hdr);

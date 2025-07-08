@@ -195,7 +195,6 @@
     <ClCompile Include="bvh_builder.cpp" />
     <ClCompile Include="bvh_manager.cpp" />
     <ClCompile Include="camera.cpp" />
-    <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="hittable_list.cpp" />
     <ClCompile Include="hittable_list_custom_bvh.cpp" />
     <ClCompile Include="hittable_list_tinybvh.cpp" />
