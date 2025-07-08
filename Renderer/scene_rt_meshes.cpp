@@ -27,7 +27,7 @@ void SceneRtMeshes::initialize() {
 
     prev_BVH_technique_ = context.settings->BVH_technique;
 
-    TextureLoader tex_loader("Resources/textures/san_giuseppe_bridge.hdr");
+    TextureLoader tex_loader("../Resources/textures/san_giuseppe_bridge.hdr");
     if (!tex_loader.load()) {
         std::cerr << "ERROR: Could not load background texture file.\n";
     }
@@ -39,7 +39,7 @@ void SceneRtMeshes::initialize() {
     }
 
     // Loading texture from an image
-    TextureLoader tex_loader2("Resources/textures/default_texture.jpg");
+    TextureLoader tex_loader2("../Resources/textures/default_texture.jpg");
     if (!tex_loader2.load()) {
         std::cerr << "ERROR: Could not load texture file" << "\n ";
     }
@@ -74,7 +74,7 @@ void SceneRtMeshes::update(int display_w, int display_h) {
 }
 
 void SceneRtMeshes::initShader() {
-    shader_prog_ = std::make_unique<Shader>("ShaderFiles/shader_bounding_box.vs.txt", "ShaderFiles/shader_bounding_box.fs.txt");
+    shader_prog_ = std::make_unique<Shader>("../ShaderFiles/shader_bounding_box.vs.txt", "../ShaderFiles/shader_bounding_box.fs.txt");
 }
 
 void SceneRtMeshes::drawBVH() {

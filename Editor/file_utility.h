@@ -11,5 +11,6 @@ void addPresetToFile(const std::string& file, CameraPreset& preset);
 void removePresetFromFile(const std::string& file, std::string_view preset_name);
 
 void saveScreenshot(std::span<const vec3> data, int width, int height, bool hdr);
+void saveImage(std::string file_name, std::span<const vec3> data, int width, int height, bool hdr);
 
 #endif

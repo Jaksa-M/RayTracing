@@ -6,7 +6,6 @@
 #include "hittable_list_custom_bvh.h"
 #include "hittable_list_tinybvh.h"
 #include "camera.h"
-#include "camera_controller.h"
 #include "material.h"
 #include "matrix.h"
 #include "transformations.h"
@@ -36,7 +35,7 @@ void SceneObjLoader::initialize() {
     
     prev_BVH_technique_ = context.settings->BVH_technique;
 
-    TextureLoader tex_loader("Resources/textures/san_giuseppe_bridge.hdr");
+    TextureLoader tex_loader("../Resources/textures/san_giuseppe_bridge.hdr");
     if (!tex_loader.load()) {
         std::cerr << "ERROR: Could not load background texture file.\n";
     }
@@ -50,10 +49,10 @@ void SceneObjLoader::initialize() {
 
     auto start_time = std::chrono::high_resolution_clock::now(); // Start timing
 
-    //obj_loader_ = std::make_unique<ObjLoader>("Resources/erato/erato.obj");
-    //obj_loader_ = std::make_unique<ObjLoader>("Resources/teapot/teapot.obj");
-    //obj_loader_ = std::make_unique<ObjLoader>("Resources/crytek_sponza/sponza.obj");
-    obj_loader_ = std::make_unique<ObjLoader>("Resources/CornellBox/CornellBox-Sphere.obj");
+    //obj_loader_ = std::make_unique<ObjLoader>("../Resources/erato/erato.obj");
+    //obj_loader_ = std::make_unique<ObjLoader>("../Resources/teapot/teapot.obj");
+    //obj_loader_ = std::make_unique<ObjLoader>("../Resources/crytek_sponza/sponza.obj");
+    obj_loader_ = std::make_unique<ObjLoader>("../Resources/CornellBox/CornellBox-Sphere.obj");
     if (!obj_loader_->load(context)) {
         std::cout << "ERROR: custom mesh failed to load" << std::endl;
     }
@@ -110,7 +109,7 @@ void SceneObjLoader::update(int display_w, int display_h) {
 }
 
 void SceneObjLoader::initShader() {
-    shader_prog_ = std::make_unique<Shader>("ShaderFiles/shader_bounding_box.vs.txt", "ShaderFiles/shader_bounding_box.fs.txt");
+    shader_prog_ = std::make_unique<Shader>("../ShaderFiles/shader_bounding_box.vs.txt", "../ShaderFiles/shader_bounding_box.fs.txt");
 }
 
 void SceneObjLoader::drawBVH() {

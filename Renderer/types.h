@@ -27,11 +27,20 @@ enum class MeshColor {
     GEOMETRIC_NORMAL,
     SHADING_NORMAL,
     DEPTH,
-    UV
+    UV,
+    ROUGHNESS
 };
 
 // Code types
 namespace fs = std::filesystem;
+
+struct BVHNode {
+    vec3 aabbMin, aabbMax;
+    std::uint32_t left_child, right_child;
+    std::uint32_t first_triangle_index, triangle_cnt;
+
+    bool isLeaf() const { return triangle_cnt > 0; }
+};
 
 struct IntersectResult {
     float t = float_max;  // Intersection distance

@@ -6,13 +6,14 @@
 #include "types.h"
 #include "matrix.h"
 #include "intersection_utility.h"
+#include "gui_settings.h"
 #include <cassert>
 
 class Material {
 public:
     virtual ~Material() = default;
 
-    virtual bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered) const {
+    virtual bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered, GUISettings& settings) const {
         return false;
     }
 
@@ -26,7 +27,7 @@ public:
     Lambertian(std::shared_ptr<Texture> tex, std::shared_ptr<Texture> normal_map_tex = nullptr, std::shared_ptr<Texture> emissive_tex = nullptr) :
         tex_(tex), normal_map_tex_(normal_map_tex), emissive_tex_(emissive_tex) {}
     
-    bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered) const override {
+    bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered, GUISettings& settings) const override {
         ResolvedMeshInfo res_mesh_info = rec.mesh_buf_manager->getResolvedMesh(rec.mesh_handle);
 
         std::uint32_t i0 = res_mesh_info.indices[rec.triangle_index];
@@ -82,7 +83,17 @@ public:
 
         // Adding offset to avoid self intersection because of rounding errors
         scattered = ray(rec.p + rec.face_normal * 0.0001f, scatter_direction);
-        attenuation = tex_->value(uv[0], uv[1]);
+
+        switch (settings.mesh_color) {
+            case MeshColor::SHADING_NORMAL:
+                attenuation = shading_normal;
+                break;
+            case MeshColor::UV:
+                attenuation = vec3(uv[0], uv[1], 0.0f);
+                break;
+            default:
+                attenuation = tex_->value(uv[0], uv[1]);
+        }
         return true;
     }
 
@@ -115,7 +126,7 @@ public:
             std::shared_ptr<Texture> emissive_tex = nullptr) :
         albedo_tex_(albedo_tex), roughness_tex_(roughness_tex), normal_map_tex_(normal_map_tex), emissive_tex_(emissive_tex) {}
 
-    bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered) const override {
+    bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered, GUISettings& settings) const override {
         ResolvedMeshInfo res_mesh_info = rec.mesh_buf_manager->getResolvedMesh(rec.mesh_handle);
 
         std::uint32_t i0 = res_mesh_info.indices[rec.triangle_index];
@@ -173,7 +184,19 @@ public:
 
         scattered = ray(rec.p + rec.face_normal * 0.0001f, reflected);
 
-        attenuation = albedo_tex_->value(uv[0], uv[1]);
+        switch (settings.mesh_color) { 
+            case MeshColor::SHADING_NORMAL:
+                attenuation = shading_normal;
+                break;
+            case MeshColor::UV:
+                attenuation = vec3(uv[0], uv[1], 0.0f);
+                break;
+            case MeshColor::ROUGHNESS:
+                attenuation = roughness_tex_->value(uv[0], uv[1]);
+                break;
+            default:
+                attenuation = albedo_tex_->value(uv[0], uv[1]);
+        }
         return (dot(scattered.direction(), normal) > 0);
     }
 
@@ -205,7 +228,7 @@ public:
     Emissive(std::shared_ptr<Texture> tex) : tex_(tex) {}
     Emissive(const color& emit) : tex_(std::make_shared<Texture>(emit)) {}
 
-    bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered) const override {
+    bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered, GUISettings& settings) const override {
         return false; // Emissive materials don't scatter rays, they emit light
     }
 

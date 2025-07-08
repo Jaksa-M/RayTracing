@@ -10,36 +10,11 @@ Camera::Camera(std::string name) : name_(name) {}
 
 Camera::Camera(std::string name, vec3 center) : name_(name), center_(center) {}
 
-Camera::Camera(const Camera& other): 
-      name_(other.name_),
-      image_width(other.image_width),
-      image_height(other.image_height),
-      center_(other.center_),
-      focal_length_(other.focal_length_),
-      pixel00_loc_(other.pixel00_loc_),
-      pixel_delta_u_(other.pixel_delta_u_),
-      pixel_delta_v_(other.pixel_delta_v_),
-      camera_moved_(other.camera_moved_),
-      camera_direction_(other.camera_direction_),
-      camera_up_(other.camera_up_),
-      camera_right_(other.camera_right_),
-      view_matrix_(other.view_matrix_),
-      projection_matrix_(other.projection_matrix_),
-      background_texture_(other.background_texture_)
-{
-    // Clone unique_ptr shader if it exists
-    if (other.shader_prog_) {
-        shader_prog_ = std::make_unique<Shader>(*other.shader_prog_);
-    }
-}
-
 void Camera::setInitalValues() {
     vec3 cameraTarget = vec3(0.0f, 0.0f, -3.0f);
     camera_direction_ = unit_vector(center_ - cameraTarget);
     camera_up_ = vec3(0.0f, 1.0f, 0.0f);
     camera_right_ = unit_vector(cross(camera_up_, camera_direction_)); // the result is vec3 (1,0,0)
-
-    shader_prog_ = std::make_unique<Shader>("ShaderFiles/shader_bounding_box.vs.txt", "ShaderFiles/shader_bounding_box.fs.txt");
 }
 
 void Camera::render(const HittableList& world, std::vector<vec4>& image_data_acc, GUISettings& settings) {
@@ -180,7 +155,6 @@ ray Camera::get_ray(int i, int j, vec3 offset) const {
     vec3 ray_origin = center_;
     vec3 ray_direction = pixel_sample - ray_origin;
 
-    //return ray(ray_origin, ray_direction);
     return ray(ray_origin, unit_vector(ray_direction));
 }
 
@@ -201,6 +175,9 @@ color Camera::ray_color(const ray& r, int depth, const HittableList& world) {
     float u, v;
     switch (settings_.mesh_color) {
         case MeshColor::MATERIAL:
+        case MeshColor::SHADING_NORMAL:
+        case MeshColor::UV:
+        case MeshColor::ROUGHNESS:
             // If we've exceeded the ray bounce limit, no more light is gathered.
             if (depth <= 0) return color(0.0f, 0.0f, 0.0f);
 
@@ -208,15 +185,19 @@ color Camera::ray_color(const ray& r, int depth, const HittableList& world) {
                 ray scattered;
                 color attenuation;
                 color color_from_emission = rec.mat->emitted(rec);
-                if (rec.mat->scatter(r, rec, attenuation, scattered)) {
+                if (rec.mat->scatter(r, rec, attenuation, scattered, settings_)) {
                     if (settings_.debug_rays == true) {
                         std::scoped_lock lock(mutex_render_);
                         if (rays_to_trace_intersection_.empty() == false) {
                             rays_to_trace_intersection_.back().second = true;
                         }
                     }
-                    return color_from_emission + attenuation * ray_color(scattered, depth - 1, world);
-                    //return attenuation; // used for roughness view
+                    
+                    if (settings_.mesh_color == MeshColor::MATERIAL) {
+                        return color_from_emission + attenuation * ray_color(scattered, depth - 1, world);
+                    } else {
+                        return attenuation; // used for uv/shading normal views
+                    }
                 }
                 return color_from_emission;
             }
@@ -281,6 +262,10 @@ color Camera::ray_color(const ray& r, int depth, const HittableList& world) {
 
 void Camera::drawRays() {
     if (settings_.freeze_camera == true) {
+        if (!shader_prog_) {
+            shader_prog_ = std::make_unique<Shader>("../ShaderFiles/shader_bounding_box.vs.txt", "../ShaderFiles/shader_bounding_box.fs.txt");
+        }
+
         // Intialize shader
         shader_prog_->bind();
         shader_prog_->setMat4("view", getViewMatrix().asPointer());

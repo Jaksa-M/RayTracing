@@ -38,8 +38,6 @@ private:
     std::unique_ptr<Mesh> mesh_;
     std::unique_ptr<Shader> shader_prog_;
 
-    std::shared_ptr<Texture> background_texture_;
-
     std::vector<std::unique_ptr<Mesh>> bounding_boxes_; // 1 bounding box for each object that will get translated while drawing
 
     BVHTechnique prev_BVH_technique_; // Used for checking whether BVH techique has changed

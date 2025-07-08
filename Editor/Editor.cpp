@@ -113,7 +113,7 @@ int main(int, char**) {
     std::unique_ptr<TimeMeasurement> time_measurement = std::make_unique<TimeMeasurement>();
 
     SceneType selected_scene_index = SceneType::OBJ_LOADER;
-    BVHTechnique chosen_technique_index = BVHTechnique::SAH;
+    BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
     MeshColor chosen_mesh_color = MeshColor::MATERIAL;
 
     Context context;
@@ -150,7 +150,7 @@ int main(int, char**) {
     bool screenshot_button_pressed = false;
 
     std::unique_ptr<CameraController> cam_controller;
-    std::string camera_file = "Cameras/saved_presets.txt";
+    std::string camera_file = "../Cameras/saved_presets.txt";
     std::vector<CameraPreset> camera_presets;
 
     loadPresetsFromFile(camera_file, camera_presets);
@@ -176,7 +176,8 @@ int main(int, char**) {
             const char* scenes[] = {"scene_rt_meshes", "scene_cornell_box", "scene_obj_loader",
                                     "scene_material_testing"}; // Dropdown list (combo) items for scene selection
             const char* techniques[] = { "midpoint split", "SAH" }; // Dropdown list (combo) items for technique selection
-            const char* mesh_colors[] = {"material", "geometric normal", "shading normal", "depth", "uv"}; // Dropdown list (combo) items for color representation selection
+            const char* mesh_colors[] = {"material", "geometric normal", "shading normal", "depth",
+                                         "uv", "roughness"}; // Dropdown list (combo) items for color representation selection
             const char* block_sizes[] = {"8x8", "16x16", "64x64"}; // Dropdown list (combo) items for block size selection
             
             ImGui::Begin("Ray Tracer");                          // Create a window called "Hello, world!" and append into it.
