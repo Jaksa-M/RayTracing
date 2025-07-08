@@ -9,7 +9,7 @@
 #include "hittable_list_custom_bvh.h"
 #include "RTMeshTinyBVH.h"
 #include "RTMesh.h"
-#include "file_utility.h"
+#include "tests_file_utility.h"
 #include "utility.h"
 
 

@@ -155,7 +155,6 @@
     <ClInclude Include="bvh_manager.h" />
     <ClInclude Include="camera.h" />
     <ClInclude Include="context.h" />
-    <ClInclude Include="file_utility.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="gui_settings.h" />
     <ClInclude Include="hittable.h" />
@@ -197,7 +196,6 @@
     <ClCompile Include="bvh_manager.cpp" />
     <ClCompile Include="camera.cpp" />
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="file_utility.cpp" />
     <ClCompile Include="hittable_list.cpp" />
     <ClCompile Include="hittable_list_custom_bvh.cpp" />
     <ClCompile Include="hittable_list_tinybvh.cpp" />

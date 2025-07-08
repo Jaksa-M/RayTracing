@@ -45,6 +45,9 @@
     <ClCompile Include="..\ExternalLibraries\imgui\imgui_widgets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\Renderer\file_utility.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ShaderFiles\shader.fs.txt">
@@ -68,6 +71,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera_controller.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Renderer\file_utility.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
