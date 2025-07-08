@@ -1,4 +1,4 @@
-#include "pch.h"
+#include "gtest/gtest.h"
 
 #define GLAD_GL_IMPLEMENTATION  // Necessary for headeronly version
 #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
@@ -156,63 +156,63 @@ class CrytekSponzaScene : public BaseScene {
     }
 };
 
-//TEST_F(CornellBoxScene, TestLoading) {  // Crytek Sponza scene test
-//    // Set camera center position
-//    cameras[0]->setCenterX(-5.54435e-08f);
-//    cameras[0]->setCenterY(0.867661f);
-//    cameras[0]->setCenterZ(2.2684f);  
-//
-//    obj_loader_ = std::make_unique<ObjLoader>("../Resources/CornellBox/CornellBox-Sphere.obj");
-//    if (!obj_loader_->load(context)) {
-//        std::cout << "ERROR: custom mesh failed to load" << std::endl;
-//    }
-//
-//    matrix4x4 m = transformation::create_scaling_matrix(1.0f, 1.0f, 1.0f);
-//    std::shared_ptr<Lambertian> mat_green = std::make_shared<Lambertian>(color(0.0f, 1.0f, 0.0f));
-//
-//    std::span<MeshHandle> meshes = obj_loader_->getMeshes();
-//    std::span<const std::shared_ptr<Material>> materials = obj_loader_->getMaterials();
-//    std::span<const int> materials_indices = obj_loader_->getMaterialsIndices();
-//    for (std::uint32_t i = 0; i < meshes.size(); i++) {
-//        if (materials.empty() == false) {
-//            addMesh(meshes[i], materials[materials_indices[i]], m, context, rt_meshes, world.get());
-//        } else {  // if there are no materials specified in obj file
-//            addMesh(meshes[i], mat_green, m, context, rt_meshes, world.get());
-//        }
-//    }
-//    applyImageComparisonTests("CornellBox", context, cameras, world, true);
-//}
-//
-//TEST_F(CrytekSponzaScene, TestLoading) {  // Crytek Sponza scene test
-//    // Set camera position
-//    cameras[0]->setCenterX(-4.64865);
-//    cameras[0]->setCenterY(12.0534);
-//    cameras[0]->setCenterZ(-0.528061);
-//    cameras[0]->setDirection(vec3(-0.838719f, 0.541708f, -0.0557082f));
-//    cameras[0]->setUpVector(vec3(0.540517f, 0.840567f, 0.0359015f));
-//    cameras[0]->setRightVector(vec3(-0.0662746f, 0.0f, 0.997801f));
-//
-//    obj_loader_ = std::make_unique<ObjLoader>("../Resources/crytek_sponza/sponza.obj");
-//    if (!obj_loader_->load(context)) {
-//        std::cout << "ERROR: custom mesh failed to load" << std::endl;
-//    }
-//
-//    matrix4x4 m = transformation::create_scaling_matrix(0.01f, 0.01f, 0.01f);
-//    std::shared_ptr<Lambertian> mat_green = std::make_shared<Lambertian>(color(0.0f, 1.0f, 0.0f));
-//
-//    std::span<MeshHandle> meshes = obj_loader_->getMeshes();
-//    std::span<const std::shared_ptr<Material>> materials = obj_loader_->getMaterials();
-//    std::span<const int> materials_indices = obj_loader_->getMaterialsIndices();
-//    for (std::uint32_t i = 0; i < meshes.size(); i++) {
-//        if (materials.empty() == false) {
-//            addMesh(meshes[i], materials[materials_indices[i]], m, context, rt_meshes, world.get());
-//        } else {  // if there are no materials specified in obj file
-//            addMesh(meshes[i], mat_green, m, context, rt_meshes, world.get());
-//        }
-//    }
-//
-//    applyImageComparisonTests("CrytekSponza", context, cameras, world, true);
-//}
+TEST_F(CornellBoxScene, TestLoading) {  // Crytek Sponza scene test
+    // Set camera center position
+    cameras[0]->setCenterX(-5.54435e-08f);
+    cameras[0]->setCenterY(0.867661f);
+    cameras[0]->setCenterZ(2.2684f);  
+
+    obj_loader_ = std::make_unique<ObjLoader>("../Resources/CornellBox/CornellBox-Sphere.obj");
+    if (!obj_loader_->load(context)) {
+        std::cout << "ERROR: custom mesh failed to load" << std::endl;
+    }
+
+    matrix4x4 m = transformation::create_scaling_matrix(1.0f, 1.0f, 1.0f);
+    std::shared_ptr<Lambertian> mat_green = std::make_shared<Lambertian>(color(0.0f, 1.0f, 0.0f));
+
+    std::span<MeshHandle> meshes = obj_loader_->getMeshes();
+    std::span<const std::shared_ptr<Material>> materials = obj_loader_->getMaterials();
+    std::span<const int> materials_indices = obj_loader_->getMaterialsIndices();
+    for (std::uint32_t i = 0; i < meshes.size(); i++) {
+        if (materials.empty() == false) {
+            addMesh(meshes[i], materials[materials_indices[i]], m, context, rt_meshes, world.get());
+        } else {  // if there are no materials specified in obj file
+            addMesh(meshes[i], mat_green, m, context, rt_meshes, world.get());
+        }
+    }
+    applyImageComparisonTests("CornellBox", context, cameras, world, true);
+}
+
+TEST_F(CrytekSponzaScene, TestLoading) {  // Crytek Sponza scene test
+    // Set camera position
+    cameras[0]->setCenterX(-4.64865);
+    cameras[0]->setCenterY(12.0534);
+    cameras[0]->setCenterZ(-0.528061);
+    cameras[0]->setDirection(vec3(-0.838719f, 0.541708f, -0.0557082f));
+    cameras[0]->setUpVector(vec3(0.540517f, 0.840567f, 0.0359015f));
+    cameras[0]->setRightVector(vec3(-0.0662746f, 0.0f, 0.997801f));
+
+    obj_loader_ = std::make_unique<ObjLoader>("../Resources/crytek_sponza/sponza.obj");
+    if (!obj_loader_->load(context)) {
+        std::cout << "ERROR: custom mesh failed to load" << std::endl;
+    }
+
+    matrix4x4 m = transformation::create_scaling_matrix(0.01f, 0.01f, 0.01f);
+    std::shared_ptr<Lambertian> mat_green = std::make_shared<Lambertian>(color(0.0f, 1.0f, 0.0f));
+
+    std::span<MeshHandle> meshes = obj_loader_->getMeshes();
+    std::span<const std::shared_ptr<Material>> materials = obj_loader_->getMaterials();
+    std::span<const int> materials_indices = obj_loader_->getMaterialsIndices();
+    for (std::uint32_t i = 0; i < meshes.size(); i++) {
+        if (materials.empty() == false) {
+            addMesh(meshes[i], materials[materials_indices[i]], m, context, rt_meshes, world.get());
+        } else {  // if there are no materials specified in obj file
+            addMesh(meshes[i], mat_green, m, context, rt_meshes, world.get());
+        }
+    }
+
+    applyImageComparisonTests("CrytekSponza", context, cameras, world, true);
+}
 
 TEST_F(RTMeshesScene, TestLoading) {  // RTMeshes scene test
     // Set camera position

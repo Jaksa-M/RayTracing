@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "scene_material_testing.h"
 #include <vector>
 #include <cmath>

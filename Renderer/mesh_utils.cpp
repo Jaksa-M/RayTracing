@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "mesh_utils.h"
 #include "mesh.h"
 #include "mesh_buffer_manager.h"

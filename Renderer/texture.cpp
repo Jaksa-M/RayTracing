@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "texture.h"
 #include "texture_utility.h"
 #include "utility.h"

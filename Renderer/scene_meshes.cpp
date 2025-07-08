@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "scene_meshes.h"
 #include <vector>
 #include <cmath>

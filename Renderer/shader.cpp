@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "shader.h"
 #include <fstream>
 #include <sstream>

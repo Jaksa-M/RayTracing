@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "tests_file_utility.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION

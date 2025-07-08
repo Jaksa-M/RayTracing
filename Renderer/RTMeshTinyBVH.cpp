@@ -1,4 +1,3 @@
-#include "pch.h"
 #define TINYBVH_IMPLEMENTATION
 
 #include "RTMeshTinyBVH.h"

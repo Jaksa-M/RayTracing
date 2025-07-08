@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "matrix.h"
 
 matrix4x4::matrix4x4() { // Creating identity matrix by default

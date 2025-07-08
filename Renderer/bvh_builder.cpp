@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "bvh_builder.h"
 #include "ray.h"
 #include "math_utility.h"

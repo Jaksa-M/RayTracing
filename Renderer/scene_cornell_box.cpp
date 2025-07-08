@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "scene_cornell_box.h"
 #include <vector>
 #include <cmath>

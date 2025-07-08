@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "hittable_list_custom_bvh.h"
 #include "interval.h"
 #include <vector>

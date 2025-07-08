@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "bvh_manager.h"
 #include "bvh_builder.h"
 #include "mesh_buffer_manager.h"

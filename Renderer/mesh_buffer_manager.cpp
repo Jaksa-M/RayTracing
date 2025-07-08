@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "mesh_buffer_manager.h"
 #include <cassert>  // assert
 

@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "interval.h"
 
 const interval interval::empty = interval(+infinity, -infinity);

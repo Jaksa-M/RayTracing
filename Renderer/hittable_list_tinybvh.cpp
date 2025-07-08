@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "hittable_list_tinybvh.h"
 #include "tinybvh/tiny_bvh.h"
 #include "RTMeshTinyBVH.h"

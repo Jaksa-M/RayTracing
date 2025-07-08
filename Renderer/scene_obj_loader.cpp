@@ -1,4 +1,3 @@
-#include "pch.h"
 #include "scene_obj_loader.h"
 #include <vector>
 #include <cmath>
