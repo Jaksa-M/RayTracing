@@ -10,10 +10,6 @@
 #include <stdio.h>
 #define GL_SILENCE_DEPRECATION
 
-#if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
-#pragma comment(lib, "legacy_stdio_definitions")
-#endif
-
 #define DISPLAY_W 640
 #define DISPLAY_H 360
 
