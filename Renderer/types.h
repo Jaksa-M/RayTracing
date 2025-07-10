@@ -34,12 +34,19 @@ enum class MeshColor {
 // Code types
 namespace fs = std::filesystem;
 
-struct BVHNode {
+struct BLASNode {
     vec3 aabbMin, aabbMax;
     std::uint32_t left_child, right_child;
     std::uint32_t first_triangle_index, triangle_cnt;
 
     bool isLeaf() const { return triangle_cnt > 0; }
+};
+
+struct TLASNode {
+    vec3 aabb_min, aabb_max;
+    std::uint32_t left_right; // 2x16 bits for left and right child index
+    std::uint32_t blas; // valid only for leaf nodes
+    bool isLeaf() { return left_right == 0; } // for interior nodes one of the childs must be greater than 0
 };
 
 struct IntersectResult {

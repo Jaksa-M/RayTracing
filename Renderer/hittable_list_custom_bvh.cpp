@@ -1,6 +1,7 @@
 #include "hittable_list_custom_bvh.h"
 #include "interval.h"
 #include <vector>
+#include "bvh_manager.h"
 
 HittableListCustomBVH::HittableListCustomBVH() {}
 
@@ -20,8 +21,6 @@ bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) co
 
     for (const auto& object : objects_) {
         if (object->hit(r, interval(ray_t.min, closest_so_far), temp_rec) && temp_rec.t < closest_so_far) {
-            //if (object->hit(r, interval(ray_t.min, closest_so_far), temp_rec)) {
-            // Reducing the ray_t.max if there is closer object in world space (to reduce unnecessary checks)
             hit_anything = true;
             closest_so_far = temp_rec.t;
             rec = temp_rec;
@@ -29,4 +28,15 @@ bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) co
     }
 
     return hit_anything;
+}
+
+void HittableListCustomBVH::buildTLAS(Context& context, std::span<MeshHandle> meshes) {
+    std::vector<std::pair<vec3, vec3>> bounds;
+    for (int i = 0; i < meshes.size(); i++) {
+        std::span<const BLASNode> blas_nodes = context.bvh_manager->getBVHNodes(meshes[i]);
+
+        // assuming index 0 is root of each BLAS
+        bounds.emplace_back(blas_nodes[0].aabbMin, blas_nodes[0].aabbMax);
+    }
+    context.bvh_manager->buildTLAS(bounds);
 }

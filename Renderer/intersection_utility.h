@@ -62,9 +62,9 @@ inline bool intersectAABB(const ray& r, float t, const vec3& bmin, const vec3& b
 }
 
 template <bool posX, bool posY, bool posZ>
-inline void slabTestTwoNodes(const vec3& dir_inv, float t, const BVHNode* c1, const BVHNode* c2, float rox, float roy, float roz, float& d1,
+inline void slabTestTwoNodes(const vec3& dir_inv, float t, const BLASNode* c1, const BLASNode* c2, float rox, float roy, float roz, float& d1,
                              float& d2) {
-    auto slabTest = [&](const BVHNode* n, float& dist) {
+    auto slabTest = [&](const BLASNode* n, float& dist) {
         float tx_min = ((posX ? n->aabbMin.x() : n->aabbMax.x()) * dir_inv.x()) - rox;
         float tx_max = ((posX ? n->aabbMax.x() : n->aabbMin.x()) * dir_inv.x()) - rox;
         float ty_min = ((posY ? n->aabbMin.y() : n->aabbMax.y()) * dir_inv.y()) - roy;

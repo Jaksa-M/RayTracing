@@ -9,13 +9,13 @@ BVHBuilder::BVHBuilder(std::span<const float> vertices, std::span<std::uint32_t>
     std::span<const Triangle> triangles, std::span<std::uint32_t> triangle_indices):
     vertices_(vertices), indices_(indices), triangles_(triangles), triangle_indices_(triangle_indices) {}
 
-std::vector<BVHNode> BVHBuilder::buildBVH() {
+std::vector<BLASNode> BVHBuilder::buildBVH() {
     std::uint32_t N = static_cast<std::uint32_t>(indices_.size() / 3);
 
     for (std::uint32_t i = 0; i < 2 * N - 1; i++) {
-        bvh_nodes_.push_back(BVHNode());
+        bvh_nodes_.push_back(BLASNode());
     }
-    BVHNode& root = bvh_nodes_[0];
+    BLASNode& root = bvh_nodes_[0];
     root.left_child = 0;
     root.right_child = 0;
     root.first_triangle_index = 0;
@@ -30,13 +30,13 @@ std::vector<BVHNode> BVHBuilder::buildBVH() {
     return bvh_nodes_;
 }
 
-std::vector<BVHNode> BVHBuilder::buildBVHSAH() {
+std::vector<BLASNode> BVHBuilder::buildBVHSAH() {
     std::uint32_t N = static_cast<std::uint32_t>(indices_.size() / 3);
 
     for (std::uint32_t i = 0; i < 2 * N - 1; i++) {
-        bvh_nodes_.push_back(BVHNode());
+        bvh_nodes_.push_back(BLASNode());
     }
-    BVHNode& root = bvh_nodes_[0];
+    BLASNode& root = bvh_nodes_[0];
     root.left_child = 0;
     root.right_child = 0;
     root.first_triangle_index = 0;
@@ -54,7 +54,7 @@ std::vector<BVHNode> BVHBuilder::buildBVHSAH() {
 }
 
 void BVHBuilder::createBoundBox(std::uint32_t node_index) {
-    BVHNode& node = bvh_nodes_[node_index];
+    BLASNode& node = bvh_nodes_[node_index];
     point3 min_point = point3(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max()); // bottom left corner
     point3 max_point = point3(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest()); // top right corner
 
@@ -79,7 +79,7 @@ void BVHBuilder::createBoundBox(std::uint32_t node_index) {
 
 void BVHBuilder::subdivide(std::uint32_t node_index) {
     // Current split method: split along longest axis
-    BVHNode& node = bvh_nodes_[node_index];
+    BLASNode& node = bvh_nodes_[node_index];
 
     // Decided to return if node contains 2 or less triangles. The reason for that is because 2 triangles can be aligned with splitting axis
     // and we can't split it into 2 non empty halves. This is still not 100% safe.
@@ -135,7 +135,7 @@ void BVHBuilder::subdivide(std::uint32_t node_index) {
 
 void BVHBuilder::subdivideSAH(std::uint32_t node_index) {
     // Current split method: split along longest axis
-    BVHNode& node = bvh_nodes_[node_index];
+    BLASNode& node = bvh_nodes_[node_index];
 
     // Decided to return if node contains 2 or less triangles. The reason for that is because 2 triangles can be aligned with splitting axis
     // and we can't split it into 2 non empty halves. This is still not 100% safe.
@@ -205,7 +205,7 @@ void BVHBuilder::subdivideSAH(std::uint32_t node_index) {
     subdivideSAH(right_child_index);
 }
 
-float BVHBuilder::evaluateSAH(BVHNode& node, int axis, float pos) {
+float BVHBuilder::evaluateSAH(BLASNode& node, int axis, float pos) {
     // Initialize bounds and counts
     vec3 left_box_min(float_max), left_box_max(float_min); // Left aabb (axis aligned bounding box)
     vec3 right_box_min(float_max), right_box_max(float_min); // Right aabb
@@ -263,5 +263,84 @@ void BVHBuilder::reorderIndices() {
 
     // Copy new_indices to original indices
     std::memcpy(indices_.data(), new_indices.data(), new_indices.size() * sizeof(uint32_t));
+}
+
+std::vector<TLASNode> BVHBuilder::buildTLAS(std::span<const std::pair<vec3, vec3>> blas_bounds) {
+    const int blas_count = static_cast<int>(blas_bounds.size());
+    nodes_.resize(2 * blas_count); // Reserve enough space for full binary tree
+    int nodes_used = 1;
+
+    std::vector<int> nodes_indices(blas_count); // Holds the index of each leaf inside nodes_
+
+    // Create leaf nodes from BLAS bounds
+    for (int i = 0; i < blas_count; i++) {
+        int index = nodes_used++;
+        nodes_indices[i] = index;
+
+        nodes_[index].aabb_min = blas_bounds[i].first;
+        nodes_[index].aabb_max = blas_bounds[i].second;
+        nodes_[index].blas = i;
+        nodes_[index].left_right = 0; // mark as leaf
+    }
+
+    // Agglomerative clustering algorithm (Building the tree bottom up)
+    int A = 0;
+    int B = findBestMatch(nodes_indices, blas_count, A);
+    int active_indices = blas_count; // number of active nodes currently in nodes_indices
+
+    while (active_indices > 1) {
+        int C = findBestMatch(nodes_indices, active_indices, B);
+
+        if (A == C) {
+            int node_index_A = nodes_indices[A];
+            int node_index_B = nodes_indices[B];
+
+            TLASNode& nodeA = nodes_[node_index_A];
+            TLASNode& nodeB = nodes_[node_index_B];
+
+            // Merging nodes into 1 node
+            TLASNode& new_node = nodes_[nodes_used];
+            new_node.aabb_min = std::min(nodeA.aabb_min, nodeB.aabb_min);
+            new_node.aabb_max = std::max(nodeA.aabb_max, nodeB.aabb_max);
+            new_node.left_right = (node_index_A & 0xFFFF) | ((node_index_B & 0xFFFF) << 16); // pack left/right
+
+            nodes_indices[A] = nodes_used++;
+            nodes_indices[B] = nodes_indices[active_indices - 1]; // replace nodeIdx[B] with last
+            active_indices--;
+
+            B = findBestMatch(nodes_indices, active_indices, A);
+        }
+        else {
+            A = B;
+            B = C;
+        }
+    }
+
+    nodes_[0] = nodes_[nodes_indices[A]]; // move final node to index 0 (root node)
+    nodes_.resize(nodes_used); // Shrink to used size
+    return nodes_;
+}
+
+int BVHBuilder::findBestMatch(const std::vector<int>& list, int N, int A) {
+    float smallest = 1e30f;
+    int bestB = -1;
+
+    for (int B = 0; B < N; B++) {
+        if (B == A) continue;
+
+        const TLASNode& nodeA = nodes_[list[A]];
+        const TLASNode& nodeB = nodes_[list[B]];
+
+        vec3 bmin = std::min(nodeA.aabb_min, nodeB.aabb_min);
+        vec3 bmax = std::max(nodeA.aabb_max, nodeB.aabb_max);
+        vec3 e = bmax - bmin;
+
+        float surfaceArea = e.x() * e.y() + e.y() * e.z() + e.z() * e.x();
+        if (surfaceArea < smallest) {
+            smallest = surfaceArea;
+            bestB = B;
+        }
+    }
+    return bestB;
 }
 

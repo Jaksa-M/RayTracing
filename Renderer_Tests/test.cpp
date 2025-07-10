@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-
+    
 #define GLAD_GL_IMPLEMENTATION  // Necessary for headeronly version
 #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
 #pragma comment(lib, "legacy_stdio_definitions")
@@ -56,7 +56,7 @@ class BaseScene: public ::testing::Test {
     std::vector<std::unique_ptr<Camera>> cameras;
     std::shared_ptr<Texture> background_texture_;
 
-    virtual void SetUp() override {
+    void SetUp() override {
         gui_settings = std::make_unique<GUISettings>();
         context.settings = gui_settings.get();
 

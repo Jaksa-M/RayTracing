@@ -45,6 +45,6 @@ private:
     vec3 aabb_max_;
     
     ResolvedMeshInfo res_mesh_info_;
-    std::span<const BVHNode> bvh_nodes_;
+    std::span<const BLASNode> bvh_nodes_;
 };
 #endif

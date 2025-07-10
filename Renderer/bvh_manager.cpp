@@ -31,11 +31,20 @@ void BVHManager::buildBVH(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_h
     }
 }
 
-std::span<const BVHNode> BVHManager::getBVHNodes(MeshHandle mesh_handle) const {
+void BVHManager::buildTLAS(std::span<const std::pair<vec3, vec3>> blas_bounds) {
+    BVHBuilder bvh_builder;
+    tlas_nodes_ = bvh_builder.buildTLAS(blas_bounds);
+}
+
+std::span<const BLASNode> BVHManager::getBVHNodes(MeshHandle mesh_handle) const {
     if (auto it = bvh_info_.find(mesh_handle); it != bvh_info_.end()) {
         return std::span(it->second.bvh_nodes);
     }
     return {};
+}
+
+std::span<const TLASNode> BVHManager::getTLASNodes() const {
+    return tlas_nodes_;
 }
 
 void BVHManager::transformToTriangles(std::span<const float> vertices, std::span<const std::uint32_t> indices,

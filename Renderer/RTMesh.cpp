@@ -15,7 +15,7 @@
 
 template <bool posX, bool posY, bool posZ>
 void templatedIntersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t node_idx, float& closest_hit_t,
-                           std::span<const BVHNode> bvh_nodes, const ResolvedMeshInfo& res_mesh_info) { // version without cost
+                           std::span<const BLASNode> bvh_nodes, const ResolvedMeshInfo& res_mesh_info) { // version without cost
     constexpr int MAX_STACK_SIZE = 64;
     std::uint32_t node_stack[MAX_STACK_SIZE];
     int stack_top = 0;
@@ -38,7 +38,7 @@ void templatedIntersectBVH(const ray& r, interval ray_t, IntersectResult& inters
 
     while (stack_top > 0) {
         std::uint32_t nodeIdx = node_stack[--stack_top];
-        const BVHNode& node = bvh_nodes[nodeIdx];
+        const BLASNode& node = bvh_nodes[nodeIdx];
 
         // Leaf node: test triangles
         if (node.isLeaf()) {
@@ -61,8 +61,8 @@ void templatedIntersectBVH(const ray& r, interval ray_t, IntersectResult& inters
             continue;
         }
 
-        const BVHNode* node_left = &bvh_nodes[node.left_child];
-        const BVHNode* node_right = &bvh_nodes[node.right_child];
+        const BLASNode* node_left = &bvh_nodes[node.left_child];
+        const BLASNode* node_right = &bvh_nodes[node.right_child];
         std::uint32_t left_child = node.left_child;
         std::uint32_t right_child = node.right_child;
 
@@ -248,7 +248,7 @@ void RTMesh::drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32
         int level = front.second;
         queue.pop();
 
-        const BVHNode& node = bvh_nodes_[node_index];
+        const BLASNode& node = bvh_nodes_[node_index];
 
         // Draw the bounding box for the current node
         vec3 center = (node.aabbMin + node.aabbMax) * 0.5f;
@@ -306,7 +306,7 @@ MeshHandle RTMesh::getMeshHandle() const {
 void RTMesh::setTransformationMatrix(const matrix4x4& mat) {
     Hittable::setTransformationMatrix(mat);  // Call base class function
 
-    const BVHNode& node = bvh_nodes_[0];
+    const BLASNode& node = bvh_nodes_[0];
 
     aabb_min_ = node.aabbMin;
     aabb_max_ = node.aabbMax;
