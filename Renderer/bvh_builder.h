@@ -3,6 +3,7 @@
 
 #include "hittable.h"
 #include <span>
+#include <memory>
 
 struct Triangle {
     point3 v0, v1, v2; // Triangle vertices
@@ -38,7 +39,8 @@ private:
 
 // TLAS related
 public:
-    std::vector<TLASNode> buildTLAS(std::span<const std::pair<vec3, vec3>> blas_bounds);
+    std::vector<TLASNode> buildTLAS(std::span<const std::pair<vec3, vec3>> blas_bounds,
+                                    std::span<std::shared_ptr<Hittable>> rt_meshes);
     const std::vector<TLASNode>& getNodes() const { return nodes_; }
 
 private:

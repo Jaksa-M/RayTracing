@@ -38,7 +38,7 @@ inline IntersectResult intersectTriangle(const ray& r, interval ray_t, const vec
     return {t, vec2(u, v), 0};
 }
 
-// Currently not being used because we use slabTestTwoNodes instead
+// Currently not being used during traversal because we use slabTestTwoNodes instead. We use it only when we enter hit funciton for initial check
 inline bool intersectAABB(const ray& r, float t, const vec3& bmin, const vec3& bmax, float& closest_side) {
     vec3 dir = vec3(std::abs(r.direction().x()) < 0.00001f ? r.direction().x() + 0.0001f : r.direction().x(),
                     std::abs(r.direction().y()) < 0.00001f ? r.direction().y() + 0.0001f : r.direction().y(),

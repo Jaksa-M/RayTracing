@@ -32,7 +32,7 @@ public:
     void update() override;
     int getTriangleCount() const override;
 
-    void intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, float& closest_hit_t) const;
+    void intersectBLAS(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, float& closest_hit_t) const;
 
 private:
     Context& context_;

@@ -21,6 +21,7 @@ std::vector<BLASNode> BVHBuilder::buildBVH() {
     root.first_triangle_index = 0;
     root.triangle_cnt = N; // root node holds all triangles
 
+    // Bounding boxes created are all in local space
     createBoundBox(0); // creating bounding box for root node
 
     // Start recursive subdivision
@@ -265,7 +266,8 @@ void BVHBuilder::reorderIndices() {
     std::memcpy(indices_.data(), new_indices.data(), new_indices.size() * sizeof(uint32_t));
 }
 
-std::vector<TLASNode> BVHBuilder::buildTLAS(std::span<const std::pair<vec3, vec3>> blas_bounds) {
+std::vector<TLASNode> BVHBuilder::buildTLAS(std::span<const std::pair<vec3, vec3>> blas_bounds,
+                                            std::span<std::shared_ptr<Hittable>> rt_meshes) {
     const int blas_count = static_cast<int>(blas_bounds.size());
     nodes_.resize(2 * blas_count); // Reserve enough space for full binary tree
     int nodes_used = 1;
@@ -279,7 +281,7 @@ std::vector<TLASNode> BVHBuilder::buildTLAS(std::span<const std::pair<vec3, vec3
 
         nodes_[index].aabb_min = blas_bounds[i].first;
         nodes_[index].aabb_max = blas_bounds[i].second;
-        nodes_[index].blas = i;
+        nodes_[index].blas = rt_meshes[i].get();
         nodes_[index].left_right = 0; // mark as leaf
     }
 
@@ -300,8 +302,14 @@ std::vector<TLASNode> BVHBuilder::buildTLAS(std::span<const std::pair<vec3, vec3
 
             // Merging nodes into 1 node
             TLASNode& new_node = nodes_[nodes_used];
-            new_node.aabb_min = std::min(nodeA.aabb_min, nodeB.aabb_min);
-            new_node.aabb_max = std::max(nodeA.aabb_max, nodeB.aabb_max);
+            new_node.aabb_min.setX(std::min(nodeA.aabb_min.x(), nodeB.aabb_min.x()));
+            new_node.aabb_min.setY(std::min(nodeA.aabb_min.y(), nodeB.aabb_min.y()));
+            new_node.aabb_min.setZ(std::min(nodeA.aabb_min.z(), nodeB.aabb_min.z()));
+
+            new_node.aabb_max.setX(std::max(nodeA.aabb_max.x(), nodeB.aabb_max.x()));
+            new_node.aabb_max.setY(std::max(nodeA.aabb_max.y(), nodeB.aabb_max.y()));
+            new_node.aabb_max.setZ(std::max(nodeA.aabb_max.z(), nodeB.aabb_max.z()));
+
             new_node.left_right = (node_index_A & 0xFFFF) | ((node_index_B & 0xFFFF) << 16); // pack left/right
 
             nodes_indices[A] = nodes_used++;
@@ -331,8 +339,15 @@ int BVHBuilder::findBestMatch(const std::vector<int>& list, int N, int A) {
         const TLASNode& nodeA = nodes_[list[A]];
         const TLASNode& nodeB = nodes_[list[B]];
 
-        vec3 bmin = std::min(nodeA.aabb_min, nodeB.aabb_min);
-        vec3 bmax = std::max(nodeA.aabb_max, nodeB.aabb_max);
+        vec3 bmin, bmax;
+        bmin.setX(std::min(nodeA.aabb_min.x(), nodeB.aabb_min.x()));
+        bmin.setY(std::min(nodeA.aabb_min.y(), nodeB.aabb_min.y()));
+        bmin.setZ(std::min(nodeA.aabb_min.z(), nodeB.aabb_min.z()));
+
+        bmax.setX(std::max(nodeA.aabb_max.x(), nodeB.aabb_max.x()));
+        bmax.setY(std::max(nodeA.aabb_max.y(), nodeB.aabb_max.y()));
+        bmax.setZ(std::max(nodeA.aabb_max.z(), nodeB.aabb_max.z()));
+
         vec3 e = bmax - bmin;
 
         float surfaceArea = e.x() * e.y() + e.y() * e.z() + e.z() * e.x();

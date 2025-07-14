@@ -31,9 +31,9 @@ void BVHManager::buildBVH(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_h
     }
 }
 
-void BVHManager::buildTLAS(std::span<const std::pair<vec3, vec3>> blas_bounds) {
+void BVHManager::buildTLAS(std::span<const std::pair<vec3, vec3>> blas_bounds, std::span<std::shared_ptr<Hittable>> rt_meshes) {
     BVHBuilder bvh_builder;
-    tlas_nodes_ = bvh_builder.buildTLAS(blas_bounds);
+    tlas_nodes_ = bvh_builder.buildTLAS(blas_bounds, rt_meshes);
 }
 
 std::span<const BLASNode> BVHManager::getBVHNodes(MeshHandle mesh_handle) const {

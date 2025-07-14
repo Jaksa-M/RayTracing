@@ -5,10 +5,11 @@
 #include "types.h"
 #include <span>
 #include <memory>
-#include "context.h"
+
+class BVHManager;
 
 class HittableListCustomBVH : public HittableList {
-   public:
+public:
     HittableListCustomBVH();
     HittableListCustomBVH(std::shared_ptr<Hittable> object);
 
@@ -16,7 +17,10 @@ class HittableListCustomBVH : public HittableList {
 
     bool hit(const ray& r, interval ray_t, HitRecord& rec) const override;
 
-    void buildTLAS(Context& context, std::span<MeshHandle> meshes);
+    void buildTLAS(BVHManager* bvh_manager, std::span<MeshHandle> meshes, std::span<std::shared_ptr<Hittable>> rt_meshes);
+
+private:
+    std::span<const TLASNode> tlas_;
 };
 
 #endif

@@ -14,7 +14,7 @@
 #include "vec3.h"
 
 template <bool posX, bool posY, bool posZ>
-void templatedIntersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t node_idx, float& closest_hit_t,
+void templatedIntersectBLAS(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t node_idx, float& closest_hit_t,
                            std::span<const BLASNode> bvh_nodes, const ResolvedMeshInfo& res_mesh_info) { // version without cost
     constexpr int MAX_STACK_SIZE = 64;
     std::uint32_t node_stack[MAX_STACK_SIZE];
@@ -115,7 +115,7 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
     // Start timing
     auto start_time = std::chrono::high_resolution_clock::now();
 
-    intersectBVH(changed_ray, ray_t, intersect_result, 0, closest_hit_t);
+    intersectBLAS(changed_ray, ray_t, intersect_result, 0, closest_hit_t);
 
     // End timing
     auto end_time = std::chrono::high_resolution_clock::now();
@@ -157,9 +157,9 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
 
 bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
     // Skipping bounds that can`t produce closer t (looking in world space, where multiple BVH's are)
-    float closest_side;  // not even used for root node, but have to leave it for correct function call
-    if (!intersectAABB(r, ray_t.max, aabb_min_, aabb_max_, closest_side) || closest_side > ray_t.max)
-        return false;
+    //float closest_side;  // not even used for root node, but have to leave it for correct function call
+    //if (!intersectAABB(r, ray_t.max, aabb_min_, aabb_max_, closest_side) || closest_side > ray_t.max)
+    //    return false;
 
     if (context_.settings->enable_BVH == false) {
         ray changed_ray = r;
@@ -325,7 +325,7 @@ int RTMesh::getTriangleCount() const {
     return res_mesh_info_.indices.size() / 3;
 }
 
-void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx,
+void RTMesh::intersectBLAS(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx,
                                   float& closest_hit_t) const
 {
     bool posX = r.direction().x() >= 0;
@@ -335,26 +335,26 @@ void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& interse
     if (posX) {
         if (posY) {
             if (posZ)
-                return templatedIntersectBVH<true, true, true>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
+                return templatedIntersectBLAS<true, true, true>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
             else
-                return templatedIntersectBVH<true, true, false>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
+                return templatedIntersectBLAS<true, true, false>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
         } else {
             if (posZ)
-                return templatedIntersectBVH<true, false, true>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
+                return templatedIntersectBLAS<true, false, true>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
             else
-                return templatedIntersectBVH<true, false, false>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
+                return templatedIntersectBLAS<true, false, false>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
         }
     } else {
         if (posY) {
             if (posZ)
-                return templatedIntersectBVH<false, true, true>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
+                return templatedIntersectBLAS<false, true, true>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
             else
-                return templatedIntersectBVH<false, true, false>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
+                return templatedIntersectBLAS<false, true, false>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
         } else {
             if (posZ)
-                return templatedIntersectBVH<false, false, true>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
+                return templatedIntersectBLAS<false, false, true>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
             else
-                return templatedIntersectBVH<false, false, false>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
+                return templatedIntersectBLAS<false, false, false>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
         }
     }
 }
