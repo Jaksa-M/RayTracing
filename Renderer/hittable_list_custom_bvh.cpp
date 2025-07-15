@@ -44,13 +44,16 @@ bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) co
     std::stack<int> stack;
     stack.push(0); // Start from TLAS root (index 0)
 
+    vec3 inv_dir = vec3(1.0f / r.direction().x(), 1.0f / r.direction().y(), 1.0f / r.direction().z());
+
     while (!stack.empty()) {
         int node_idx = stack.top();
         stack.pop();
         const auto& node = tlas_[node_idx];
 
         float closest_side;
-        if (!intersectAABB(r, closest_so_far, node.aabb_min, node.aabb_max, closest_side) || closest_side > ray_t.max) continue;
+        //if (!intersectAABB(r, closest_so_far, node.aabb_min, node.aabb_max, closest_side) || closest_side > ray_t.max) continue;
+        if (!intersectAABB(r, inv_dir, node.aabb_min, node.aabb_max, closest_so_far, closest_side) || closest_side > ray_t.max) continue;
 
         if (node.isLeaf()) {
             // Intersect with corresponding BLAS
@@ -64,8 +67,26 @@ bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) co
             // Decode children
             uint16_t left = node.left_right & 0xFFFF;
             uint16_t right = (node.left_right >> 16) & 0xFFFF;
-            stack.push(left);
-            stack.push(right);
+            float dist_left, dist_right;
+            bool hit_left = intersectAABB_fast(r, inv_dir, tlas_[left].aabb_min, tlas_[left].aabb_max, closest_so_far, dist_left);
+            bool hit_right = intersectAABB_fast(r, inv_dir, tlas_[right].aabb_min, tlas_[right].aabb_max, closest_so_far, dist_right);
+
+            if (hit_left && hit_right) {
+                if (dist_left < dist_right) {
+                    stack.push(right);
+                    stack.push(left);
+                }
+                else {
+                    stack.push(left);
+                    stack.push(right);
+                }
+            }
+            else if (hit_left) {
+                stack.push(left);
+            }
+            else if (hit_right) {
+                stack.push(right);
+            }
         }
     }
 
