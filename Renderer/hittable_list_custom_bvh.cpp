@@ -68,8 +68,8 @@ bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) co
             uint16_t left = node.left_right & 0xFFFF;
             uint16_t right = (node.left_right >> 16) & 0xFFFF;
             float dist_left, dist_right;
-            bool hit_left = intersectAABB_fast(r, inv_dir, tlas_[left].aabb_min, tlas_[left].aabb_max, closest_so_far, dist_left);
-            bool hit_right = intersectAABB_fast(r, inv_dir, tlas_[right].aabb_min, tlas_[right].aabb_max, closest_so_far, dist_right);
+            bool hit_left = intersectAABB(r, inv_dir, tlas_[left].aabb_min, tlas_[left].aabb_max, closest_so_far, dist_left);
+            bool hit_right = intersectAABB(r, inv_dir, tlas_[right].aabb_min, tlas_[right].aabb_max, closest_so_far, dist_right);
 
             if (hit_left && hit_right) {
                 if (dist_left < dist_right) {
@@ -95,9 +95,9 @@ bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) co
 
 
 void HittableListCustomBVH::buildTLAS(BVHManager* bvh_manager, std::span<MeshHandle> meshes, std::span<std::shared_ptr<Hittable>> rt_meshes) {
-    std::vector<std::pair<vec3, vec3>> bounds; // bounds and BLAS id for each mesh
+    std::vector<std::pair<vec3, vec3>> bounds; // bounding box bounds for each mesh
     for (int i = 0; i < meshes.size(); i++) {
-        std::span<const BLASNode> blas_nodes = bvh_manager->getBVHNodes(meshes[i]);
+        std::span<const BLASNode> blas_nodes = bvh_manager->getBLASNodes(meshes[i]);
 
         // rt_meshes is in the same order as meshes. So rt_meshes[i] points to the mesh and meshes[i] hold mesh_handle of that mesh.
         // Used to convert bounding box bounds from local to world space, because TLAS is working on world space

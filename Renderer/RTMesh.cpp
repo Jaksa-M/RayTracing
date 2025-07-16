@@ -314,7 +314,7 @@ void RTMesh::setTransformationMatrix(const matrix4x4& mat) {
 }
 
 void RTMesh::update() {
-    bvh_nodes_ = context_.bvh_manager->getBVHNodes(mesh_handle_);
+    bvh_nodes_ = context_.bvh_manager->getBLASNodes(mesh_handle_);
     res_mesh_info_.vertices = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::Position);
     res_mesh_info_.indices = context_.mesh_buf_manager->getIndices(mesh_handle_);
     res_mesh_info_.vertex_normals = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::Normal);

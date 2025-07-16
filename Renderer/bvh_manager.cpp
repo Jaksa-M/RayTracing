@@ -2,12 +2,13 @@
 #include "bvh_builder.h"
 #include "mesh_buffer_manager.h"
 #include "gui_settings.h"
+#include "hittable.h"
 
 BVHManager::BVHManager(GUISettings* settings): settings_(settings) {
     
 }
 
-void BVHManager::buildBVH(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_handle) {
+void BVHManager::buildBLAS(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_handle) {
     // BVH for that mesh handle doesn't exists, so we have to build it
     if (auto it = bvh_info_.find(mesh_handle); it == bvh_info_.end()) {
         std::span<const float> vertices = mesh_buf_manager->getAttribute(mesh_handle, AttributeType::Position);
@@ -22,10 +23,10 @@ void BVHManager::buildBVH(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_h
 
         switch (settings_->BVH_technique) {
         case BVHTechnique::MIDPOINT_SPLIT: // midpoint split
-            bvh_info_[mesh_handle].bvh_nodes = bvh_builder.buildBVH();
+            bvh_info_[mesh_handle].bvh_nodes = bvh_builder.buildBLAS();
             break;
         case BVHTechnique::SAH: // SAH
-            bvh_info_[mesh_handle].bvh_nodes = bvh_builder.buildBVHSAH();
+            bvh_info_[mesh_handle].bvh_nodes = bvh_builder.buildBLASSAH();
             break;
         }
     }
@@ -36,7 +37,7 @@ void BVHManager::buildTLAS(std::span<const std::pair<vec3, vec3>> blas_bounds, s
     tlas_nodes_ = bvh_builder.buildTLAS(blas_bounds, rt_meshes);
 }
 
-std::span<const BLASNode> BVHManager::getBVHNodes(MeshHandle mesh_handle) const {
+std::span<const BLASNode> BVHManager::getBLASNodes(MeshHandle mesh_handle) const {
     if (auto it = bvh_info_.find(mesh_handle); it != bvh_info_.end()) {
         return std::span(it->second.bvh_nodes);
     }

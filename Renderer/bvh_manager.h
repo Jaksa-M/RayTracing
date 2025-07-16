@@ -7,22 +7,22 @@
 #include <span>
 #include "vec3.h"
 #include "bvh_builder.h"
-#include "hittable.h"
 #include "types.h"
 #include <utility>
 
 class MeshBufferManager;
 struct GUISettings;
+class Hittable;
 
 class BVHManager {
 public:
 	BVHManager(GUISettings* settings);
 
-	void buildBVH(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_handle); // building BLASes
+	void buildBLAS(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_handle); // building BLASes
     void buildTLAS(std::span<const std::pair<vec3, vec3>> blas_bounds,
                    std::span<std::shared_ptr<Hittable>> rt_meshes); // building TLAS
 
-	std::span<const BLASNode> getBVHNodes(MeshHandle mesh_handle) const;
+	std::span<const BLASNode> getBLASNodes(MeshHandle mesh_handle) const;
 	std::span<const TLASNode> getTLASNodes() const;
 
 private:
