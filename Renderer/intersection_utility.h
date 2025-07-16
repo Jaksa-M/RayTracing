@@ -38,28 +38,6 @@ inline IntersectResult intersectTriangle(const ray& r, interval ray_t, const vec
     return {t, vec2(u, v), 0};
 }
 
-// Currently not being used during traversal because we use slabTestTwoNodes instead. We use it only when we enter hit funciton for initial check
-//inline bool intersectAABB(const ray& r, float t, const vec3& bmin, const vec3& bmax, float& closest_side) {
-//    vec3 dir = vec3(std::abs(r.direction().x()) < 0.00001f ? r.direction().x() + 0.0001f : r.direction().x(),
-//                    std::abs(r.direction().y()) < 0.00001f ? r.direction().y() + 0.0001f : r.direction().y(),
-//                    std::abs(r.direction().z()) < 0.00001f ? r.direction().z() + 0.0001f : r.direction().z());
-//
-//    float tx1 = (bmin.x() - r.origin().x()) / dir.x();
-//    float tx2 = (bmax.x() - r.origin().x()) / dir.x();
-//    float tmin = std::min(tx1, tx2);
-//    float tmax = std::max(tx1, tx2);
-//    float ty1 = (bmin.y() - r.origin().y()) / dir.y();
-//    float ty2 = (bmax.y() - r.origin().y()) / dir.y();
-//    tmin = std::max(tmin, std::min(ty1, ty2));
-//    tmax = std::min(tmax, std::max(ty1, ty2));
-//    float tz1 = (bmin.z() - r.origin().z()) / dir.z();
-//    float tz2 = (bmax.z() - r.origin().z()) / dir.z();
-//    tmin = std::max(tmin, std::min(tz1, tz2));
-//    tmax = std::min(tmax, std::max(tz1, tz2));
-//
-//    closest_side = tmin;
-//    return tmax >= tmin && tmin < t && tmax > 0;
-//}
 inline bool intersectAABB(const ray& r, const vec3& inv_dir, const vec3& bmin, const vec3& bmax, float tMax, float& closest_side) {
     float tx1 = (bmin.x() - r.origin().x()) * inv_dir.x();
     float tx2 = (bmax.x() - r.origin().x()) * inv_dir.x();
@@ -79,7 +57,6 @@ inline bool intersectAABB(const ray& r, const vec3& inv_dir, const vec3& bmin, c
     closest_side = tmin;
     return (tmax >= tmin) && (tmin < tMax) && (tmax > 0);
 }
-
 
 template <bool posX, bool posY, bool posZ>
 inline void slabTestTwoNodes(const vec3& dir_inv, float t, const BLASNode* c1, const BLASNode* c2, float rox, float roy, float roz, float& d1,

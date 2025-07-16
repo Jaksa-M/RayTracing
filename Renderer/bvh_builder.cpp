@@ -6,6 +6,29 @@
 #include <algorithm>
 #include "hittable.h"
 
+inline int findBestMatch(std::span<const TLASNode> tlas_nodes, const std::span<const int> list, int N, int A) {
+    float smallest = 1e30f;
+    int bestB = -1;
+
+    for (int B = 0; B < N; B++) {
+        if (B == A) continue;
+
+        const TLASNode& nodeA = tlas_nodes[list[A]];
+        const TLASNode& nodeB = tlas_nodes[list[B]];
+
+        vec3 bmin = vec3::minVec(nodeA.aabb_min, nodeB.aabb_min);
+        vec3 bmax = vec3::maxVec(nodeA.aabb_max, nodeB.aabb_max);
+        vec3 e = bmax - bmin;
+
+        float surfaceArea = e.x() * e.y() + e.y() * e.z() + e.z() * e.x();
+        if (surfaceArea < smallest) {
+            smallest = surfaceArea;
+            bestB = B;
+        }
+    }
+    return bestB;
+}
+
 BVHBuilder::BVHBuilder(std::span<const float> vertices, std::span<std::uint32_t> indices,
     std::span<const Triangle> triangles, std::span<std::uint32_t> triangle_indices):
     vertices_(vertices), indices_(indices), triangles_(triangles), triangle_indices_(triangle_indices) {}
@@ -288,11 +311,11 @@ std::vector<TLASNode> BVHBuilder::buildTLAS(std::span<const std::pair<vec3, vec3
 
     // Agglomerative clustering algorithm (Building the tree bottom up)
     int A = 0;
-    int B = findBestMatch(nodes_indices, blas_count, A);
+    int B = findBestMatch(tlas_nodes_, nodes_indices, blas_count, A);
     int active_indices = blas_count; // number of active nodes currently in nodes_indices
 
     while (active_indices > 1) {
-        int C = findBestMatch(nodes_indices, active_indices, B);
+        int C = findBestMatch(tlas_nodes_, nodes_indices, active_indices, B);
 
         if (A == C) {
             int node_index_A = nodes_indices[A];
@@ -313,7 +336,7 @@ std::vector<TLASNode> BVHBuilder::buildTLAS(std::span<const std::pair<vec3, vec3
             nodes_indices[B] = nodes_indices[active_indices - 1]; // replace nodeIdx[B] with last
             active_indices--;
 
-            B = findBestMatch(nodes_indices, active_indices, A);
+            B = findBestMatch(tlas_nodes_, nodes_indices, active_indices, A);
         }
         else {
             A = B;
@@ -325,27 +348,3 @@ std::vector<TLASNode> BVHBuilder::buildTLAS(std::span<const std::pair<vec3, vec3
     tlas_nodes_.resize(nodes_used);            // Shrink to used size
     return tlas_nodes_;
 }
-
-int BVHBuilder::findBestMatch(const std::vector<int>& list, int N, int A) {
-    float smallest = 1e30f;
-    int bestB = -1;
-
-    for (int B = 0; B < N; B++) {
-        if (B == A) continue;
-
-        const TLASNode& nodeA = tlas_nodes_[list[A]];
-        const TLASNode& nodeB = tlas_nodes_[list[B]];
-
-        vec3 bmin = vec3::minVec(nodeA.aabb_min, nodeB.aabb_min);
-        vec3 bmax = vec3::maxVec(nodeA.aabb_max, nodeB.aabb_max);
-        vec3 e = bmax - bmin;
-
-        float surfaceArea = e.x() * e.y() + e.y() * e.z() + e.z() * e.x();
-        if (surfaceArea < smallest) {
-            smallest = surfaceArea;
-            bestB = B;
-        }
-    }
-    return bestB;
-}
-

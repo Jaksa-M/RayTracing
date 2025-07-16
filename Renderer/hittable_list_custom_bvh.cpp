@@ -41,14 +41,17 @@ bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) co
 
     if (tlas_.empty()) return false;
 
-    std::stack<int> stack;
-    stack.push(0); // Start from TLAS root (index 0)
+    std::vector<int> stack;
+    // Reserving some space to avoid frequent reallocations. Not same as passing to constructor because no
+    // elements are constructed yet, only the buffer is allocated.
+    stack.reserve(64);
+    stack.push_back(0); // Start from TLAS root (index 0)
 
     vec3 inv_dir = vec3(1.0f / r.direction().x(), 1.0f / r.direction().y(), 1.0f / r.direction().z());
 
     while (!stack.empty()) {
-        int node_idx = stack.top();
-        stack.pop();
+        int node_idx = stack.back(); // get last element
+        stack.pop_back();
         const auto& node = tlas_[node_idx];
 
         float closest_side;
@@ -73,19 +76,19 @@ bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) co
 
             if (hit_left && hit_right) {
                 if (dist_left < dist_right) {
-                    stack.push(right);
-                    stack.push(left);
+                    stack.push_back(right);
+                    stack.push_back(left);
                 }
                 else {
-                    stack.push(left);
-                    stack.push(right);
+                    stack.push_back(left);
+                    stack.push_back(right);
                 }
             }
             else if (hit_left) {
-                stack.push(left);
+                stack.push_back(left);
             }
             else if (hit_right) {
-                stack.push(right);
+                stack.push_back(right);
             }
         }
     }

@@ -23,7 +23,6 @@ SceneObjLoader::SceneObjLoader() {}
 void SceneObjLoader::initialize() {
     if (context.settings->use_tiny_bvh) world_ = std::make_unique<HittableListTinybvh>();
     else world_ = std::make_unique<HittableListCustomBVH>();
-    //world_ = std::make_unique<HittableListCustomBVH>();
     
     // Initialization of cameras
     std::unique_ptr<Camera> cam1 = std::make_unique<Camera>("initial cam");

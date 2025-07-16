@@ -8,7 +8,6 @@
 #include "vec3.h"
 #include "bvh_builder.h"
 #include "types.h"
-#include <utility>
 
 class MeshBufferManager;
 struct GUISettings;

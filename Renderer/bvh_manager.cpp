@@ -3,6 +3,7 @@
 #include "mesh_buffer_manager.h"
 #include "gui_settings.h"
 #include "hittable.h"
+#include <utility> // for std::pair
 
 BVHManager::BVHManager(GUISettings* settings): settings_(settings) {
     

@@ -47,7 +47,6 @@ public:
 
 private:
     std::vector<TLASNode> tlas_nodes_;
-    int findBestMatch(const std::vector<int>& list, int N, int A);
 };
 
 #endif

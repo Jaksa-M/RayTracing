@@ -156,11 +156,6 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
 }
 
 bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
-    // Skipping bounds that can`t produce closer t (looking in world space, where multiple BVH's are)
-    //float closest_side;  // not even used for root node, but have to leave it for correct function call
-    //if (!intersectAABB(r, ray_t.max, aabb_min_, aabb_max_, closest_side) || closest_side > ray_t.max)
-    //    return false;
-
     if (context_.settings->enable_BVH == false) {
         ray changed_ray = r;
         changed_ray.setOrigin(transformPoint(r.origin(), world_to_local_mat_));
