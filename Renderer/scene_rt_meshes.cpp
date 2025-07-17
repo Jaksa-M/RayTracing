@@ -47,17 +47,27 @@ void SceneRtMeshes::initialize() {
     std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader2.getData(), desc2);
     std::shared_ptr<Material> texture_mat = std::make_shared<Lambertian>(tex);
 
+    std::vector<MeshHandle> meshes;
+
     rect_prism_mesh1_ = MeshUtils::GenerateTriangleCube(context, texture_mat, 4);
     matrix4x4 m = transformation::create_rotation_matrix(0.0f, 30.0f * (3.14159f / 180.0f), 0.0f) *
                   transformation::create_translation_matrix(vec3(-2.0f, 0.0f, 0.0f)); // 30 degree rotation on y-axis + translation on x-axis
     rect_prism_mesh1_->setTransformationMatrix(m);
-    world_->add(rect_prism_mesh1_);
+    meshes.push_back(rect_prism_mesh1_->getMeshHandle());
 
     rect_prism_mesh2_ = std::make_shared<RTMesh>(context, rect_prism_mesh1_->getMeshHandle(), texture_mat);
     m = transformation::create_rotation_matrix(0.0f, 70.0f * (3.14159f / 180.0f), 0.0f) *
         transformation::create_translation_matrix(vec3(2.0f, 0.0f, 0.0f)); // 70 degree rotation on y-axis + translation on x-axis
     rect_prism_mesh2_->setTransformationMatrix(m);
-    world_->add(rect_prism_mesh2_);
+    meshes.push_back(rect_prism_mesh2_->getMeshHandle());
+
+    rt_meshes_.push_back(std::move(rect_prism_mesh1_));
+    rt_meshes_.push_back(std::move(rect_prism_mesh2_));
+    for (uint32_t i = 0; i < rt_meshes_.size(); i++) {
+        world_->add(rt_meshes_[i]);
+    }
+
+    static_cast<HittableListCustomBVH*>(world_.get())->buildTLAS(context.bvh_manager, meshes, rt_meshes_);
 
     initShader();
 }
