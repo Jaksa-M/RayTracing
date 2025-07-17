@@ -41,8 +41,8 @@ class RTMeshTinyBVH : public Hittable {
     std::shared_ptr<Material> mat_;
 
     // AABB bounds in world space
-    vec3 aabb_min_;
-    vec3 aabb_max_;
+    vec3 aabb_min_ws_; // ws = world space
+    vec3 aabb_max_ws_;
 
     ResolvedMeshInfo res_mesh_info_;
 

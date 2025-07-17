@@ -40,9 +40,9 @@ private:
     MeshHandle mesh_handle_;
     std::shared_ptr<Material> mat_;
 
-    // AABB bounds in world space
-    vec3 aabb_min_;
-    vec3 aabb_max_;
+    // AABB bounds in world space. Used only for initial check if ray hit the BLAS in world space.
+    vec3 aabb_min_ws_; // ws = world space
+    vec3 aabb_max_ws_;
     
     ResolvedMeshInfo res_mesh_info_;
     std::span<const BLASNode> bvh_nodes_;

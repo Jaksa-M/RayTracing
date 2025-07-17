@@ -37,7 +37,7 @@ enum class MeshColor {
 namespace fs = std::filesystem;
 
 struct BLASNode {
-    vec3 aabbMin, aabbMax;
+    vec3 aabb_min, aabb_max;
     std::uint32_t left_child, right_child;
     std::uint32_t first_triangle_index, triangle_cnt;
 

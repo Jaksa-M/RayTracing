@@ -62,12 +62,12 @@ template <bool posX, bool posY, bool posZ>
 inline void slabTestTwoNodes(const vec3& dir_inv, float t, const BLASNode* c1, const BLASNode* c2, float rox, float roy, float roz, float& d1,
                              float& d2) {
     auto slabTest = [&](const BLASNode* n, float& dist) {
-        float tx_min = ((posX ? n->aabbMin.x() : n->aabbMax.x()) * dir_inv.x()) - rox;
-        float tx_max = ((posX ? n->aabbMax.x() : n->aabbMin.x()) * dir_inv.x()) - rox;
-        float ty_min = ((posY ? n->aabbMin.y() : n->aabbMax.y()) * dir_inv.y()) - roy;
-        float ty_max = ((posY ? n->aabbMax.y() : n->aabbMin.y()) * dir_inv.y()) - roy;
-        float tz_min = ((posZ ? n->aabbMin.z() : n->aabbMax.z()) * dir_inv.z()) - roz;
-        float tz_max = ((posZ ? n->aabbMax.z() : n->aabbMin.z()) * dir_inv.z()) - roz;
+        float tx_min = ((posX ? n->aabb_min.x() : n->aabb_max.x()) * dir_inv.x()) - rox;
+        float tx_max = ((posX ? n->aabb_max.x() : n->aabb_min.x()) * dir_inv.x()) - rox;
+        float ty_min = ((posY ? n->aabb_min.y() : n->aabb_max.y()) * dir_inv.y()) - roy;
+        float ty_max = ((posY ? n->aabb_max.y() : n->aabb_min.y()) * dir_inv.y()) - roy;
+        float tz_min = ((posZ ? n->aabb_min.z() : n->aabb_max.z()) * dir_inv.z()) - roz;
+        float tz_max = ((posZ ? n->aabb_max.z() : n->aabb_min.z()) * dir_inv.z()) - roz;
 
         float tmin = std::max(std::max(tx_min, ty_min), std::max(tz_min, 0.0f));
         float tmax = std::min(std::min(tx_max, ty_max), std::min(tz_max, t));

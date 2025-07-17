@@ -107,7 +107,10 @@ void HittableListCustomBVH::buildTLAS(BVHManager* bvh_manager, std::span<MeshHan
         const matrix4x4& local_to_world_mat = rt_meshes[i]->getLocalToWorldMatrix();
         
         // Assuming index 0 is root of each BLAS
-        bounds.emplace_back(transformPoint(blas_nodes[0].aabbMin, local_to_world_mat), transformPoint(blas_nodes[0].aabbMax, local_to_world_mat));
+        vec3 aabb_min_ws = blas_nodes[0].aabb_min;
+        vec3 aabb_max_ws = blas_nodes[0].aabb_max;
+        transformAABB(aabb_min_ws, aabb_max_ws, local_to_world_mat);
+        bounds.emplace_back(aabb_min_ws, aabb_max_ws);
     }
     bvh_manager->buildTLAS(bounds, rt_meshes);
     tlas_ = bvh_manager->getTLASNodes();

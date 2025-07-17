@@ -246,8 +246,8 @@ void RTMesh::drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32
         const BLASNode& node = bvh_nodes_[node_index];
 
         // Draw the bounding box for the current node
-        vec3 center = (node.aabbMin + node.aabbMax) * 0.5f;
-        vec3 scale = node.aabbMax - node.aabbMin;
+        vec3 center = (node.aabb_min + node.aabb_max) * 0.5f;
+        vec3 scale = node.aabb_max - node.aabb_min;
 
         matrix4x4 translation_matrix = transformation::create_translation_matrix(center);
         matrix4x4 scaling_matrix = transformation::create_scaling_matrix(scale.x(), scale.y(), scale.z());
@@ -279,8 +279,8 @@ void RTMesh::drawBVHLeaves(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint
 
     for (int i = 0; i < bvh_nodes_.size(); i++) {
         if (bvh_nodes_[i].isLeaf() == true) {
-            vec3 center = (bvh_nodes_[i].aabbMin + bvh_nodes_[i].aabbMax) * 0.5f;
-            vec3 scale = bvh_nodes_[i].aabbMax - bvh_nodes_[i].aabbMin;
+            vec3 center = (bvh_nodes_[i].aabb_min + bvh_nodes_[i].aabb_max) * 0.5f;
+            vec3 scale = bvh_nodes_[i].aabb_max - bvh_nodes_[i].aabb_min;
 
             matrix4x4 translation_matrix = transformation::create_translation_matrix(center);
             matrix4x4 scaling_matrix = transformation::create_scaling_matrix(scale.x(), scale.y(), scale.z());
@@ -303,9 +303,9 @@ void RTMesh::setTransformationMatrix(const matrix4x4& mat) {
 
     const BLASNode& node = bvh_nodes_[0];
 
-    aabb_min_ = node.aabbMin;
-    aabb_max_ = node.aabbMax;
-    transformAABB(aabb_min_, aabb_max_, local_to_world_mat_); // transforms aabb from local to world space
+    aabb_min_ws_ = node.aabb_min;
+    aabb_max_ws_ = node.aabb_max;
+    transformAABB(aabb_min_ws_, aabb_max_ws_, local_to_world_mat_); // transforms aabb from local to world space
 }
 
 void RTMesh::update() {

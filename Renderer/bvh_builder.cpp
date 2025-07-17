@@ -98,8 +98,8 @@ void BVHBuilder::createBoundBox(std::uint32_t node_index) {
         max_point.setZ(std::max({ max_point.z(), triangle.v0.z(), triangle.v1.z(), triangle.v2.z() }));
     }
 
-    node.aabbMin = min_point;
-    node.aabbMax = max_point;
+    node.aabb_min = min_point;
+    node.aabb_max = max_point;
 }
 
 void BVHBuilder::subdivide(std::uint32_t node_index) {
@@ -111,11 +111,11 @@ void BVHBuilder::subdivide(std::uint32_t node_index) {
     if (node.triangle_cnt <= 2) return;
 
     // Midpoint split
-    vec3 extent = node.aabbMax - node.aabbMin;
+    vec3 extent = node.aabb_max - node.aabb_min;
     int axis = 0; // x-axis
     if (extent.y() > extent.x()) axis = 1; // y-axis
     if (extent.z() > extent.x() && extent.z() > extent.y()) axis = 2; // z-axis
-    float split_pos = node.aabbMin[axis] + extent[axis] * 0.5f; // split that axis in half
+    float split_pos = node.aabb_min[axis] + extent[axis] * 0.5f; // split that axis in half
 
     // split the box in halves
     int i = node.first_triangle_index;
@@ -185,7 +185,7 @@ void BVHBuilder::subdivideSAH(std::uint32_t node_index) {
     int axis = best_axis;
     float splitPos = best_pos;
 
-    vec3 e = node.aabbMax - node.aabbMin; // extent of parent
+    vec3 e = node.aabb_max - node.aabb_min; // extent of parent
     float parent_area = e.x() * e.y() + e.y() * e.z() + e.z() * e.x();
     float parentCost = node.triangle_cnt * parent_area;
 
