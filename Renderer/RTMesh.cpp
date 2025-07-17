@@ -348,7 +348,7 @@ void RTMesh::intersectBLAS(const ray& r, interval ray_t, IntersectResult& inters
     }
 }
 
-void RTMesh::getWorldBoundingBoxBounds(vec3& aabb_min, vec3& aabb_max) {
+void RTMesh::getWorldBoundingBox(vec3& aabb_min, vec3& aabb_max) {
     const BLASNode& node = bvh_nodes_[0];
 
     aabb_min = node.aabb_min;

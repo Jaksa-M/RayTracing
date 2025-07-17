@@ -34,7 +34,7 @@ public:
 
     void intersectBLAS(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, float& closest_hit_t) const;
 
-    void getWorldBoundingBoxBounds(vec3& aabb_min, vec3& aabb_max);
+    void getWorldBoundingBox(vec3& aabb_min, vec3& aabb_max);
 
 private:
     Context& context_;

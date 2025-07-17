@@ -55,7 +55,7 @@ public:
         world_to_local_mat_ = mat.invert();
     }
 
-    virtual void getWorldBoundingBoxBounds(vec3& aabb_min, vec3& aabb_max){};
+    virtual void getWorldBoundingBox(vec3& aabb_min, vec3& aabb_max){};
 
 protected:
     matrix4x4 local_to_world_mat_; // transformation from local coord system to world coord system

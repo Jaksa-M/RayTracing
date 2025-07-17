@@ -27,7 +27,7 @@ bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) co
 
     for (const auto& object : objects_) {
         vec3 aabb_min_ws, aabb_max_ws;
-        object->getWorldBoundingBoxBounds(aabb_min_ws, aabb_max_ws);
+        object->getWorldBoundingBox(aabb_min_ws, aabb_max_ws);
         // Skipping bounds that can`t produce closer t (looking in world space, where multiple BVH's are)
         float closest_side; // not even used for root node, but have to leave it for correct function call
         vec3 inv_dir = vec3(1.0f / r.direction().x(), 1.0f / r.direction().y(), 1.0f / r.direction().z());
