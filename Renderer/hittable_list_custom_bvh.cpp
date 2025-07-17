@@ -6,6 +6,8 @@
 #include "intersection_utility.h"
 #include "bvh_manager.h"
 
+#define DEBUG_BLAS 0
+
 HittableListCustomBVH::HittableListCustomBVH() {}
 
 HittableListCustomBVH::HittableListCustomBVH(std::shared_ptr<Hittable> object) {
@@ -16,23 +18,31 @@ void HittableListCustomBVH::add(std::shared_ptr<Hittable> object) {
     objects_.push_back(object);
 }
 
-//bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) const {
-//    HitRecord temp_rec;
-//    bool hit_anything = false;
-//    auto closest_so_far = ray_t.max;
-//    temp_rec.t = std::numeric_limits<float>::max();
-//
-//    for (const auto& object : objects_) {
-//        if (object->hit(r, interval(ray_t.min, closest_so_far), temp_rec) && temp_rec.t < closest_so_far) {
-//            hit_anything = true;
-//            closest_so_far = temp_rec.t;
-//            rec = temp_rec;
-//        }
-//    }
-//
-//    return hit_anything;
-//}
+#if DEBUG_BLAS
+bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) const {
+    HitRecord temp_rec;
+    bool hit_anything = false;
+    auto closest_so_far = ray_t.max;
+    temp_rec.t = std::numeric_limits<float>::max();
 
+    for (const auto& object : objects_) {
+        vec3 aabb_min_ws, aabb_max_ws;
+        object->getWorldBoundingBoxBounds(aabb_min_ws, aabb_max_ws);
+        // Skipping bounds that can`t produce closer t (looking in world space, where multiple BVH's are)
+        float closest_side; // not even used for root node, but have to leave it for correct function call
+        vec3 inv_dir = vec3(1.0f / r.direction().x(), 1.0f / r.direction().y(), 1.0f / r.direction().z());
+        if (!intersectAABB(r, inv_dir, aabb_min_ws, aabb_max_ws, ray_t.max, closest_side) || closest_side > ray_t.max) continue;
+
+        if (object->hit(r, interval(ray_t.min, closest_so_far), temp_rec) && temp_rec.t < closest_so_far) {
+            hit_anything = true;
+            closest_so_far = temp_rec.t;
+            rec = temp_rec;
+        }
+    }
+
+    return hit_anything;
+}
+#else
 bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) const {
     HitRecord temp_rec;
     bool hit_anything = false;
@@ -55,12 +65,11 @@ bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) co
         const auto& node = tlas_[node_idx];
 
         float closest_side;
-        //if (!intersectAABB(r, closest_so_far, node.aabb_min, node.aabb_max, closest_side) || closest_side > ray_t.max) continue;
         if (!intersectAABB(r, inv_dir, node.aabb_min, node.aabb_max, closest_so_far, closest_side) || closest_side > ray_t.max) continue;
 
         if (node.isLeaf()) {
             // Intersect with corresponding BLAS
-            if(node.blas->hit(r, interval(ray_t.min, closest_so_far), temp_rec) && temp_rec.t < closest_so_far) {
+            if (node.blas->hit(r, interval(ray_t.min, closest_so_far), temp_rec) && temp_rec.t < closest_so_far) {
                 hit_anything = true;
                 closest_so_far = temp_rec.t;
                 rec = temp_rec;
@@ -95,7 +104,7 @@ bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) co
 
     return hit_anything;
 }
-
+#endif // !DEBUG_BLAS
 
 void HittableListCustomBVH::buildTLAS(BVHManager* bvh_manager, std::span<MeshHandle> meshes, std::span<std::shared_ptr<Hittable>> rt_meshes) {
     std::vector<std::pair<vec3, vec3>> bounds; // bounding box bounds for each mesh

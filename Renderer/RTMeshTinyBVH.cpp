@@ -73,7 +73,7 @@ void RTMeshTinyBVH::setTransformationMatrix(const matrix4x4& mat) {
 
     aabb_min_ws_ = vec3(impl_->bvh_->aabbMin.x, impl_->bvh_->aabbMin.y, impl_->bvh_->aabbMin.z);
     aabb_max_ws_ = vec3(impl_->bvh_->aabbMax.x, impl_->bvh_->aabbMax.y, impl_->bvh_->aabbMax.z);
-    transformAABB(aabb_min_ws_, aabb_max_ws_, local_to_world_mat_);  // transforms aabb from local to world space
+    transformAABB(aabb_min_ws_, aabb_max_ws_, local_to_world_mat_); // transforms aabb from local to world space
 }
 
 void RTMeshTinyBVH::update() {

@@ -34,15 +34,13 @@ public:
 
     void intersectBLAS(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, float& closest_hit_t) const;
 
+    void getWorldBoundingBoxBounds(vec3& aabb_min, vec3& aabb_max);
+
 private:
     Context& context_;
 
     MeshHandle mesh_handle_;
     std::shared_ptr<Material> mat_;
-
-    // AABB bounds in world space. Used only for initial check if ray hit the BLAS in world space.
-    vec3 aabb_min_ws_; // ws = world space
-    vec3 aabb_max_ws_;
     
     ResolvedMeshInfo res_mesh_info_;
     std::span<const BLASNode> bvh_nodes_;

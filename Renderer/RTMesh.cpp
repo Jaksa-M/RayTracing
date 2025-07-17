@@ -300,12 +300,6 @@ MeshHandle RTMesh::getMeshHandle() const {
 
 void RTMesh::setTransformationMatrix(const matrix4x4& mat) {
     Hittable::setTransformationMatrix(mat);  // Call base class function
-
-    const BLASNode& node = bvh_nodes_[0];
-
-    aabb_min_ws_ = node.aabb_min;
-    aabb_max_ws_ = node.aabb_max;
-    transformAABB(aabb_min_ws_, aabb_max_ws_, local_to_world_mat_); // transforms aabb from local to world space
 }
 
 void RTMesh::update() {
@@ -352,4 +346,12 @@ void RTMesh::intersectBLAS(const ray& r, interval ray_t, IntersectResult& inters
                 return templatedIntersectBLAS<false, false, false>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
         }
     }
+}
+
+void RTMesh::getWorldBoundingBoxBounds(vec3& aabb_min, vec3& aabb_max) {
+    const BLASNode& node = bvh_nodes_[0];
+
+    aabb_min = node.aabb_min;
+    aabb_max = node.aabb_max;
+    transformAABB(aabb_min, aabb_max, local_to_world_mat_); // transforms aabb from local to world space
 }
