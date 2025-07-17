@@ -45,7 +45,8 @@ RTMeshTinyBVH::~RTMeshTinyBVH() {}
 bool RTMeshTinyBVH::hit(const ray& r, interval ray_t, HitRecord& rec) const {
     // Skipping bounds that can`t produce closer t (looking in world space, where multiple BVH's are)
     float closest_side;  // not even used for root node, but have to leave it for correct function call
-    if (!intersectAABB(r, ray_t.max, aabb_min_, aabb_max_, closest_side) || closest_side > ray_t.max)
+    vec3 inv_dir = vec3(1.0f / r.direction().x(), 1.0f / r.direction().y(), 1.0f / r.direction().z());
+    if (!intersectAABB(r, inv_dir, aabb_min_ws_, aabb_max_ws_, ray_t.max, closest_side) || closest_side > ray_t.max)
         return false;
 
     ray changed_ray = r;  // Create new ray that will be changing
@@ -70,9 +71,9 @@ MeshHandle RTMeshTinyBVH::getMeshHandle() const {
 void RTMeshTinyBVH::setTransformationMatrix(const matrix4x4& mat) {
     Hittable::setTransformationMatrix(mat);  // Call base class function
 
-    aabb_min_ = vec3(impl_->bvh_->aabbMin.x, impl_->bvh_->aabbMin.y, impl_->bvh_->aabbMin.z);
-    aabb_max_ = vec3(impl_->bvh_->aabbMax.x, impl_->bvh_->aabbMax.y, impl_->bvh_->aabbMax.z);
-    transformAABB(aabb_min_, aabb_max_, local_to_world_mat_);  // transforms aabb from local to world space
+    aabb_min_ws_ = vec3(impl_->bvh_->aabbMin.x, impl_->bvh_->aabbMin.y, impl_->bvh_->aabbMin.z);
+    aabb_max_ws_ = vec3(impl_->bvh_->aabbMax.x, impl_->bvh_->aabbMax.y, impl_->bvh_->aabbMax.z);
+    transformAABB(aabb_min_ws_, aabb_max_ws_, local_to_world_mat_); // transforms aabb from local to world space
 }
 
 void RTMeshTinyBVH::update() {

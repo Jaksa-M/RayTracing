@@ -32,19 +32,17 @@ public:
     void update() override;
     int getTriangleCount() const override;
 
-    void intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, float& closest_hit_t) const;
+    void intersectBLAS(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, float& closest_hit_t) const;
+
+    void getWorldBoundingBox(vec3& aabb_min, vec3& aabb_max);
 
 private:
     Context& context_;
 
     MeshHandle mesh_handle_;
     std::shared_ptr<Material> mat_;
-
-    // AABB bounds in world space
-    vec3 aabb_min_;
-    vec3 aabb_max_;
     
     ResolvedMeshInfo res_mesh_info_;
-    std::span<const BVHNode> bvh_nodes_;
+    std::span<const BLASNode> bvh_nodes_;
 };
 #endif

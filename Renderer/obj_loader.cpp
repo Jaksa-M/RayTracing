@@ -274,7 +274,7 @@ bool ObjLoader::load(Context& context) {
         std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
 
         if (!context.settings->use_tiny_bvh) {
-            context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
+            context.bvh_manager->buildBLAS(context.mesh_buf_manager, mesh_handle);
         }
         meshes_.push_back(mesh_handle);
     }

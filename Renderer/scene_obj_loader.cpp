@@ -21,9 +21,8 @@
 SceneObjLoader::SceneObjLoader() {}
 
 void SceneObjLoader::initialize() {
-    //if (context.settings->use_tiny_bvh) world_ = std::make_unique<HittableListTinybvh>();
-    //else world_ = std::make_unique<HittableListCustomBVH>();
-    world_ = std::make_unique<HittableListCustomBVH>();
+    if (context.settings->use_tiny_bvh) world_ = std::make_unique<HittableListTinybvh>();
+    else world_ = std::make_unique<HittableListCustomBVH>();
     
     // Initialization of cameras
     std::unique_ptr<Camera> cam1 = std::make_unique<Camera>("initial cam");
@@ -51,16 +50,16 @@ void SceneObjLoader::initialize() {
 
     //obj_loader_ = std::make_unique<ObjLoader>("../Resources/erato/erato.obj");
     //obj_loader_ = std::make_unique<ObjLoader>("../Resources/teapot/teapot.obj");
-    //obj_loader_ = std::make_unique<ObjLoader>("../Resources/crytek_sponza/sponza.obj");
-    obj_loader_ = std::make_unique<ObjLoader>("../Resources/CornellBox/CornellBox-Sphere.obj");
+    obj_loader_ = std::make_unique<ObjLoader>("../Resources/crytek_sponza/sponza.obj");
+    //obj_loader_ = std::make_unique<ObjLoader>("../Resources/CornellBox/CornellBox-Sphere.obj");
     if (!obj_loader_->load(context)) {
         std::cout << "ERROR: custom mesh failed to load" << std::endl;
     }
 
     //matrix4x4 m = transformation::create_scaling_matrix(0.02f, 0.02f, 0.02f); // teapot
-    matrix4x4 m = transformation::create_scaling_matrix(1.0f, 1.0f, 1.0f); // sponza, cornell_box
+    //matrix4x4 m = transformation::create_scaling_matrix(1.0f, 1.0f, 1.0f); // sponza, cornell_box
     //matrix4x4 m = transformation::create_scaling_matrix(0.3f, 0.3f, 0.3f); // erato
-    //matrix4x4 m = transformation::create_scaling_matrix(0.01f, 0.01f, 0.01f); // crytek_sponza
+    matrix4x4 m = transformation::create_scaling_matrix(0.01f, 0.01f, 0.01f); // crytek_sponza
 
     std::span<MeshHandle> meshes = obj_loader_->getMeshes();
     std::span<const std::shared_ptr<Material>> materials = obj_loader_->getMaterials();
@@ -74,7 +73,10 @@ void SceneObjLoader::initialize() {
     }
 
     if (context.settings->use_tiny_bvh) {
-        //static_cast<HittableListTinybvh*>(world_.get())->buildTLAS();
+        static_cast<HittableListTinybvh*>(world_.get())->buildTLAS();
+    }
+    else {
+        static_cast<HittableListCustomBVH*>(world_.get())->buildTLAS(context.bvh_manager , meshes, rt_meshes_);
     }
     
     auto end_time = std::chrono::high_resolution_clock::now(); // End timing

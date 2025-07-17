@@ -4,39 +4,64 @@
 #include "vec3.h"
 #include "interval.h"
 #include <algorithm>
+#include "hittable.h"
+
+inline int findBestMatch(std::span<const TLASNode> tlas_nodes, const std::span<const uint32_t> list, int N, int A) {
+    float smallest = 1e30f;
+    int bestB = -1;
+
+    for (int B = 0; B < N; B++) {
+        if (B == A) continue;
+
+        const TLASNode& nodeA = tlas_nodes[list[A]];
+        const TLASNode& nodeB = tlas_nodes[list[B]];
+
+        vec3 bmin = vec3::minVec(nodeA.aabb_min, nodeB.aabb_min);
+        vec3 bmax = vec3::maxVec(nodeA.aabb_max, nodeB.aabb_max);
+        vec3 e = bmax - bmin;
+
+        float surfaceArea = e.x() * e.y() + e.y() * e.z() + e.z() * e.x();
+        if (surfaceArea < smallest) {
+            smallest = surfaceArea;
+            bestB = B;
+        }
+    }
+    return bestB;
+}
 
 BVHBuilder::BVHBuilder(std::span<const float> vertices, std::span<std::uint32_t> indices,
     std::span<const Triangle> triangles, std::span<std::uint32_t> triangle_indices):
     vertices_(vertices), indices_(indices), triangles_(triangles), triangle_indices_(triangle_indices) {}
 
-std::vector<BVHNode> BVHBuilder::buildBVH() {
+std::vector<BLASNode> BVHBuilder::buildBLAS() {
     std::uint32_t N = static_cast<std::uint32_t>(indices_.size() / 3);
 
     for (std::uint32_t i = 0; i < 2 * N - 1; i++) {
-        bvh_nodes_.push_back(BVHNode());
+        blas_nodes_.push_back(BLASNode());
     }
-    BVHNode& root = bvh_nodes_[0];
+    BLASNode& root = blas_nodes_[0];
     root.left_child = 0;
     root.right_child = 0;
     root.first_triangle_index = 0;
     root.triangle_cnt = N; // root node holds all triangles
 
+    // Bounding boxes created are all in local space
     createBoundBox(0); // creating bounding box for root node
 
     // Start recursive subdivision
     subdivide(0);
 
     reorderIndices();
-    return bvh_nodes_;
+    return blas_nodes_;
 }
 
-std::vector<BVHNode> BVHBuilder::buildBVHSAH() {
+std::vector<BLASNode> BVHBuilder::buildBLASSAH() {
     std::uint32_t N = static_cast<std::uint32_t>(indices_.size() / 3);
 
     for (std::uint32_t i = 0; i < 2 * N - 1; i++) {
-        bvh_nodes_.push_back(BVHNode());
+        blas_nodes_.push_back(BLASNode());
     }
-    BVHNode& root = bvh_nodes_[0];
+    BLASNode& root = blas_nodes_[0];
     root.left_child = 0;
     root.right_child = 0;
     root.first_triangle_index = 0;
@@ -49,12 +74,12 @@ std::vector<BVHNode> BVHBuilder::buildBVHSAH() {
 
     reorderIndices();
 
-    bvh_nodes_.resize(nodes_used_); // Trim unused nodes
-    return bvh_nodes_;
+    blas_nodes_.resize(nodes_used_); // Trim unused nodes
+    return blas_nodes_;
 }
 
 void BVHBuilder::createBoundBox(std::uint32_t node_index) {
-    BVHNode& node = bvh_nodes_[node_index];
+    BLASNode& node = blas_nodes_[node_index];
     point3 min_point = point3(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max()); // bottom left corner
     point3 max_point = point3(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest()); // top right corner
 
@@ -73,24 +98,24 @@ void BVHBuilder::createBoundBox(std::uint32_t node_index) {
         max_point.setZ(std::max({ max_point.z(), triangle.v0.z(), triangle.v1.z(), triangle.v2.z() }));
     }
 
-    node.aabbMin = min_point;
-    node.aabbMax = max_point;
+    node.aabb_min = min_point;
+    node.aabb_max = max_point;
 }
 
 void BVHBuilder::subdivide(std::uint32_t node_index) {
     // Current split method: split along longest axis
-    BVHNode& node = bvh_nodes_[node_index];
+    BLASNode& node = blas_nodes_[node_index];
 
     // Decided to return if node contains 2 or less triangles. The reason for that is because 2 triangles can be aligned with splitting axis
     // and we can't split it into 2 non empty halves. This is still not 100% safe.
     if (node.triangle_cnt <= 2) return;
 
     // Midpoint split
-    vec3 extent = node.aabbMax - node.aabbMin;
+    vec3 extent = node.aabb_max - node.aabb_min;
     int axis = 0; // x-axis
     if (extent.y() > extent.x()) axis = 1; // y-axis
     if (extent.z() > extent.x() && extent.z() > extent.y()) axis = 2; // z-axis
-    float split_pos = node.aabbMin[axis] + extent[axis] * 0.5f; // split that axis in half
+    float split_pos = node.aabb_min[axis] + extent[axis] * 0.5f; // split that axis in half
 
     // split the box in halves
     int i = node.first_triangle_index;
@@ -116,10 +141,10 @@ void BVHBuilder::subdivide(std::uint32_t node_index) {
     int right_child_index = nodes_used_++;
     node.left_child = left_child_index;
     node.right_child = right_child_index;
-    bvh_nodes_[left_child_index].first_triangle_index = node.first_triangle_index;
-    bvh_nodes_[left_child_index].triangle_cnt = left_count;
-    bvh_nodes_[right_child_index].first_triangle_index = i;
-    bvh_nodes_[right_child_index].triangle_cnt = node.triangle_cnt - left_count;
+    blas_nodes_[left_child_index].first_triangle_index = node.first_triangle_index;
+    blas_nodes_[left_child_index].triangle_cnt = left_count;
+    blas_nodes_[right_child_index].first_triangle_index = i;
+    blas_nodes_[right_child_index].triangle_cnt = node.triangle_cnt - left_count;
 
     // We also use this variable to know if it is leaf node or not. Leaf nodes have primCount > 0.
     // So every time node gets split into children, primCount for that node becomes 0.
@@ -135,7 +160,7 @@ void BVHBuilder::subdivide(std::uint32_t node_index) {
 
 void BVHBuilder::subdivideSAH(std::uint32_t node_index) {
     // Current split method: split along longest axis
-    BVHNode& node = bvh_nodes_[node_index];
+    BLASNode& node = blas_nodes_[node_index];
 
     // Decided to return if node contains 2 or less triangles. The reason for that is because 2 triangles can be aligned with splitting axis
     // and we can't split it into 2 non empty halves. This is still not 100% safe.
@@ -160,7 +185,7 @@ void BVHBuilder::subdivideSAH(std::uint32_t node_index) {
     int axis = best_axis;
     float splitPos = best_pos;
 
-    vec3 e = node.aabbMax - node.aabbMin; // extent of parent
+    vec3 e = node.aabb_max - node.aabb_min; // extent of parent
     float parent_area = e.x() * e.y() + e.y() * e.z() + e.z() * e.x();
     float parentCost = node.triangle_cnt * parent_area;
 
@@ -188,10 +213,10 @@ void BVHBuilder::subdivideSAH(std::uint32_t node_index) {
     int right_child_index = nodes_used_++;
     node.left_child = left_child_index;
     node.right_child = right_child_index;
-    bvh_nodes_[left_child_index].first_triangle_index = node.first_triangle_index;
-    bvh_nodes_[left_child_index].triangle_cnt = leftCount;
-    bvh_nodes_[right_child_index].first_triangle_index = i;
-    bvh_nodes_[right_child_index].triangle_cnt = node.triangle_cnt - leftCount;
+    blas_nodes_[left_child_index].first_triangle_index = node.first_triangle_index;
+    blas_nodes_[left_child_index].triangle_cnt = leftCount;
+    blas_nodes_[right_child_index].first_triangle_index = i;
+    blas_nodes_[right_child_index].triangle_cnt = node.triangle_cnt - leftCount;
 
     // We also use this variable to know if it is leaf node or not. Leaf nodes have primCount > 0.
     // So every time node gets split into children, triangle_cnt for that node becomes 0.
@@ -205,7 +230,7 @@ void BVHBuilder::subdivideSAH(std::uint32_t node_index) {
     subdivideSAH(right_child_index);
 }
 
-float BVHBuilder::evaluateSAH(BVHNode& node, int axis, float pos) {
+float BVHBuilder::evaluateSAH(BLASNode& node, int axis, float pos) {
     // Initialize bounds and counts
     vec3 left_box_min(float_max), left_box_max(float_min); // Left aabb (axis aligned bounding box)
     vec3 right_box_min(float_max), right_box_max(float_min); // Right aabb
@@ -265,3 +290,61 @@ void BVHBuilder::reorderIndices() {
     std::memcpy(indices_.data(), new_indices.data(), new_indices.size() * sizeof(uint32_t));
 }
 
+std::vector<TLASNode> BVHBuilder::buildTLAS(std::span<const std::pair<vec3, vec3>> blas_bounds,
+                                            std::span<std::shared_ptr<Hittable>> rt_meshes) {
+    const int blas_count = static_cast<int>(blas_bounds.size());
+    tlas_nodes_.resize(2 * blas_count); // Reserve enough space for full binary tree
+    uint32_t nodes_used = 1;
+
+    std::vector<uint32_t> nodes_indices(blas_count); // Holds the index of each leaf inside nodes_
+
+    // Create leaf nodes from BLAS bounds
+    for (uint32_t i = 0; i < blas_count; i++) {
+        int index = nodes_used++;
+        nodes_indices[i] = index;
+
+        tlas_nodes_[index].aabb_min = blas_bounds[i].first;
+        tlas_nodes_[index].aabb_max = blas_bounds[i].second;
+        tlas_nodes_[index].blas = rt_meshes[i].get();
+        tlas_nodes_[index].left_right = 0; // mark as leaf
+    }
+
+    // Agglomerative clustering algorithm (Building the tree bottom up)
+    uint32_t A = 0;
+    uint32_t B = findBestMatch(tlas_nodes_, nodes_indices, blas_count, A);
+    uint32_t active_indices = blas_count; // number of active nodes currently in nodes_indices
+
+    while (active_indices > 1) {
+        uint32_t C = findBestMatch(tlas_nodes_, nodes_indices, active_indices, B);
+
+        if (A == C) {
+            uint32_t node_index_A = nodes_indices[A];
+            uint32_t node_index_B = nodes_indices[B];
+
+            TLASNode& nodeA = tlas_nodes_[node_index_A];
+            TLASNode& nodeB = tlas_nodes_[node_index_B];
+
+            // Merging nodes into 1 node
+            TLASNode& new_node = tlas_nodes_[nodes_used];
+
+            new_node.aabb_min = vec3::minVec(nodeA.aabb_min, nodeB.aabb_min);
+            new_node.aabb_max = vec3::maxVec(nodeA.aabb_max, nodeB.aabb_max);
+
+            new_node.left_right = (node_index_A & 0xFFFF) | ((node_index_B & 0xFFFF) << 16); // pack left/right
+
+            nodes_indices[A] = nodes_used++;
+            nodes_indices[B] = nodes_indices[active_indices - 1]; // replace nodeIdx[B] with last
+            active_indices--;
+
+            B = findBestMatch(tlas_nodes_, nodes_indices, active_indices, A);
+        }
+        else {
+            A = B;
+            B = C;
+        }
+    }
+
+    tlas_nodes_[0] = tlas_nodes_[nodes_indices[A]]; // move final node to index 0 (root node)
+    tlas_nodes_.resize(nodes_used);            // Shrink to used size
+    return tlas_nodes_;
+}

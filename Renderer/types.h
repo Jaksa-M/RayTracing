@@ -7,6 +7,8 @@
 #include <filesystem>
 #include <chrono>
 
+class Hittable; // Had to put it because of TLASNode
+
 using MeshHandle = std::size_t;
 
 // UI types
@@ -34,12 +36,19 @@ enum class MeshColor {
 // Code types
 namespace fs = std::filesystem;
 
-struct BVHNode {
-    vec3 aabbMin, aabbMax;
+struct BLASNode {
+    vec3 aabb_min, aabb_max;
     std::uint32_t left_child, right_child;
     std::uint32_t first_triangle_index, triangle_cnt;
 
     bool isLeaf() const { return triangle_cnt > 0; }
+};
+
+struct TLASNode {
+    vec3 aabb_min, aabb_max;
+    std::uint32_t left_right; // 2x16 bits for left and right child index
+    const Hittable* blas; // Valid only for leaf nodes
+    bool isLeaf() const { return left_right == 0; } // for interior nodes one of the childs must be greater than 0
 };
 
 struct IntersectResult {

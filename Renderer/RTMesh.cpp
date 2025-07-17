@@ -14,8 +14,8 @@
 #include "vec3.h"
 
 template <bool posX, bool posY, bool posZ>
-void templatedIntersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t node_idx, float& closest_hit_t,
-                           std::span<const BVHNode> bvh_nodes, const ResolvedMeshInfo& res_mesh_info) { // version without cost
+void templatedIntersectBLAS(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t node_idx, float& closest_hit_t,
+                           std::span<const BLASNode> bvh_nodes, const ResolvedMeshInfo& res_mesh_info) { // version without cost
     constexpr int MAX_STACK_SIZE = 64;
     std::uint32_t node_stack[MAX_STACK_SIZE];
     int stack_top = 0;
@@ -38,7 +38,7 @@ void templatedIntersectBVH(const ray& r, interval ray_t, IntersectResult& inters
 
     while (stack_top > 0) {
         std::uint32_t nodeIdx = node_stack[--stack_top];
-        const BVHNode& node = bvh_nodes[nodeIdx];
+        const BLASNode& node = bvh_nodes[nodeIdx];
 
         // Leaf node: test triangles
         if (node.isLeaf()) {
@@ -61,8 +61,8 @@ void templatedIntersectBVH(const ray& r, interval ray_t, IntersectResult& inters
             continue;
         }
 
-        const BVHNode* node_left = &bvh_nodes[node.left_child];
-        const BVHNode* node_right = &bvh_nodes[node.right_child];
+        const BLASNode* node_left = &bvh_nodes[node.left_child];
+        const BLASNode* node_right = &bvh_nodes[node.right_child];
         std::uint32_t left_child = node.left_child;
         std::uint32_t right_child = node.right_child;
 
@@ -115,7 +115,7 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
     // Start timing
     auto start_time = std::chrono::high_resolution_clock::now();
 
-    intersectBVH(changed_ray, ray_t, intersect_result, 0, closest_hit_t);
+    intersectBLAS(changed_ray, ray_t, intersect_result, 0, closest_hit_t);
 
     // End timing
     auto end_time = std::chrono::high_resolution_clock::now();
@@ -156,11 +156,6 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
 }
 
 bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
-    // Skipping bounds that can`t produce closer t (looking in world space, where multiple BVH's are)
-    float closest_side;  // not even used for root node, but have to leave it for correct function call
-    if (!intersectAABB(r, ray_t.max, aabb_min_, aabb_max_, closest_side) || closest_side > ray_t.max)
-        return false;
-
     if (context_.settings->enable_BVH == false) {
         ray changed_ray = r;
         changed_ray.setOrigin(transformPoint(r.origin(), world_to_local_mat_));
@@ -248,11 +243,11 @@ void RTMesh::drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32
         int level = front.second;
         queue.pop();
 
-        const BVHNode& node = bvh_nodes_[node_index];
+        const BLASNode& node = bvh_nodes_[node_index];
 
         // Draw the bounding box for the current node
-        vec3 center = (node.aabbMin + node.aabbMax) * 0.5f;
-        vec3 scale = node.aabbMax - node.aabbMin;
+        vec3 center = (node.aabb_min + node.aabb_max) * 0.5f;
+        vec3 scale = node.aabb_max - node.aabb_min;
 
         matrix4x4 translation_matrix = transformation::create_translation_matrix(center);
         matrix4x4 scaling_matrix = transformation::create_scaling_matrix(scale.x(), scale.y(), scale.z());
@@ -284,8 +279,8 @@ void RTMesh::drawBVHLeaves(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint
 
     for (int i = 0; i < bvh_nodes_.size(); i++) {
         if (bvh_nodes_[i].isLeaf() == true) {
-            vec3 center = (bvh_nodes_[i].aabbMin + bvh_nodes_[i].aabbMax) * 0.5f;
-            vec3 scale = bvh_nodes_[i].aabbMax - bvh_nodes_[i].aabbMin;
+            vec3 center = (bvh_nodes_[i].aabb_min + bvh_nodes_[i].aabb_max) * 0.5f;
+            vec3 scale = bvh_nodes_[i].aabb_max - bvh_nodes_[i].aabb_min;
 
             matrix4x4 translation_matrix = transformation::create_translation_matrix(center);
             matrix4x4 scaling_matrix = transformation::create_scaling_matrix(scale.x(), scale.y(), scale.z());
@@ -305,16 +300,10 @@ MeshHandle RTMesh::getMeshHandle() const {
 
 void RTMesh::setTransformationMatrix(const matrix4x4& mat) {
     Hittable::setTransformationMatrix(mat);  // Call base class function
-
-    const BVHNode& node = bvh_nodes_[0];
-
-    aabb_min_ = node.aabbMin;
-    aabb_max_ = node.aabbMax;
-    transformAABB(aabb_min_, aabb_max_, local_to_world_mat_); // transforms aabb from local to world space
 }
 
 void RTMesh::update() {
-    bvh_nodes_ = context_.bvh_manager->getBVHNodes(mesh_handle_);
+    bvh_nodes_ = context_.bvh_manager->getBLASNodes(mesh_handle_);
     res_mesh_info_.vertices = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::Position);
     res_mesh_info_.indices = context_.mesh_buf_manager->getIndices(mesh_handle_);
     res_mesh_info_.vertex_normals = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::Normal);
@@ -325,7 +314,7 @@ int RTMesh::getTriangleCount() const {
     return res_mesh_info_.indices.size() / 3;
 }
 
-void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx,
+void RTMesh::intersectBLAS(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx,
                                   float& closest_hit_t) const
 {
     bool posX = r.direction().x() >= 0;
@@ -335,26 +324,34 @@ void RTMesh::intersectBVH(const ray& r, interval ray_t, IntersectResult& interse
     if (posX) {
         if (posY) {
             if (posZ)
-                return templatedIntersectBVH<true, true, true>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
+                return templatedIntersectBLAS<true, true, true>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
             else
-                return templatedIntersectBVH<true, true, false>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
+                return templatedIntersectBLAS<true, true, false>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
         } else {
             if (posZ)
-                return templatedIntersectBVH<true, false, true>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
+                return templatedIntersectBLAS<true, false, true>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
             else
-                return templatedIntersectBVH<true, false, false>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
+                return templatedIntersectBLAS<true, false, false>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
         }
     } else {
         if (posY) {
             if (posZ)
-                return templatedIntersectBVH<false, true, true>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
+                return templatedIntersectBLAS<false, true, true>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
             else
-                return templatedIntersectBVH<false, true, false>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
+                return templatedIntersectBLAS<false, true, false>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
         } else {
             if (posZ)
-                return templatedIntersectBVH<false, false, true>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
+                return templatedIntersectBLAS<false, false, true>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
             else
-                return templatedIntersectBVH<false, false, false>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
+                return templatedIntersectBLAS<false, false, false>(r, ray_t, intersect_result, nodeIdx, closest_hit_t, bvh_nodes_, res_mesh_info_);
         }
     }
+}
+
+void RTMesh::getWorldBoundingBox(vec3& aabb_min, vec3& aabb_max) {
+    const BLASNode& node = bvh_nodes_[0];
+
+    aabb_min = node.aabb_min;
+    aabb_max = node.aabb_max;
+    transformAABB(aabb_min, aabb_max, local_to_world_mat_); // transforms aabb from local to world space
 }

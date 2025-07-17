@@ -11,21 +11,27 @@
 
 class MeshBufferManager;
 struct GUISettings;
+class Hittable;
 
 class BVHManager {
 public:
 	BVHManager(GUISettings* settings);
 
-	void buildBVH(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_handle);
+	void buildBLAS(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_handle); // building BLASes
+    void buildTLAS(std::span<const std::pair<vec3, vec3>> blas_bounds,
+                   std::span<std::shared_ptr<Hittable>> rt_meshes); // building TLAS
 
-	std::span<const BVHNode> getBVHNodes(MeshHandle mesh_handle) const;
+	std::span<const BLASNode> getBLASNodes(MeshHandle mesh_handle) const;
+	std::span<const TLASNode> getTLASNodes() const;
 
 private:
 	GUISettings* settings_;
 	struct BVHInfo {
-		std::vector<BVHNode> bvh_nodes;
+		std::vector<BLASNode> bvh_nodes;
 	};
 	std::unordered_map<MeshHandle, BVHInfo> bvh_info_;
+
+	std::vector<TLASNode> tlas_nodes_;
 
 	void transformToTriangles(std::span<const float> vertices, std::span<const std::uint32_t> indices,
 		std::vector<Triangle>& triangles, std::vector<std::uint32_t>& triangle_indices);

@@ -38,39 +38,36 @@ inline IntersectResult intersectTriangle(const ray& r, interval ray_t, const vec
     return {t, vec2(u, v), 0};
 }
 
-// Currently not being used because we use slabTestTwoNodes instead
-inline bool intersectAABB(const ray& r, float t, const vec3& bmin, const vec3& bmax, float& closest_side) {
-    vec3 dir = vec3(std::abs(r.direction().x()) < 0.00001f ? r.direction().x() + 0.0001f : r.direction().x(),
-                    std::abs(r.direction().y()) < 0.00001f ? r.direction().y() + 0.0001f : r.direction().y(),
-                    std::abs(r.direction().z()) < 0.00001f ? r.direction().z() + 0.0001f : r.direction().z());
-
-    float tx1 = (bmin.x() - r.origin().x()) / dir.x();
-    float tx2 = (bmax.x() - r.origin().x()) / dir.x();
+inline bool intersectAABB(const ray& r, const vec3& inv_dir, const vec3& bmin, const vec3& bmax, float tMax, float& closest_side) {
+    float tx1 = (bmin.x() - r.origin().x()) * inv_dir.x();
+    float tx2 = (bmax.x() - r.origin().x()) * inv_dir.x();
     float tmin = std::min(tx1, tx2);
     float tmax = std::max(tx1, tx2);
-    float ty1 = (bmin.y() - r.origin().y()) / dir.y();
-    float ty2 = (bmax.y() - r.origin().y()) / dir.y();
+
+    float ty1 = (bmin.y() - r.origin().y()) * inv_dir.y();
+    float ty2 = (bmax.y() - r.origin().y()) * inv_dir.y();
     tmin = std::max(tmin, std::min(ty1, ty2));
     tmax = std::min(tmax, std::max(ty1, ty2));
-    float tz1 = (bmin.z() - r.origin().z()) / dir.z();
-    float tz2 = (bmax.z() - r.origin().z()) / dir.z();
+
+    float tz1 = (bmin.z() - r.origin().z()) * inv_dir.z();
+    float tz2 = (bmax.z() - r.origin().z()) * inv_dir.z();
     tmin = std::max(tmin, std::min(tz1, tz2));
     tmax = std::min(tmax, std::max(tz1, tz2));
 
     closest_side = tmin;
-    return tmax >= tmin && tmin < t && tmax > 0;
+    return (tmax >= tmin) && (tmin < tMax) && (tmax > 0);
 }
 
 template <bool posX, bool posY, bool posZ>
-inline void slabTestTwoNodes(const vec3& dir_inv, float t, const BVHNode* c1, const BVHNode* c2, float rox, float roy, float roz, float& d1,
+inline void slabTestTwoNodes(const vec3& dir_inv, float t, const BLASNode* c1, const BLASNode* c2, float rox, float roy, float roz, float& d1,
                              float& d2) {
-    auto slabTest = [&](const BVHNode* n, float& dist) {
-        float tx_min = ((posX ? n->aabbMin.x() : n->aabbMax.x()) * dir_inv.x()) - rox;
-        float tx_max = ((posX ? n->aabbMax.x() : n->aabbMin.x()) * dir_inv.x()) - rox;
-        float ty_min = ((posY ? n->aabbMin.y() : n->aabbMax.y()) * dir_inv.y()) - roy;
-        float ty_max = ((posY ? n->aabbMax.y() : n->aabbMin.y()) * dir_inv.y()) - roy;
-        float tz_min = ((posZ ? n->aabbMin.z() : n->aabbMax.z()) * dir_inv.z()) - roz;
-        float tz_max = ((posZ ? n->aabbMax.z() : n->aabbMin.z()) * dir_inv.z()) - roz;
+    auto slabTest = [&](const BLASNode* n, float& dist) {
+        float tx_min = ((posX ? n->aabb_min.x() : n->aabb_max.x()) * dir_inv.x()) - rox;
+        float tx_max = ((posX ? n->aabb_max.x() : n->aabb_min.x()) * dir_inv.x()) - rox;
+        float ty_min = ((posY ? n->aabb_min.y() : n->aabb_max.y()) * dir_inv.y()) - roy;
+        float ty_max = ((posY ? n->aabb_max.y() : n->aabb_min.y()) * dir_inv.y()) - roy;
+        float tz_min = ((posZ ? n->aabb_min.z() : n->aabb_max.z()) * dir_inv.z()) - roz;
+        float tz_max = ((posZ ? n->aabb_max.z() : n->aabb_min.z()) * dir_inv.z()) - roz;
 
         float tmin = std::max(std::max(tx_min, ty_min), std::max(tz_min, 0.0f));
         float tmax = std::min(std::min(tx_max, ty_max), std::min(tz_max, t));

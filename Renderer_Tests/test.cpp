@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-
+    
 #define GLAD_GL_IMPLEMENTATION  // Necessary for headeronly version
 #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
 #pragma comment(lib, "legacy_stdio_definitions")
@@ -56,7 +56,7 @@ class BaseScene: public ::testing::Test {
     std::vector<std::unique_ptr<Camera>> cameras;
     std::shared_ptr<Texture> background_texture_;
 
-    virtual void SetUp() override {
+    void SetUp() override {
         gui_settings = std::make_unique<GUISettings>();
         context.settings = gui_settings.get();
 
@@ -151,7 +151,7 @@ class CrytekSponzaScene : public BaseScene {
     }
 };
 
-TEST_F(CornellBoxScene, TestLoading) {  // Crytek Sponza scene test
+TEST_F(CornellBoxScene, TestLoading) {  // Cornell Box scene test
     // Set camera center position
     cameras[0]->setCenterX(-5.54435e-08f);
     cameras[0]->setCenterY(0.867661f);
@@ -175,6 +175,14 @@ TEST_F(CornellBoxScene, TestLoading) {  // Crytek Sponza scene test
             addMesh(meshes[i], mat_green, m, context, rt_meshes, world.get());
         }
     }
+
+    if (context.settings->use_tiny_bvh) {
+        static_cast<HittableListTinybvh*>(world.get())->buildTLAS();
+    }
+    else {
+        static_cast<HittableListCustomBVH*>(world.get())->buildTLAS(context.bvh_manager, meshes, rt_meshes);
+    }
+
     applyImageComparisonTests("CornellBox", context, cameras, world, true);
 }
 
@@ -206,6 +214,13 @@ TEST_F(CrytekSponzaScene, TestLoading) {  // Crytek Sponza scene test
         }
     }
 
+    if (context.settings->use_tiny_bvh) {
+        static_cast<HittableListTinybvh*>(world.get())->buildTLAS();
+    }
+    else {
+        static_cast<HittableListCustomBVH*>(world.get())->buildTLAS(context.bvh_manager, meshes, rt_meshes);
+    }
+
     applyImageComparisonTests("CrytekSponza", context, cameras, world, true);
 }
 
@@ -227,21 +242,28 @@ TEST_F(RTMeshesScene, TestLoading) {  // RTMeshes scene test
     std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader2.getData(), desc2);
     std::shared_ptr<Material> texture_mat = std::make_shared<Lambertian>(tex);
 
+    std::vector<MeshHandle> meshes;
+
     // Initializing objects that will be shown in scene
     std::shared_ptr<RTMesh> rect_prism_mesh1 = MeshUtils::GenerateTriangleCube(context, texture_mat, 4);
-    rt_meshes.push_back(rect_prism_mesh1);
     matrix4x4 m = transformation::create_rotation_matrix(0.0f, 30.0f * (3.14159f / 180.0f), 0.0f) *
                   transformation::create_translation_matrix(vec3(-2.0f, 0.0f, 0.0f));  // 30 degree rotation on y-axis + translation on x-axis
     rect_prism_mesh1->setTransformationMatrix(m);
+    meshes.push_back(rect_prism_mesh1->getMeshHandle());
 
     std::shared_ptr<RTMesh> rect_prism_mesh2 = std::make_shared<RTMesh>(context, rect_prism_mesh1->getMeshHandle(), texture_mat);
-    rt_meshes.push_back(rect_prism_mesh2);
     m = transformation::create_rotation_matrix(0.0f, 70.0f * (3.14159f / 180.0f), 0.0f) *
         transformation::create_translation_matrix(vec3(2.0f, 0.0f, 0.0f));  // 70 degree rotation on y-axis + translation on x-axis
     rect_prism_mesh2->setTransformationMatrix(m);
+    meshes.push_back(rect_prism_mesh2->getMeshHandle());
 
-    world->add(std::move(rect_prism_mesh1));
-    world->add(std::move(rect_prism_mesh2));
+    rt_meshes.push_back(std::move(rect_prism_mesh1));
+    rt_meshes.push_back(std::move(rect_prism_mesh2));
+    for (uint32_t i = 0; i < rt_meshes.size(); i++) {
+        world->add(rt_meshes[i]);
+    }
+
+    static_cast<HittableListCustomBVH*>(world.get())->buildTLAS(context.bvh_manager, meshes, rt_meshes);
 
     applyImageComparisonTests("RTMeshes", context, cameras, world, true);
 }

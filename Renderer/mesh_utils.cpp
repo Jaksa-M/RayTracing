@@ -80,7 +80,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(Context& context, const 
     attributes.push_back(Attribute(AttributeType::UV, tex_coords));
 
     std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
-    context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
+    context.bvh_manager->buildBLAS(context.mesh_buf_manager, mesh_handle);
 
     std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(context, mesh_handle, mat);
     return mesh;
@@ -152,7 +152,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(Context& context, cons
     attributes.push_back(Attribute(AttributeType::UV, tex_coords));
 
     std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
-    context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
+    context.bvh_manager->buildBLAS(context.mesh_buf_manager, mesh_handle);
 
     std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(context, mesh_handle, mat);
     return mesh;
@@ -258,7 +258,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateIcosphere(Context& context, const std
     attributes.push_back(Attribute(AttributeType::UV, tex_coords));
 
     std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
-    context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
+    context.bvh_manager->buildBLAS(context.mesh_buf_manager, mesh_handle);
 
     std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(context, mesh_handle, mat);
     return mesh;
@@ -327,7 +327,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(Context& context, c
     attributes.push_back(Attribute(AttributeType::UV, tex_coords));
 
     std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
-    context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
+    context.bvh_manager->buildBLAS(context.mesh_buf_manager, mesh_handle);
 
     std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(context, mesh_handle, mat);
     return mesh;
@@ -392,7 +392,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTestMesh(Context& context, const std:
     attributes.push_back(Attribute(AttributeType::Normal, float_vertex_normals));
     // Add data to mesh buffer manager
     std::size_t mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
-    context.bvh_manager->buildBVH(context.mesh_buf_manager, mesh_handle);
+    context.bvh_manager->buildBLAS(context.mesh_buf_manager, mesh_handle);
 
     std::shared_ptr<RTMesh> mesh = std::make_shared<RTMesh>(context, mesh_handle, mat);
     return mesh;

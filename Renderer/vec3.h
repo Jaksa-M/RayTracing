@@ -75,6 +75,22 @@ public:
     const float* asPointer() const { // Method to return a pointer to the underlying array
         return e;
     }
+
+    static vec3 minVec(const vec3& a, const vec3& b) {
+        return vec3(
+            std::min(a.x(), b.x()),
+            std::min(a.y(), b.y()),
+            std::min(a.z(), b.z())
+        );
+    }
+
+    static vec3 maxVec(const vec3& a, const vec3& b) {
+        return vec3(
+            std::max(a.x(), b.x()),
+            std::max(a.y(), b.y()),
+            std::max(a.z(), b.z())
+        );
+    }
 };
 
 // point3 is just an alias for vec3, but useful for geometric clarity in the code.
