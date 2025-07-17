@@ -6,7 +6,7 @@
 #include <algorithm>
 #include "hittable.h"
 
-inline int findBestMatch(std::span<const TLASNode> tlas_nodes, const std::span<const int> list, int N, int A) {
+inline int findBestMatch(std::span<const TLASNode> tlas_nodes, const std::span<const uint32_t> list, int N, int A) {
     float smallest = 1e30f;
     int bestB = -1;
 
@@ -294,12 +294,12 @@ std::vector<TLASNode> BVHBuilder::buildTLAS(std::span<const std::pair<vec3, vec3
                                             std::span<std::shared_ptr<Hittable>> rt_meshes) {
     const int blas_count = static_cast<int>(blas_bounds.size());
     tlas_nodes_.resize(2 * blas_count); // Reserve enough space for full binary tree
-    int nodes_used = 1;
+    uint32_t nodes_used = 1;
 
-    std::vector<int> nodes_indices(blas_count); // Holds the index of each leaf inside nodes_
+    std::vector<uint32_t> nodes_indices(blas_count); // Holds the index of each leaf inside nodes_
 
     // Create leaf nodes from BLAS bounds
-    for (int i = 0; i < blas_count; i++) {
+    for (uint32_t i = 0; i < blas_count; i++) {
         int index = nodes_used++;
         nodes_indices[i] = index;
 
@@ -310,16 +310,16 @@ std::vector<TLASNode> BVHBuilder::buildTLAS(std::span<const std::pair<vec3, vec3
     }
 
     // Agglomerative clustering algorithm (Building the tree bottom up)
-    int A = 0;
-    int B = findBestMatch(tlas_nodes_, nodes_indices, blas_count, A);
-    int active_indices = blas_count; // number of active nodes currently in nodes_indices
+    uint32_t A = 0;
+    uint32_t B = findBestMatch(tlas_nodes_, nodes_indices, blas_count, A);
+    uint32_t active_indices = blas_count; // number of active nodes currently in nodes_indices
 
     while (active_indices > 1) {
-        int C = findBestMatch(tlas_nodes_, nodes_indices, active_indices, B);
+        uint32_t C = findBestMatch(tlas_nodes_, nodes_indices, active_indices, B);
 
         if (A == C) {
-            int node_index_A = nodes_indices[A];
-            int node_index_B = nodes_indices[B];
+            uint32_t node_index_A = nodes_indices[A];
+            uint32_t node_index_B = nodes_indices[B];
 
             TLASNode& nodeA = tlas_nodes_[node_index_A];
             TLASNode& nodeB = tlas_nodes_[node_index_B];

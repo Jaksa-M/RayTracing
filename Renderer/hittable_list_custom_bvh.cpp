@@ -2,7 +2,6 @@
 #include "interval.h"
 #include <vector>
 #include "bvh_manager.h"
-#include <stack>
 #include "intersection_utility.h"
 #include "bvh_manager.h"
 
@@ -84,14 +83,8 @@ bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) co
             bool hit_right = intersectAABB(r, inv_dir, tlas_[right].aabb_min, tlas_[right].aabb_max, closest_so_far, dist_right);
 
             if (hit_left && hit_right) {
-                if (dist_left < dist_right) {
-                    stack.push_back(right);
-                    stack.push_back(left);
-                }
-                else {
-                    stack.push_back(left);
-                    stack.push_back(right);
-                }
+                stack.push_back(dist_left < dist_right ? right : left);
+                stack.push_back(dist_left < dist_right ? left : right);
             }
             else if (hit_left) {
                 stack.push_back(left);

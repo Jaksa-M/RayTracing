@@ -47,7 +47,7 @@ struct BLASNode {
 struct TLASNode {
     vec3 aabb_min, aabb_max;
     std::uint32_t left_right; // 2x16 bits for left and right child index
-    Hittable* blas; // Valid only for leaf nodes
+    const Hittable* blas; // Valid only for leaf nodes
     bool isLeaf() const { return left_right == 0; } // for interior nodes one of the childs must be greater than 0
 };
 
