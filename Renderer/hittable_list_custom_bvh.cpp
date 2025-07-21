@@ -56,7 +56,8 @@ bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) co
     stack.reserve(64);
     stack.push_back(0); // Start from TLAS root (index 0)
 
-    vec3 inv_dir = vec3(1.0f / r.direction().x(), 1.0f / r.direction().y(), 1.0f / r.direction().z());
+    const vec3& dir = r.direction();
+    vec3 inv_dir = vec3(1.0f / dir.x(), 1.0f / dir.y(), 1.0f / dir.z());
 
     while (!stack.empty()) {
         int node_idx = stack.back(); // get last element

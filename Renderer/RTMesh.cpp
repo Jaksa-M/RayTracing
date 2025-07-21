@@ -31,11 +31,6 @@ void templatedIntersectBLAS(const ray& r, interval ray_t, IntersectResult& inter
     float roy = ori.y() * dir_inv.y();
     float roz = ori.z() * dir_inv.z();
 
-    //// Determine ray direction signs
-    //bool posX = dir_inv.x() >= 0;
-    //bool posY = dir_inv.y() >= 0;
-    //bool posZ = dir_inv.z() >= 0;
-
     while (stack_top > 0) {
         std::uint32_t nodeIdx = node_stack[--stack_top];
         const BLASNode& node = bvh_nodes[nodeIdx];
