@@ -14,9 +14,9 @@ bool templatedIntersectTLAS(const ray& r, interval ray_t, HitRecord& rec, std::s
     float closest_so_far = ray_t.max;
     temp_rec.t = std::numeric_limits<float>::max();
 
-    const int MAX_STACK_SIZE = 64;
-    int stack[MAX_STACK_SIZE];
-    int stack_ptr = 0;
+    const uint32_t MAX_STACK_SIZE = 64;
+    uint32_t stack[MAX_STACK_SIZE];
+    uint32_t stack_ptr = 0;
 
     stack[stack_ptr++] = 0; // Start from TLAS root (index 0)
 
@@ -36,7 +36,7 @@ bool templatedIntersectTLAS(const ray& r, interval ray_t, HitRecord& rec, std::s
 
         // Quick AABB reject for the whole node
         float closest_side;
-        if (!fastIntersectAABB<posX, posY, posZ>(ori, inv_dir, rox, roy, roz, node.aabb_min, node.aabb_max, closest_so_far, closest_side) ||
+        if (!intersectAABB<posX, posY, posZ>(ori, inv_dir, rox, roy, roz, node.aabb_min, node.aabb_max, closest_so_far, closest_side) ||
             closest_side > ray_t.max) {
             continue;
         }
@@ -57,7 +57,7 @@ bool templatedIntersectTLAS(const ray& r, interval ray_t, HitRecord& rec, std::s
             // Compute distances for both children
             float dist_left, dist_right;
             bool hit_left, hit_right;
-            slabTestTwoTLASNodesFast<posX, posY, posZ>(ori, inv_dir, rox, roy, roz, tlas[left].aabb_min, tlas[left].aabb_max, tlas[right].aabb_min,
+            slabTestTwoTLASNodes<posX, posY, posZ>(ori, inv_dir, rox, roy, roz, tlas[left].aabb_min, tlas[left].aabb_max, tlas[right].aabb_min,
                                                        tlas[right].aabb_max, closest_so_far, hit_left, dist_left, hit_right, dist_right);
 
             if (hit_left && hit_right) {

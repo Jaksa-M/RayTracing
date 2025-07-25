@@ -59,8 +59,8 @@ inline bool intersectAABB(const ray& r, const vec3& inv_dir, const vec3& bmin, c
 }
 
 template <bool posX, bool posY, bool posZ>
-inline bool fastIntersectAABB(const vec3& ray_origin, const vec3& inv_dir, float rox, float roy, float roz,
-                              const vec3& bmin, const vec3& bmax, float tMax, float& closest_side) {
+inline bool intersectAABB(const vec3& ray_origin, const vec3& inv_dir, float rox, float roy, float roz,
+                              const vec3& bmin, const vec3& bmax, float tMax, float& closest_side) { // faster version than previous
     // ro x/y/z hold the precomputed ray_origin * inv_dir for less multiplications
 
     // X slabs
@@ -107,45 +107,21 @@ inline void slabTestTwoNodes(const vec3& dir_inv, float t, const BLASNode* c1, c
 }
 
 template <bool posX, bool posY, bool posZ>
-inline void slabTestTwoTLASNodes(const vec3& ray_origin, const vec3& inv_dir, const vec3& bmin_left, const vec3& bmax_left, const vec3& bmin_right,
-                                 const vec3& bmax_right, float tMax, bool& hit_left, float& dist_left, bool& hit_right, float& dist_right) {
-    auto slabTest = [&](const vec3& bmin, const vec3& bmax, bool& hit, float& dist) {
-        // X slabs
-        float tx_min = ((posX ? bmin.x() : bmax.x()) - ray_origin.x()) * inv_dir.x();
-        float tx_max = ((posX ? bmax.x() : bmin.x()) - ray_origin.x()) * inv_dir.x();
-
-        // Y slabs
-        float ty_min = ((posY ? bmin.y() : bmax.y()) - ray_origin.y()) * inv_dir.y();
-        float ty_max = ((posY ? bmax.y() : bmin.y()) - ray_origin.y()) * inv_dir.y();
-
-        // Z slabs
-        float tz_min = ((posZ ? bmin.z() : bmax.z()) - ray_origin.z()) * inv_dir.z();
-        float tz_max = ((posZ ? bmax.z() : bmin.z()) - ray_origin.z()) * inv_dir.z();
-
-        float tmin = std::max({tx_min, ty_min, tz_min});
-        float tmax = std::min({tx_max, ty_max, tz_max});
-
-        hit = (tmax >= tmin) && (tmin < tMax) && (tmax > 0.0f);
-        dist = hit ? tmin : std::numeric_limits<float>::infinity();
-    };
-
-    // Test both in one go
-    slabTest(bmin_left, bmax_left, hit_left, dist_left);
-    slabTest(bmin_right, bmax_right, hit_right, dist_right);
-}
-
-template <bool posX, bool posY, bool posZ>
-inline void slabTestTwoTLASNodesFast(const vec3& ray_origin, const vec3& inv_dir, float rox, float roy, float roz, const vec3& bmin_left, const vec3& bmax_left,
+inline void slabTestTwoTLASNodes(const vec3& ray_origin, const vec3& inv_dir, float rox, float roy, float roz, const vec3& bmin_left, const vec3& bmax_left,
                                      const vec3& bmin_right, const vec3& bmax_right, float tMax, bool& hit_left, float& dist_left, bool& hit_right,
                                      float& dist_right) { // used for TLAS
     // Left child
     {
+        // For X axis: choose min or max depending on ray sign (posX template param)
+        // If ray is going positive (posX = true), the entry plane is bmin.x, else it’s bmax.x
         float tx_min = ((posX ? bmin_left.x() : bmax_left.x()) * inv_dir.x()) - rox;
         float tx_max = ((posX ? bmax_left.x() : bmin_left.x()) * inv_dir.x()) - rox;
 
+        // Same for Y axis
         float ty_min = ((posY ? bmin_left.y() : bmax_left.y()) * inv_dir.y()) - roy;
         float ty_max = ((posY ? bmax_left.y() : bmin_left.y()) * inv_dir.y()) - roy;
 
+        // Same for Z axis
         float tz_min = ((posZ ? bmin_left.z() : bmax_left.z()) * inv_dir.z()) - roz;
         float tz_max = ((posZ ? bmax_left.z() : bmin_left.z()) * inv_dir.z()) - roz;
 
