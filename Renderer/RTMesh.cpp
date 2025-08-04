@@ -24,12 +24,12 @@ void templatedIntersectBLAS(const ray& r, interval ray_t, IntersectResult& inter
 
     const vec3 dir = r.direction();
     const vec3 ori = r.origin();
-    vec3 dir_inv(1.0f / dir.x(), 1.0f / dir.y(), 1.0f / dir.z());
+    const vec3 inv_dir = vec3::invertVecSafe(dir);
 
     // Precompute origin * direction for slab test optimization
-    float rox = ori.x() * dir_inv.x();
-    float roy = ori.y() * dir_inv.y();
-    float roz = ori.z() * dir_inv.z();
+    float rox = ori.x() * inv_dir.x();
+    float roy = ori.y() * inv_dir.y();
+    float roz = ori.z() * inv_dir.z();
 
     while (stack_top > 0) {
         std::uint32_t nodeIdx = node_stack[--stack_top];
@@ -64,7 +64,8 @@ void templatedIntersectBLAS(const ray& r, interval ray_t, IntersectResult& inter
         float dist_left = infinity;
         float dist_right = infinity;
 
-        slabTestTwoNodes<posX, posY, posZ>(dir_inv, intersect_result.t, node_left, node_right, rox, roy, roz, dist_left, dist_right);
+        slabTestTwoNodes<posX, posY, posZ>(inv_dir, intersect_result.t, node_left->aabb_min, node_left->aabb_max, node_right->aabb_min, node_right->aabb_max,
+                                           rox, roy, roz, dist_left, dist_right);
 
         bool left_check = dist_left < intersect_result.t;
         bool right_check = dist_right < intersect_result.t;

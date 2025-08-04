@@ -23,7 +23,7 @@ bool templatedIntersectTLAS(const ray& r, interval ray_t, HitRecord& rec, std::s
     // Same every loop, so we precalculate it only once
     const vec3 dir = r.direction();
     const vec3 ori = r.origin();
-    const vec3 inv_dir(1.0f / dir.x(), 1.0f / dir.y(), 1.0f / dir.z());
+    const vec3 inv_dir = vec3::invertVecSafe(dir);
 
     const float rox = ori.x() * inv_dir.x();
     const float roy = ori.y() * inv_dir.y();

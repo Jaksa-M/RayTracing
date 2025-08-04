@@ -14,6 +14,11 @@ inline std::uint32_t getComponentCount(AttributeType type) {
 
 MeshBufferManager::MeshBufferManager() {
     buffer = std::vector<float>();
+    buffer.reserve(1000000);
+    // Reserving just in case I use it somewhere where I don't update regularly (will ignore the resize if there is enough space)
+    // Each time buffer resizes, if there is not enough contigous memory available, buffer has to move to another location.
+    // That being said, field res_mesh_info in RTMesh class, since it contain spans, have to be updated because those
+    // spans now point to the memory where buffer is not stored, and have some random values.
 }
 
 std::vector<float>& MeshBufferManager::getBuffer() {

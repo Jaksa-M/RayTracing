@@ -91,6 +91,8 @@ public:
             std::max(a.z(), b.z())
         );
     }
+
+    static vec3 invertVecSafe(const vec3& v) { return vec3(invertCoord(v.x()), invertCoord(v.y()), invertCoord(v.z())); }
 };
 
 // point3 is just an alias for vec3, but useful for geometric clarity in the code.

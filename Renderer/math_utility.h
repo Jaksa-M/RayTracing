@@ -31,4 +31,12 @@ inline float random_double(float min, float max) {
     return min + (max - min) * random_double();
 }
 
+// Function that inverts the vec3 in a safe way (avoiding division by 0)
+inline float invertCoord(const float x) {
+    if (x > 1e-12f || x < -1e-12f)
+        return 1.0f / x;
+    else
+        return x >= 0 ? float_max : -float_max;
+}
+
 #endif
