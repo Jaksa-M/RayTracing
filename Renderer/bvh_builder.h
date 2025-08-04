@@ -43,6 +43,7 @@ private:
 public:
     std::vector<TLASNode> buildTLAS(std::span<const std::pair<vec3, vec3>> blas_bounds,
                                     std::span<std::shared_ptr<Hittable>> rt_meshes);
+    uint32_t buildTLASNode(std::span<uint32_t> indices, std::span<const std::pair<vec3, vec3>> blas_bounds, std::span<std::shared_ptr<Hittable>> rt_meshes);
 
 private:
     std::vector<TLASNode> tlas_nodes_;

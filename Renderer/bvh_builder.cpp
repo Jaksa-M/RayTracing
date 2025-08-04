@@ -345,6 +345,6 @@ std::vector<TLASNode> BVHBuilder::buildTLAS(std::span<const std::pair<vec3, vec3
     }
 
     tlas_nodes_[0] = tlas_nodes_[nodes_indices[A]]; // move final node to index 0 (root node)
-    tlas_nodes_.resize(nodes_used);            // Shrink to used size
+    tlas_nodes_.resize(nodes_used); // Shrink to used size
     return tlas_nodes_;
 }

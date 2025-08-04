@@ -38,7 +38,6 @@ private:
         bool active = false;
 	};
     std::vector<float> buffer;
-	std::size_t mesh_ids_ = 0;
 
     std::vector<MeshInfo> mesh_info_;
     std::vector<std::size_t> free_indices_;

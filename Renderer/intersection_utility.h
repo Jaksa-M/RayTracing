@@ -55,19 +55,46 @@ inline bool intersectAABB(const ray& r, const vec3& inv_dir, const vec3& bmin, c
     tmax = std::min(tmax, std::max(tz1, tz2));
 
     closest_side = tmin;
-    return (tmax >= tmin) && (tmin < tMax) && (tmax > 0);
+    return (tmax >= tmin) && (tmin < tMax) && (tmax > 0.0f);
 }
 
 template <bool posX, bool posY, bool posZ>
-inline void slabTestTwoNodes(const vec3& dir_inv, float t, const BLASNode* c1, const BLASNode* c2, float rox, float roy, float roz, float& d1,
-                             float& d2) {
-    auto slabTest = [&](const BLASNode* n, float& dist) {
-        float tx_min = ((posX ? n->aabb_min.x() : n->aabb_max.x()) * dir_inv.x()) - rox;
-        float tx_max = ((posX ? n->aabb_max.x() : n->aabb_min.x()) * dir_inv.x()) - rox;
-        float ty_min = ((posY ? n->aabb_min.y() : n->aabb_max.y()) * dir_inv.y()) - roy;
-        float ty_max = ((posY ? n->aabb_max.y() : n->aabb_min.y()) * dir_inv.y()) - roy;
-        float tz_min = ((posZ ? n->aabb_min.z() : n->aabb_max.z()) * dir_inv.z()) - roz;
-        float tz_max = ((posZ ? n->aabb_max.z() : n->aabb_min.z()) * dir_inv.z()) - roz;
+inline bool intersectAABB(const vec3& ray_origin, const vec3& inv_dir, float rox, float roy, float roz,
+                              const vec3& bmin, const vec3& bmax, float tMax, float& closest_side) { // faster version than previous
+    // ro x/y/z hold the precomputed ray_origin * inv_dir for less multiplications
+
+    // X slabs
+    float tx_min = ((posX ? bmin.x() : bmax.x()) * inv_dir.x()) - rox;
+    float tx_max = ((posX ? bmax.x() : bmin.x()) * inv_dir.x()) - rox;
+
+    // Y slabs
+    float ty_min = ((posY ? bmin.y() : bmax.y()) * inv_dir.y()) - roy;
+    float ty_max = ((posY ? bmax.y() : bmin.y()) * inv_dir.y()) - roy;
+
+    // Z slabs
+    float tz_min = ((posZ ? bmin.z() : bmax.z()) * inv_dir.z()) - roz;
+    float tz_max = ((posZ ? bmax.z() : bmin.z()) * inv_dir.z()) - roz;
+
+    float tmin = tx_min > ty_min ? tx_min : ty_min;
+    if (tz_min > tmin) tmin = tz_min;
+
+    float tmax = tx_max < ty_max ? tx_max : ty_max;
+    if (tz_max < tmax) tmax = tz_max;
+
+    closest_side = tmin;
+    return (tmax >= tmin) && (tmin < tMax) && (tmax > 0.0f);
+}
+
+template <bool posX, bool posY, bool posZ>
+inline void slabTestTwoNodes(const vec3& dir_inv, float t, const vec3& node1_min, const vec3& node1_max, const vec3& node2_min, const vec3& node2_max,
+                             float rox, float roy, float roz, float& d1, float& d2) {
+    auto slabTest = [&](const vec3& aabb_min, const vec3& aabb_max, float& dist) {
+        float tx_min = ((posX ? aabb_min.x() : aabb_max.x()) * dir_inv.x()) - rox;
+        float tx_max = ((posX ? aabb_max.x() : aabb_min.x()) * dir_inv.x()) - rox;
+        float ty_min = ((posY ? aabb_min.y() : aabb_max.y()) * dir_inv.y()) - roy;
+        float ty_max = ((posY ? aabb_max.y() : aabb_min.y()) * dir_inv.y()) - roy;
+        float tz_min = ((posZ ? aabb_min.z() : aabb_max.z()) * dir_inv.z()) - roz;
+        float tz_max = ((posZ ? aabb_max.z() : aabb_min.z()) * dir_inv.z()) - roz;
 
         float tmin = std::max(std::max(tx_min, ty_min), std::max(tz_min, 0.0f));
         float tmax = std::min(std::min(tx_max, ty_max), std::min(tz_max, t));
@@ -75,8 +102,51 @@ inline void slabTestTwoNodes(const vec3& dir_inv, float t, const BLASNode* c1, c
         dist = (tmax >= tmin) ? tmin : infinity;
     };
 
-    slabTest(c1, d1);
-    slabTest(c2, d2);
+    slabTest(node1_min, node1_max, d1);
+    slabTest(node2_min, node2_max, d2);
+}
+
+template <bool posX, bool posY, bool posZ>
+inline void slabTestTwoTLASNodes(const vec3& ray_origin, const vec3& inv_dir, float rox, float roy, float roz, const vec3& bmin_left, const vec3& bmax_left,
+                                     const vec3& bmin_right, const vec3& bmax_right, float tMax, bool& hit_left, float& dist_left, bool& hit_right,
+                                     float& dist_right) { // used for TLAS
+    { // Left child
+        // For X axis: choose min or max depending on ray sign (posX template param)
+        // If ray is going positive (posX = true), the entry plane is bmin.x, else it’s bmax.x
+        float tx_min = ((posX ? bmin_left.x() : bmax_left.x()) * inv_dir.x()) - rox;
+        float tx_max = ((posX ? bmax_left.x() : bmin_left.x()) * inv_dir.x()) - rox;
+
+        // Same for Y axis
+        float ty_min = ((posY ? bmin_left.y() : bmax_left.y()) * inv_dir.y()) - roy;
+        float ty_max = ((posY ? bmax_left.y() : bmin_left.y()) * inv_dir.y()) - roy;
+
+        // Same for Z axis
+        float tz_min = ((posZ ? bmin_left.z() : bmax_left.z()) * inv_dir.z()) - roz;
+        float tz_max = ((posZ ? bmax_left.z() : bmin_left.z()) * inv_dir.z()) - roz;
+
+        float tmin = std::max(tx_min, std::max(ty_min, tz_min));
+        float tmax = std::min(tx_max, std::min(ty_max, tz_max));
+
+        hit_left = (tmax >= tmin) && (tmin < tMax) && (tmax > 0.0f);
+        dist_left = hit_left ? tmin : std::numeric_limits<float>::infinity();
+    }
+
+    { // Right child
+        float tx_min = ((posX ? bmin_right.x() : bmax_right.x()) * inv_dir.x()) - rox;
+        float tx_max = ((posX ? bmax_right.x() : bmin_right.x()) * inv_dir.x()) - rox;
+
+        float ty_min = ((posY ? bmin_right.y() : bmax_right.y()) * inv_dir.y()) - roy;
+        float ty_max = ((posY ? bmax_right.y() : bmin_right.y()) * inv_dir.y()) - roy;
+
+        float tz_min = ((posZ ? bmin_right.z() : bmax_right.z()) * inv_dir.z()) - roz;
+        float tz_max = ((posZ ? bmax_right.z() : bmin_right.z()) * inv_dir.z()) - roz;
+
+        float tmin = std::max(tx_min, std::max(ty_min, tz_min));
+        float tmax = std::min(tx_max, std::min(ty_max, tz_max));
+
+        hit_right = (tmax >= tmin) && (tmin < tMax) && (tmax > 0.0f);
+        dist_right = hit_right ? tmin : std::numeric_limits<float>::infinity();
+    }
 }
 
 inline void transformAABB(vec3& pmin, vec3& pmax, const matrix4x4& transform) {
