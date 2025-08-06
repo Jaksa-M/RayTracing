@@ -2,7 +2,15 @@
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image/stb_image.h"
+
+// Removing warnings caused by this file
+#pragma warning(push)
+#pragma warning(disable : 4996)
+
 #include "stb_image/stb_image_write.h"
+
+#pragma warning(pop)
+
 
 #include "utility.h"
 
