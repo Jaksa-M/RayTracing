@@ -20,7 +20,8 @@ public:
     float t;
     bool front_face;
     MeshHandle mesh_handle;
-    std::uint32_t triangle_index;
+    
+    uint32 triangle_index;
     vec2 buv;
     const MeshBufferManager* mesh_buf_manager;
     matrix4x4 local_to_world_mat;
@@ -44,7 +45,7 @@ public:
 
     virtual void update() {}
 
-    virtual int getTriangleCount() const { return 0; };
+    virtual uint32 getTriangleCount() const { return 0; };
 
     virtual const matrix4x4& getLocalToWorldMatrix() const { 
         return local_to_world_mat_;

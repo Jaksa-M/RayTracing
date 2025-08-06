@@ -4,7 +4,14 @@
 #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
 #pragma comment(lib, "legacy_stdio_definitions")
 #endif
+
+// Removing warnings caused by this file
+#pragma warning(push)
+#pragma warning(disable : 4551)
+
 #include <glad/gl.h>
+
+#pragma warning(pop)
 #undef GLAD_GL_IMPLEMENTATION  //must stay here because of multiple gl.h includes
 
 #include <stdio.h>
@@ -97,7 +104,7 @@ class RTMeshesScene : public BaseScene {
 
         cameras.push_back(std::move(cam1));
 
-        for (int i = 0; i < cameras.size(); i++) {
+        for (uint32 i = 0; i < cameras.size(); i++) {
             cameras[i]->setBackgroundTexture(background_texture_);
         }
     }
@@ -120,7 +127,7 @@ class CornellBoxScene : public BaseScene {
 
         cameras.push_back(std::move(cam1));
 
-        for (int i = 0; i < cameras.size(); i++) {
+        for (uint32 i = 0; i < cameras.size(); i++) {
             cameras[i]->setBackgroundTexture(background_texture_);
         }
     }
@@ -145,7 +152,7 @@ class CrytekSponzaScene : public BaseScene {
 
         cameras.push_back(std::move(cam1));
 
-        for (int i = 0; i < cameras.size(); i++) {
+        for (uint32 i = 0; i < cameras.size(); i++) {
             cameras[i]->setBackgroundTexture(background_texture_);
         }
     }
@@ -167,8 +174,8 @@ TEST_F(CornellBoxScene, TestLoading) {  // Cornell Box scene test
 
     std::span<MeshHandle> meshes = obj_loader_->getMeshes();
     std::span<const std::shared_ptr<Material>> materials = obj_loader_->getMaterials();
-    std::span<const int> materials_indices = obj_loader_->getMaterialsIndices();
-    for (std::uint32_t i = 0; i < meshes.size(); i++) {
+    std::span<const int32> materials_indices = obj_loader_->getMaterialsIndices();
+    for (uint32 i = 0; i < meshes.size(); i++) {
         if (materials.empty() == false) {
             addMesh(meshes[i], materials[materials_indices[i]], m, context, rt_meshes, world.get());
         } else {  // if there are no materials specified in obj file
@@ -188,9 +195,9 @@ TEST_F(CornellBoxScene, TestLoading) {  // Cornell Box scene test
 
 TEST_F(CrytekSponzaScene, TestLoading) {  // Crytek Sponza scene test
     // Set camera position
-    cameras[0]->setCenterX(-4.64865);
-    cameras[0]->setCenterY(12.0534);
-    cameras[0]->setCenterZ(-0.528061);
+    cameras[0]->setCenterX(-4.64865f);
+    cameras[0]->setCenterY(12.0534f);
+    cameras[0]->setCenterZ(-0.528061f);
     cameras[0]->setDirection(vec3(-0.838719f, 0.541708f, -0.0557082f));
     cameras[0]->setUpVector(vec3(0.540517f, 0.840567f, 0.0359015f));
     cameras[0]->setRightVector(vec3(-0.0662746f, 0.0f, 0.997801f));
@@ -205,8 +212,8 @@ TEST_F(CrytekSponzaScene, TestLoading) {  // Crytek Sponza scene test
 
     std::span<MeshHandle> meshes = obj_loader_->getMeshes();
     std::span<const std::shared_ptr<Material>> materials = obj_loader_->getMaterials();
-    std::span<const int> materials_indices = obj_loader_->getMaterialsIndices();
-    for (std::uint32_t i = 0; i < meshes.size(); i++) {
+    std::span<const int32> materials_indices = obj_loader_->getMaterialsIndices();
+    for (uint32 i = 0; i < meshes.size(); i++) {
         if (materials.empty() == false) {
             addMesh(meshes[i], materials[materials_indices[i]], m, context, rt_meshes, world.get());
         } else {  // if there are no materials specified in obj file
@@ -259,7 +266,7 @@ TEST_F(RTMeshesScene, TestLoading) {  // RTMeshes scene test
 
     rt_meshes.push_back(std::move(rect_prism_mesh1));
     rt_meshes.push_back(std::move(rect_prism_mesh2));
-    for (uint32_t i = 0; i < rt_meshes.size(); i++) {
+    for (uint32 i = 0; i < rt_meshes.size(); i++) {
         world->add(rt_meshes[i]);
     }
 

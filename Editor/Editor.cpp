@@ -6,7 +6,16 @@
 #if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
 #pragma comment(lib, "legacy_stdio_definitions")
 #endif
+
+// Removing warnings caused by this file
+#pragma warning(push)
+#pragma warning(disable : 4551)
+
 #include <glad/gl.h>
+
+#pragma warning(pop)
+
+
 #undef GLAD_GL_IMPLEMENTATION //must stay here because of multiple gl.h includes
 
 // Includes for my code
@@ -127,26 +136,26 @@ int main(int, char**) {
     std::unique_ptr<Scene> active_scene;
 
     std::vector<vec4> image_data_acc;  // Used for accumulation of image shown on the screen
-    std::vector<std::uint8_t> image_data;
+    std::vector<uint8> image_data;
     std::vector<vec3> image_data_float;
     float trace_percentage = 0.1f; // Decides how much pixels will be traced
-    int reflection_depth = 3;
+    int32 reflection_depth = 3;
     float environment_light = 1.0f;
     bool reset_accumulated = false;
     bool freeze_camera = false;
     int selected_option = -1;
     bool debug_rays = false;
     bool hdr = false;
-    int block_size = 8;
-    int block_size_values[] = {8, 16, 64};
-    int block_size_index = 0;
-    int selected_camera_index = 0;
-    int selected_preset_index = 0;
+    int32 block_size = 8;
+    int32 block_size_values[] = {8, 16, 64};
+    int32 block_size_index = 0;
+    int32 selected_camera_index = 0;
+    int32 selected_preset_index = 0;
 
     // screenshot variables
     bool capturing_high_qual_screenshot = false;
-    int frames_captured = 0;
-    int frames_to_accumulate = 64;
+    int32 frames_captured = 0;
+    int32 frames_to_accumulate = 64;
     bool screenshot_button_pressed = false;
 
     std::unique_ptr<CameraController> cam_controller;
@@ -232,11 +241,11 @@ int main(int, char**) {
                 const std::vector<std::unique_ptr<Camera>>& cameras = active_scene->getCameras();
 
                 std::vector<const char*> camera_names_cstrings;
-                for (size_t i = 0; i < cameras.size(); i++) {
+                for (uint32 i = 0; i < cameras.size(); i++) {
                     camera_names_cstrings.push_back(cameras[i]->getName().data());
                 }
 
-                if (ImGui::Combo("Cameras", &selected_camera_index, camera_names_cstrings.data(), camera_names_cstrings.size())) {
+                if (ImGui::Combo("Cameras", &selected_camera_index, camera_names_cstrings.data(), static_cast<int32>(camera_names_cstrings.size()))) {
                     active_scene->setActiveCamera(selected_camera_index);
                     cam_controller = std::make_unique<CameraController>(*cameras[selected_camera_index], 2.0f);
 
@@ -248,13 +257,13 @@ int main(int, char**) {
 
                 // Process camera presets
                 std::vector<const char*> camera_presets_cstrings;
-                for (size_t i = 0; i < camera_presets.size(); i++) {
+                for (uint32 i = 0; i < camera_presets.size(); i++) {
                     camera_presets_cstrings.push_back(camera_presets[i].name.c_str());
                 }
                 
                 ImGui::Text("Presets");
                 ImGui::PushItemWidth(200); // Adjust width for Combo box
-                if (ImGui::Combo("##camera presets", &selected_preset_index, camera_presets_cstrings.data(), camera_presets_cstrings.size())) {
+                if (ImGui::Combo("##camera presets", &selected_preset_index, camera_presets_cstrings.data(), static_cast<int32>(camera_presets_cstrings.size()))) {
                     cameras[selected_camera_index]->applyPreset(camera_presets[selected_preset_index]);
                     float yaw, pitch;
                     cameras[selected_camera_index]->recalculateYawPitch(yaw, pitch);
@@ -280,7 +289,7 @@ int main(int, char**) {
 
                 if (!io.WantCaptureMouse) {
                     static bool was_right_mouse_down = false;
-
+                    
                     // Detect if button is pressed now but not in previous frame
                     bool is_right_mouse_down = ImGui::IsMouseDown(1);
                     if (is_right_mouse_down && !was_right_mouse_down) {
@@ -325,15 +334,15 @@ int main(int, char**) {
 
             ImGui::Separator();
 
-            int scene_index = static_cast<int>(selected_scene_index); // Convert enum class to int (bceause ImGui is C library)
+            int32 scene_index = static_cast<int32>(selected_scene_index); // Convert enum class to int (bceause ImGui is C library)
             bool scene_changed = ImGui::Combo("Scene", &scene_index, scenes, IM_ARRAYSIZE(scenes)); // Ret value is true when combo has changed
             selected_scene_index = static_cast<SceneType>(scene_index); // Convert int back to enum class
 
-            int technique_index = static_cast<int>(chosen_technique_index); // Convert enum class to int
+            int32 technique_index = static_cast<int32>(chosen_technique_index); // Convert enum class to int
             ImGui::Combo("BVH technique", &technique_index, techniques, IM_ARRAYSIZE(techniques));
             chosen_technique_index = static_cast<BVHTechnique>(technique_index); // Convert int back to enum class
 
-            int mesh_color_index = static_cast<int>(chosen_mesh_color); // Convert enum class to int
+            int32 mesh_color_index = static_cast<int32>(chosen_mesh_color); // Convert enum class to int
             ImGui::Combo("Mesh color", &mesh_color_index, mesh_colors, IM_ARRAYSIZE(mesh_colors));
             chosen_mesh_color = static_cast<MeshColor>(mesh_color_index); // Convert int back to enum class
 
@@ -370,12 +379,12 @@ int main(int, char**) {
                 const std::vector<std::unique_ptr<Camera>>& cameras = active_scene->getCameras();
                 
                 std::vector<const char*> camera_names_cstrings;
-                for (size_t i = 0; i < cameras.size(); i++) {
+                for (uint32 i = 0; i < cameras.size(); i++) {
                     camera_names_cstrings.push_back(cameras[i]->getName().data());
                 }
 
                 selected_camera_index = 0;
-                ImGui::Combo("Cameras", &selected_camera_index, camera_names_cstrings.data(), camera_names_cstrings.size());
+                ImGui::Combo("Cameras", &selected_camera_index, camera_names_cstrings.data(), static_cast<int32>(camera_names_cstrings.size()));
                 active_scene->setActiveCamera(selected_camera_index);
                 cam_controller = std::make_unique<CameraController>(*cameras[selected_camera_index], 2.0f);
                 float yaw, pitch;
@@ -412,7 +421,7 @@ int main(int, char**) {
 
         // Rendering
         ImGui::Render();
-        int display_w, display_h;
+        int32 display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
         

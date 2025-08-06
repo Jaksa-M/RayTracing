@@ -2,6 +2,7 @@
 #define HITTABLE_LIST_H
 
 #include "hittable.h"
+#include "types.h"
 
 class HittableList {
    public:
@@ -16,9 +17,9 @@ class HittableList {
 
     virtual void update();
 
-    virtual int getSize() const;
-    virtual int getTriangleCount() const;
-    virtual std::shared_ptr<Hittable> getObject(int index) const;
+    virtual uint32 getSize() const;
+    virtual uint32 getTriangleCount() const;
+    virtual std::shared_ptr<Hittable> getObject(uint32 index) const;
 
    protected:
     std::vector<std::shared_ptr<Hittable>> objects_;

@@ -15,8 +15,8 @@
 
 class Camera {
 public:
-    int image_width = 100;  // Rendered image width in pixel count
-    int image_height;   // Rendered image height
+    uint32 image_width = 100;  // Rendered image width in pixel count
+    uint32 image_height;      // Rendered image height
     
     Camera(std::string name);
     Camera(std::string name, vec3 center);
@@ -77,11 +77,11 @@ private:
 
     void initialize();
 
-    ray get_ray(int i, int j, vec3 offset) const;
+    ray get_ray(uint32 i, uint32 j, vec3 offset) const;
 
     vec3 sample_square() const;
 
-    color ray_color(const ray& r, int depth, const HittableList& world);
+    color ray_color(const ray& r, int32 depth, const HittableList& world);
 };
 
 #endif

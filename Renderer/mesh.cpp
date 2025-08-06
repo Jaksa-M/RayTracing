@@ -1,7 +1,7 @@
 #include "mesh.h"
 #include "glad/gl.h"
 
-Mesh::Mesh(std::span<float> vertices, int size, int stride, int offset_pos, int offset_col, bool with_EBO, std::span<unsigned int> indices):
+Mesh::Mesh(std::span<float> vertices, uint32 size, uint32 stride, uint32 offset_pos, uint32 offset_col, bool with_EBO, std::span<uint32> indices):
     VBO_(0), VAO_(0), EBO_(0), indices_size_(0)
 {
     glGenVertexArrays(1, &VAO_);
@@ -15,8 +15,8 @@ Mesh::Mesh(std::span<float> vertices, int size, int stride, int offset_pos, int 
     if (with_EBO == true) {
         glGenBuffers(1, &EBO_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() *  sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
-        indices_size_ = static_cast<std::uint32_t>(indices.size());
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32), indices.data(), GL_STATIC_DRAW);
+        indices_size_ = static_cast<uint32>(indices.size());
     }
 
     // Position attribute
@@ -36,7 +36,7 @@ void Mesh::updateVBO(std::span<float> vertices) {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void Mesh::updateEBO(std::span<std::uint32_t> indices) {
+void Mesh::updateEBO(std::span<uint32> indices) {
     if (EBO_ == 0) { // If EBO doesn't exist, generate and bind it
         glGenBuffers(1, &EBO_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_);
@@ -44,13 +44,13 @@ void Mesh::updateEBO(std::span<std::uint32_t> indices) {
     else {
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO_);
     }
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
-    indices_size_ = static_cast<std::uint32_t>(indices.size());
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32), indices.data(), GL_STATIC_DRAW);
+    indices_size_ = static_cast<uint32>(indices.size());
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 
-void Mesh::draw(unsigned int shape) {
+void Mesh::draw(uint32 shape) {
     glLineWidth(3.0f); // Set the line width to 5.0 pixels
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glBindVertexArray(VAO_);

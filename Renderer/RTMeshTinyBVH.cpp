@@ -37,7 +37,7 @@ RTMeshTinyBVH::RTMeshTinyBVH(Context& context, MeshHandle mesh_handle, std::shar
         });
     }
     impl_->bvh_ = std::make_unique<tinybvh::BVH>();
-    impl_->bvh_->Build(impl_->bvh_vertices_.data(), res_mesh_info_.indices.data(), static_cast<uint32_t>(res_mesh_info_.indices.size() / 3));
+    impl_->bvh_->Build(impl_->bvh_vertices_.data(), res_mesh_info_.indices.data(), static_cast<uint32>(res_mesh_info_.indices.size() / 3));
 }
 
 RTMeshTinyBVH::~RTMeshTinyBVH() {}
@@ -83,19 +83,19 @@ void RTMeshTinyBVH::update() {
     res_mesh_info_.uv = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::UV);
 }
 
-int RTMeshTinyBVH::getTriangleCount() const {
-    return res_mesh_info_.indices.size() / 3;
+uint32 RTMeshTinyBVH::getTriangleCount() const {
+    return static_cast<uint32>(res_mesh_info_.indices.size() / 3);
 }
 
 bool RTMeshTinyBVH::fillHitRecord(const ray& r, tinybvh::Ray& tinybvh_ray, HitRecord& rec) const {
     if (tinybvh_ray.hit.t != BVH_FAR) {  // ray hit something
         rec.mat = mat_;
 
-        std::uint32_t triangle_index = tinybvh_ray.hit.prim * 3;
+        uint32 triangle_index = tinybvh_ray.hit.prim * 3;
 
-        std::uint32_t i0 = res_mesh_info_.indices[triangle_index];
-        std::uint32_t i1 = res_mesh_info_.indices[triangle_index + 1];
-        std::uint32_t i2 = res_mesh_info_.indices[triangle_index + 2];
+        uint32 i0 = res_mesh_info_.indices[triangle_index];
+        uint32 i1 = res_mesh_info_.indices[triangle_index + 1];
+        uint32 i2 = res_mesh_info_.indices[triangle_index + 2];
 
         vec3 v0, v1, v2;
         getTriangleVertices(res_mesh_info_, i0, i1, i2, v0, v1, v2);

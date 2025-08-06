@@ -5,7 +5,6 @@
 #include "shader.h"
 #include "mesh.h"
 #include "RTMesh.h"
-#include "types.h"
 #include <memory.h>
 
 class SceneCornellBox: public Scene {
@@ -14,7 +13,7 @@ public:
 
     void initialize() override;
 
-    void update(int display_w, int display_h) override;
+    void update(uint32 display_w, uint32 display_h) override;
 
     void initShader();
     void drawBVH() override;

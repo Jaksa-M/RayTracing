@@ -14,9 +14,9 @@ bool templatedIntersectTLAS(const ray& r, interval ray_t, HitRecord& rec, std::s
     float closest_so_far = ray_t.max;
     temp_rec.t = std::numeric_limits<float>::max();
 
-    const uint32_t MAX_STACK_SIZE = 64;
-    uint32_t stack[MAX_STACK_SIZE];
-    uint32_t stack_ptr = 0;
+    const uint32 MAX_STACK_SIZE = 64;
+    uint32 stack[MAX_STACK_SIZE];
+    uint32 stack_ptr = 0;
 
     stack[stack_ptr++] = 0; // Start from TLAS root (index 0)
 
@@ -31,7 +31,7 @@ bool templatedIntersectTLAS(const ray& r, interval ray_t, HitRecord& rec, std::s
 
     // Tree Traversal
     while (stack_ptr > 0) {
-        const int node_idx = stack[--stack_ptr];
+        const uint32 node_idx = stack[--stack_ptr];
         const TLASNode& node = tlas[node_idx];
 
         // Quick AABB reject for the whole node
@@ -112,62 +112,6 @@ bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) co
     return hit_anything;
 }
 #else
-//bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) const {
-//    HitRecord temp_rec;
-//    bool hit_anything = false;
-//    auto closest_so_far = ray_t.max;
-//    temp_rec.t = std::numeric_limits<float>::max();
-//
-//    if (tlas_.empty()) return false;
-//
-//    std::vector<int> stack;
-//    // Reserving some space to avoid frequent reallocations. Not same as passing to constructor because no
-//    // elements are constructed yet, only the buffer is allocated.
-//    stack.reserve(64);
-//    stack.push_back(0); // Start from TLAS root (index 0)
-//
-//    const vec3& dir = r.direction();
-//    vec3 inv_dir = vec3(1.0f / dir.x(), 1.0f / dir.y(), 1.0f / dir.z());
-//
-//    while (!stack.empty()) {
-//        int node_idx = stack.back(); // get last element
-//        stack.pop_back();
-//        const auto& node = tlas_[node_idx];
-//
-//        float closest_side;
-//        if (!intersectAABB(r, inv_dir, node.aabb_min, node.aabb_max, closest_so_far, closest_side) || closest_side > ray_t.max) continue;
-//
-//        if (node.isLeaf()) {
-//            // Intersect with corresponding BLAS
-//            if (node.blas->hit(r, interval(ray_t.min, closest_so_far), temp_rec) && temp_rec.t < closest_so_far) {
-//                hit_anything = true;
-//                closest_so_far = temp_rec.t;
-//                rec = temp_rec;
-//            }
-//        }
-//        else {
-//            // Decode children
-//            uint16_t left = node.left_right & 0xFFFF;
-//            uint16_t right = (node.left_right >> 16) & 0xFFFF;
-//            float dist_left, dist_right;
-//            bool hit_left = intersectAABB(r, inv_dir, tlas_[left].aabb_min, tlas_[left].aabb_max, closest_so_far, dist_left);
-//            bool hit_right = intersectAABB(r, inv_dir, tlas_[right].aabb_min, tlas_[right].aabb_max, closest_so_far, dist_right);
-//
-//            if (hit_left && hit_right) {
-//                stack.push_back(dist_left < dist_right ? right : left);
-//                stack.push_back(dist_left < dist_right ? left : right);
-//            }
-//            else if (hit_left) {
-//                stack.push_back(left);
-//            }
-//            else if (hit_right) {
-//                stack.push_back(right);
-//            }
-//        }
-//    }
-//
-//    return hit_anything;
-//}
 bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) const {
     if (tlas_.empty()) return false;
 
@@ -210,7 +154,7 @@ bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) co
 
 void HittableListCustomBVH::buildTLAS(BVHManager* bvh_manager, std::span<MeshHandle> meshes, std::span<std::shared_ptr<Hittable>> rt_meshes) {
     std::vector<std::pair<vec3, vec3>> bounds; // bounding box bounds for each mesh
-    for (int i = 0; i < meshes.size(); i++) {
+    for (uint32 i = 0; i < meshes.size(); i++) {
         std::span<const BLASNode> blas_nodes = bvh_manager->getBLASNodes(meshes[i]);
 
         // rt_meshes is in the same order as meshes. So rt_meshes[i] points to the mesh and meshes[i] hold mesh_handle of that mesh.

@@ -8,7 +8,7 @@ Texture::Texture(const color& solid_color) {
     tex_description_.format = TexFormat::RGB32_FLOAT;
     tex_description_.image_width = 1;
     tex_description_.image_height = 1;
-    int channels = getChannelCount(tex_description_.format);
+    uint32 channels = getChannelCount(tex_description_.format);
     bytes_per_scanline_ = channels * bytesPerElement(tex_description_.format) * tex_description_.image_width;
 
     data_.resize(bytes_per_scanline_);
@@ -16,7 +16,7 @@ Texture::Texture(const color& solid_color) {
     std::memcpy(data_.data(), &solid_color, sizeof(float) * channels);
 }
 
-Texture::Texture(std::vector<std::uint8_t> data, TexDescription desc)
+Texture::Texture(std::vector<uint8> data, TexDescription desc)
     : data_(data), tex_description_(desc),
       bytes_per_scanline_(getChannelCount(desc.format) * bytesPerElement(desc.format) * desc.image_width) {}
 
@@ -24,7 +24,7 @@ std::span<unsigned char> Texture::getData() {
     return std::span<unsigned char>(data_);
 }
 
-void Texture::setData(std::vector<std::uint8_t> data) {
+void Texture::setData(std::vector<uint8> data) {
     data_ = data;
 }
 
@@ -38,23 +38,23 @@ vec3 Texture::value(float u, float v) const {
     v = 1.0f - std::fmod(std::abs(v), 1.0f);
 
     // Map u, v to pixel coordinates in the image
-    std::uint32_t i = std::uint32_t(u * tex_description_.image_width);
-    std::uint32_t j = std::uint32_t(v * tex_description_.image_height);
+    uint32 i = uint32(u * tex_description_.image_width);
+    uint32 j = uint32(v * tex_description_.image_height);
 
     vec4 pixel_data = pixelData(i, j);
     return vec3(pixel_data[0], pixel_data[1], pixel_data[2]);
 }
 
-vec4 Texture::pixelData(std::uint32_t x, std::uint32_t y) const { // Return the address of the three RGB bytes of the pixel at x,y
+vec4 Texture::pixelData(uint32 x, uint32 y) const { // Return the address of the three RGB bytes of the pixel at x,y
     if (data_.empty()) return vec4(1.0f, 0.0f, 1.0f, 1.0f); // If there is no image data, returns magenta.
 
     x = std::clamp(x, 0u, tex_description_.image_width - 1);
     y = std::clamp(y, 0u, tex_description_.image_height - 1);
 
-    int channels = getChannelCount(tex_description_.format);
-    int bpe = bytesPerElement(tex_description_.format);
+    uint32 channels = getChannelCount(tex_description_.format);
+    uint32 bpe = bytesPerElement(tex_description_.format);
 
-    const std::uint8_t* pixel = &data_[y * bytes_per_scanline_ + x * channels * bpe];
+    const uint8* pixel = &data_[y * bytes_per_scanline_ + x * channels * bpe];
 
     vec4 result(0.0f);
     if (isFloatFormat(tex_description_.format)) {

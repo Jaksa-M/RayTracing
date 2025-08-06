@@ -8,6 +8,7 @@
 #include "vec3.h"
 #include "bvh_builder.h"
 #include "types.h"
+#include "bvh_types.h"
 
 class MeshBufferManager;
 struct GUISettings;
@@ -33,8 +34,8 @@ private:
 
 	std::vector<TLASNode> tlas_nodes_;
 
-	void transformToTriangles(std::span<const float> vertices, std::span<const std::uint32_t> indices,
-		std::vector<Triangle>& triangles, std::vector<std::uint32_t>& triangle_indices);
+	void transformToTriangles(std::span<const float> vertices, std::span<const uint32> indices,
+		std::vector<Triangle>& triangles, std::vector<uint32>& triangle_indices);
 };
 
 #endif

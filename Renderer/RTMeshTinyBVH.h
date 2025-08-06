@@ -12,8 +12,8 @@ struct Context;
 class matrix4x4;
 
 namespace tinybvh {
-class BVH;
-class Ray;
+    class BVH;
+    struct Ray;
 }
 
 class RTMeshTinyBVH : public Hittable {
@@ -29,7 +29,7 @@ class RTMeshTinyBVH : public Hittable {
     void setTransformationMatrix(const matrix4x4& mat) override;
 
     void update() override;
-    int getTriangleCount() const override;
+    uint32 getTriangleCount() const override;
 
     bool fillHitRecord(const ray& r, tinybvh::Ray& tinybvh_ray, HitRecord& rec) const;
     tinybvh::BVH* getBVH();

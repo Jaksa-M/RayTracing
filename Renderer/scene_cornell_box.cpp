@@ -32,7 +32,7 @@ void SceneCornellBox::initialize() {
     }
     TexDescription desc(tex_loader.getImageWidth(), tex_loader.getImageHeight(), tex_loader.getFormat());
     background_texture_ = std::make_shared<Texture>(tex_loader.getData(), desc);
-    for (int i = 0; i < cameras_.size(); i++) {
+    for (uint32 i = 0; i < cameras_.size(); i++) {
         cameras_[i]->setBackgroundTexture(background_texture_);
     }
 
@@ -94,7 +94,7 @@ void SceneCornellBox::initialize() {
 	initShader();
 }
 
-void SceneCornellBox::update(int display_w, int display_h) {
+void SceneCornellBox::update(uint32 display_w, uint32 display_h) {
 	if (prev_BVH_technique_ != context.settings->BVH_technique) {
         world_->clear();
 		initialize();
@@ -113,7 +113,7 @@ void SceneCornellBox::drawBVH() {
 	if (context.settings->selected_option != -1) {
         bounding_boxes_.resize(world_->getSize());
 
-		for (int i = 0; i < world_->getSize(); i++) {  // Drawing BVH tree or leaves
+		for (uint32 i = 0; i < world_->getSize(); i++) {  // Drawing BVH tree or leaves
             std::shared_ptr<Hittable> object = world_->getObject(i);
 			RTMesh* rtMesh = dynamic_cast<RTMesh*>(object.get());
 

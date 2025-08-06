@@ -29,10 +29,10 @@ public:
     
     bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered, GUISettings& settings) const override {
         ResolvedMeshInfo res_mesh_info = rec.mesh_buf_manager->getResolvedMesh(rec.mesh_handle);
-
-        std::uint32_t i0 = res_mesh_info.indices[rec.triangle_index];
-        std::uint32_t i1 = res_mesh_info.indices[rec.triangle_index + 1];
-        std::uint32_t i2 = res_mesh_info.indices[rec.triangle_index + 2];
+        
+        uint32 i0 = res_mesh_info.indices[rec.triangle_index];
+        uint32 i1 = res_mesh_info.indices[rec.triangle_index + 1];
+        uint32 i2 = res_mesh_info.indices[rec.triangle_index + 2];
 
         vec2 uv0, uv1, uv2;
         getTriangleUVs(res_mesh_info, i0, i1, i2, uv0, uv1, uv2);
@@ -102,9 +102,9 @@ public:
 
         ResolvedMeshInfo res_mesh_info = rec.mesh_buf_manager->getResolvedMesh(rec.mesh_handle);
 
-        std::uint32_t i0 = res_mesh_info.indices[rec.triangle_index];
-        std::uint32_t i1 = res_mesh_info.indices[rec.triangle_index + 1];
-        std::uint32_t i2 = res_mesh_info.indices[rec.triangle_index + 2];
+        uint32 i0 = res_mesh_info.indices[rec.triangle_index];
+        uint32 i1 = res_mesh_info.indices[rec.triangle_index + 1];
+        uint32 i2 = res_mesh_info.indices[rec.triangle_index + 2];
 
         vec2 uv0, uv1, uv2;
         getTriangleUVs(res_mesh_info, i0, i1, i2, uv0, uv1, uv2);
@@ -129,9 +129,9 @@ public:
     bool scatter(const ray& r_in, const HitRecord& rec, color& attenuation, ray& scattered, GUISettings& settings) const override {
         ResolvedMeshInfo res_mesh_info = rec.mesh_buf_manager->getResolvedMesh(rec.mesh_handle);
 
-        std::uint32_t i0 = res_mesh_info.indices[rec.triangle_index];
-        std::uint32_t i1 = res_mesh_info.indices[rec.triangle_index + 1];
-        std::uint32_t i2 = res_mesh_info.indices[rec.triangle_index + 2];
+        uint32 i0 = res_mesh_info.indices[rec.triangle_index];
+        uint32 i1 = res_mesh_info.indices[rec.triangle_index + 1];
+        uint32 i2 = res_mesh_info.indices[rec.triangle_index + 2];
 
         vec2 uv0, uv1, uv2;
         getTriangleUVs(res_mesh_info, i0, i1, i2, uv0, uv1, uv2);
@@ -205,9 +205,9 @@ public:
 
         ResolvedMeshInfo res_mesh_info = rec.mesh_buf_manager->getResolvedMesh(rec.mesh_handle);
 
-        std::uint32_t i0 = res_mesh_info.indices[rec.triangle_index];
-        std::uint32_t i1 = res_mesh_info.indices[rec.triangle_index + 1];
-        std::uint32_t i2 = res_mesh_info.indices[rec.triangle_index + 2];
+        uint32 i0 = res_mesh_info.indices[rec.triangle_index];
+        uint32 i1 = res_mesh_info.indices[rec.triangle_index + 1];
+        uint32 i2 = res_mesh_info.indices[rec.triangle_index + 2];
 
         vec2 uv0, uv1, uv2;
         getTriangleUVs(res_mesh_info, i0, i1, i2, uv0, uv1, uv2);
@@ -235,9 +235,9 @@ public:
     vec3 emitted(const HitRecord& rec) const override {
         ResolvedMeshInfo res_mesh_info = rec.mesh_buf_manager->getResolvedMesh(rec.mesh_handle);
 
-        std::uint32_t i0 = res_mesh_info.indices[rec.triangle_index];
-        std::uint32_t i1 = res_mesh_info.indices[rec.triangle_index + 1];
-        std::uint32_t i2 = res_mesh_info.indices[rec.triangle_index + 2];
+        uint32 i0 = res_mesh_info.indices[rec.triangle_index];
+        uint32 i1 = res_mesh_info.indices[rec.triangle_index + 1];
+        uint32 i2 = res_mesh_info.indices[rec.triangle_index + 2];
 
         vec2 uv0, uv1, uv2;
         getTriangleUVs(res_mesh_info, i0, i1, i2, uv0, uv1, uv2);

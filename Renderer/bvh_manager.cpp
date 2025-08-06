@@ -13,10 +13,10 @@ void BVHManager::buildBLAS(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_
     // BVH for that mesh handle doesn't exists, so we have to build it
     if (auto it = bvh_info_.find(mesh_handle); it == bvh_info_.end()) {
         std::span<const float> vertices = mesh_buf_manager->getAttribute(mesh_handle, AttributeType::Position);
-        std::span<std::uint32_t> indices = mesh_buf_manager->getIndices(mesh_handle);
+        std::span<uint32> indices = mesh_buf_manager->getIndices(mesh_handle);
 
         std::vector<Triangle> triangles;
-        std::vector<std::uint32_t> triangle_indices;
+        std::vector<uint32> triangle_indices;
 
         transformToTriangles(vertices, indices, triangles, triangle_indices);
 
@@ -49,14 +49,14 @@ std::span<const TLASNode> BVHManager::getTLASNodes() const {
     return tlas_nodes_;
 }
 
-void BVHManager::transformToTriangles(std::span<const float> vertices, std::span<const std::uint32_t> indices,
-    std::vector<Triangle>& triangles, std::vector<std::uint32_t>& triangle_indices) {
+void BVHManager::transformToTriangles(std::span<const float> vertices, std::span<const uint32> indices,
+    std::vector<Triangle>& triangles, std::vector<uint32>& triangle_indices) {
 
     // Calculate each triangle centroid and insert that, coordinates and vertex normals into triangles vector
-    for (std::uint32_t i = 0; i < indices.size(); i += 3) {
-        uint32_t i0 = indices[i];
-        uint32_t i1 = indices[i + 1];
-        uint32_t i2 = indices[i + 2];
+    for (uint32 i = 0; i < indices.size(); i += 3) {
+        uint32 i0 = indices[i];
+        uint32 i1 = indices[i + 1];
+        uint32 i2 = indices[i + 2];
 
         point3 v0(vertices[i0 * 3], vertices[i0 * 3 + 1], vertices[i0 * 3 + 2]);
         point3 v1(vertices[i1 * 3], vertices[i1 * 3 + 1], vertices[i1 * 3 + 2]);

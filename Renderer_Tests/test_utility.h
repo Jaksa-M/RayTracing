@@ -49,7 +49,7 @@ void saveAndCompare(std::string file_name, const std::vector<std::unique_ptr<Cam
     std::vector<vec4> image_data_acc(cameras[0]->image_width * cameras[0]->image_height, vec4(0.0f)); // Accumulated image buffer
 
     // Call render 20 times
-    for (int i = 0; i < 20; i++) {
+    for (uint32 i = 0; i < 20; i++) {
         cameras[0]->render(*world.get(), image_data_acc, *context.settings);
     }
 

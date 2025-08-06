@@ -8,16 +8,20 @@ matrix4x4::matrix4x4() { // Creating identity matrix by default
     }
 }
 
-float& matrix4x4::operator()(int row, int col) { return data[row][col]; }
+float& matrix4x4::operator()(uint32 row, uint32 col) {
+    return data[row][col];
+}
 
-const float& matrix4x4::operator()(int row, int col) const { return data[row][col]; }
+const float& matrix4x4::operator()(uint32 row, uint32 col) const {
+    return data[row][col];
+}
 
 matrix4x4 matrix4x4::operator*(const matrix4x4& other) const {
     matrix4x4 result;
-    for (int row = 0; row < 4; row++) {
-        for (int col = 0; col < 4; col++) {
+    for (uint32 row = 0; row < 4; row++) {
+        for (uint32 col = 0; col < 4; col++) {
             result(row, col) = 0.0f;
-            for (int k = 0; k < 4; k++) {
+            for (uint32 k = 0; k < 4; k++) {
                 result(row, col) += data[row][k] * other(k, col);
             }
         }
@@ -54,8 +58,8 @@ vec4 matrix4x4::operator*(const vec4& v) const {
 
 matrix3x3 matrix4x4::convertTo3x3() const {
     matrix3x3 result;
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
+    for (uint32 i = 0; i < 3; i++) {
+        for (uint32 j = 0; j < 3; j++) {
             result(i, j) = data[i][j]; // Copy upper-left 3x3 part
         }
     }
@@ -71,7 +75,7 @@ matrix4x4 matrix4x4::invert() const {
     matrix4x4 temp = *this; // Copy of the current matrix
 
     // Perform Gaussian elimination
-    for (int i = 0; i < 4; i++) {
+    for (uint32 i = 0; i < 4; i++) {
         // Find the pivot element
         float pivot = temp(i, i);
         if (fabs(pivot) < 1e-6) {
@@ -79,16 +83,16 @@ matrix4x4 matrix4x4::invert() const {
         }
 
         // Normalize the pivot row
-        for (int j = 0; j < 4; j++) {
+        for (uint32 j = 0; j < 4; j++) {
             temp(i, j) /= pivot;
             result(i, j) /= pivot;
         }
 
         // Eliminate the other rows
-        for (int row = 0; row < 4; row++) {
+        for (uint32 row = 0; row < 4; row++) {
             if (row != i) {
                 float factor = temp(row, i);
-                for (int col = 0; col < 4; col++) {
+                for (uint32 col = 0; col < 4; col++) {
                     temp(row, col) -= factor * temp(i, col);
                     result(row, col) -= factor * result(i, col);
                 }
@@ -101,8 +105,8 @@ matrix4x4 matrix4x4::invert() const {
 
 matrix4x4 matrix4x4::transpose() const {
     matrix4x4 result;
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
+    for (uint32 i = 0; i < 4; i++) {
+        for (uint32 j = 0; j < 4; j++) {
             result(j, i) = data[i][j]; // Swap row and column indices
         }
     }
@@ -114,9 +118,9 @@ const float* matrix4x4::asPointer() const {
 }
 
 std::ostream& operator<<(std::ostream& os, const matrix4x4& matrix) {
-    for (int i = 0; i < 4; i++) {
+    for (uint32 i = 0; i < 4; i++) {
         os << "| ";
-        for (int j = 0; j < 4; j++) {
+        for (uint32 j = 0; j < 4; j++) {
             os << matrix(i, j) << " ";
         }
         os << "|" << std::endl;
@@ -128,16 +132,16 @@ std::ostream& operator<<(std::ostream& os, const matrix4x4& matrix) {
 //----------------- Matrix 3x3 ------------------
 
 matrix3x3::matrix3x3() { // Creating identity matrix by default
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
+    for (uint32 i = 0; i < 3; i++) {
+        for (uint32 j = 0; j < 3; j++) {
             data[i][j] = (i == j) ? 1.0f : 0.0f; // Set diagonal to 1, others to 0
         }
     }
 }
 
 matrix3x3::matrix3x3(const matrix4x4& mat4) {
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
+    for (uint32 i = 0; i < 3; i++) {
+        for (uint32 j = 0; j < 3; j++) {
             data[i][j] = mat4(i, j);
         }
     }
@@ -149,16 +153,20 @@ matrix3x3::matrix3x3(const vec3& col0, const vec3& col1, const vec3& col2) {
     data[2][0] = col0.z(); data[2][1] = col1.z(); data[2][2] = col2.z();
 }
 
-float& matrix3x3::operator()(int row, int col) { return data[row][col]; }
+float& matrix3x3::operator()(uint32 row, uint32 col) {
+    return data[row][col];
+}
 
-const float& matrix3x3::operator()(int row, int col) const { return data[row][col]; }
+const float& matrix3x3::operator()(uint32 row, uint32 col) const {
+    return data[row][col];
+}
 
 matrix3x3 matrix3x3::operator*(const matrix3x3& other) const {
     matrix3x3 result;
-    for (int row = 0; row < 3; row++) {
-        for (int col = 0; col < 3; col++) {
+    for (uint32 row = 0; row < 3; row++) {
+        for (uint32 col = 0; col < 3; col++) {
             result(row, col) = 0.0f;
-            for (int k = 0; k < 3; k++) {
+            for (uint32 k = 0; k < 3; k++) {
                 result(row, col) += data[row][k] * other(k, col);
             }
         }
@@ -182,7 +190,7 @@ matrix3x3 matrix3x3::invert() const {
     matrix3x3 temp = *this; // Copy of the current matrix
 
     // Perform Gaussian elimination
-    for (int i = 0; i < 3; i++) {
+    for (uint32 i = 0; i < 3; i++) {
         // Find the pivot element
         float pivot = temp(i, i);
         if (fabs(pivot) < 1e-6) {
@@ -190,16 +198,16 @@ matrix3x3 matrix3x3::invert() const {
         }
 
         // Normalize the pivot row
-        for (int j = 0; j < 3; j++) {
+        for (uint32 j = 0; j < 3; j++) {
             temp(i, j) /= pivot;
             result(i, j) /= pivot;
         }
 
         // Eliminate the other rows
-        for (int row = 0; row < 3; row++) {
+        for (uint32 row = 0; row < 3; row++) {
             if (row != i) {
                 float factor = temp(row, i);
-                for (int col = 0; col < 3; col++) {
+                for (uint32 col = 0; col < 3; col++) {
                     temp(row, col) -= factor * temp(i, col);
                     result(row, col) -= factor * result(i, col);
                 }
@@ -212,8 +220,8 @@ matrix3x3 matrix3x3::invert() const {
 
 matrix3x3 matrix3x3::transpose() const {
     matrix3x3 result;
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
+    for (uint32 i = 0; i < 3; i++) {
+        for (uint32 j = 0; j < 3; j++) {
             result(j, i) = data[i][j]; // Swap row and column indices
         }
     }
@@ -227,9 +235,9 @@ const float* matrix3x3::asPointer() const {
 
 // Output stream operator
 std::ostream& operator<<(std::ostream& os, const matrix3x3& matrix) {
-    for (int i = 0; i < 3; i++) {
+    for (uint32 i = 0; i < 3; i++) {
         os << "| ";
-        for (int j = 0; j < 3; j++) {
+        for (uint32 j = 0; j < 3; j++) {
             os << matrix(i, j) << " ";
         }
         os << "|" << std::endl;

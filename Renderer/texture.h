@@ -10,24 +10,25 @@ class Texture {
    public:
     Texture();
     Texture(const color& solid_color);
-    Texture(std::vector<std::uint8_t> data, TexDescription desc);
+    Texture(std::vector<uint8> data, TexDescription desc);
 
     ~Texture() { 
         data_.clear();
     }
 
     std::span<unsigned char> getData();
-    void setData(std::vector<std::uint8_t> data);
+    void setData(std::vector<uint8> data);
     TexFormat getFormat() const;
 
     vec3 value(float u, float v) const;
 
    private:
-    std::vector<std::uint8_t> data_;
-    std::uint32_t bytes_per_scanline_ = 0;
+    std::vector<uint8> data_;
+
+    uint32 bytes_per_scanline_ = 0;
     TexDescription tex_description_;
 
-    vec4 pixelData(std::uint32_t x, std::uint32_t y) const;
+    vec4 pixelData(uint32 x, uint32 y) const;
 };
 
 #endif

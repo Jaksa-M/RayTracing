@@ -15,13 +15,13 @@ public:
     bool load(Context& context);
 
     std::span<const std::shared_ptr<Material>> getMaterials() const;
-    std::span<const int> getMaterialsIndices() const;
+    std::span<const int32> getMaterialsIndices() const;
     std::span<MeshHandle> getMeshes();
 
 private:
     fs::path file_;
     std::vector<std::shared_ptr<Material>> materials_;
-    std::vector<int> materials_indices_;
+    std::vector<int32> materials_indices_;
     std::vector<MeshHandle> meshes_;
 };
 

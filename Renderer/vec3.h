@@ -4,6 +4,7 @@
 #include <cmath>
 #include "math_utility.h"
 #include <iostream>
+#include "types.h"
 
 class vec3 {
 public:
@@ -22,8 +23,8 @@ public:
     void setZ(float val) { e[2] = val; }
 
     vec3 operator-() const { return vec3(-e[0], -e[1], -e[2]); }
-    float operator[](int i) const { return e[i]; }
-    float& operator[](int i) { return e[i]; }
+    float operator[](uint32 i) const { return e[i]; }
+    float& operator[](uint32 i) { return e[i]; }
 
     vec3& operator+=(const vec3& v) {
         e[0] += v.e[0];
@@ -183,8 +184,8 @@ public:
     void setW(float val) { e[3] = val; }
 
     vec4 operator-() const { return vec4(-e[0], -e[1], -e[2], -e[3]); }
-    float operator[](int i) const { return e[i]; }
-    float& operator[](int i) { return e[i]; }
+    float operator[](uint32 i) const { return e[i]; }
+    float& operator[](uint32 i) { return e[i]; }
 
     vec4& operator+=(const vec4& v) {
         e[0] += v.e[0];

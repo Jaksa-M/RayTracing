@@ -11,8 +11,8 @@
 #include "types.h"
 #include "texture_loader.h"
 
-std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(Context& context, const std::shared_ptr<Material>& mat,
-        unsigned int num_of_vert, vec3 center , vec3 size)  // creating an unit cube
+std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(Context& context, const std::shared_ptr<Material>& mat, uint32 num_of_vert, vec3 center,
+                                                        vec3 size) // creating an unit cube
 {
     std::vector<Attribute> attributes;
     std::vector<float> vertices;
@@ -32,11 +32,11 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(Context& context, const 
     std::vector<unsigned int> indices = createFaceIndices(num_of_vert);
 
     std::vector<vec3> normals;
-    int triangle_count_per_face = (num_of_vert - 1) * (num_of_vert - 1) * 2;
+    uint32 triangle_count_per_face = (num_of_vert - 1) * (num_of_vert - 1) * 2;
     bool reverse_normal = false;
-    int counter = 0;
+    uint32 counter = 0;
 
-    for (int i = 0; i < indices.size(); i += 3) {
+    for (uint32 i = 0; i < indices.size(); i += 3) {
         const point3 p1 = point3(vertices[indices[i] * 3], vertices[indices[i] * 3 + 1], vertices[indices[i] * 3 + 2]);
         const point3 p2 = point3(vertices[indices[i + 1] * 3], vertices[indices[i + 1] * 3 + 1], vertices[indices[i + 1] * 3 + 2]);
         const point3 p3 = point3(vertices[indices[i + 2] * 3], vertices[indices[i + 2] * 3 + 1], vertices[indices[i + 2] * 3 + 2]);
@@ -59,7 +59,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(Context& context, const 
     std::vector<vec3> vertex_normals(vertices.size() / 3, vec3(0, 0, 0));
 
     // For each vertex add triangle normal of the triangle it belongs to (1 vertex can be part of multiple triangles, so we add all those normals together)
-    for (int i = 0; i < indices.size(); i += 3) {
+    for (uint32 i = 0; i < indices.size(); i += 3) {
         const vec3& triangle_normal = normals[i / 3];
         vertex_normals[indices[i]] += triangle_normal;
         vertex_normals[indices[i + 1]] += triangle_normal;
@@ -67,7 +67,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(Context& context, const 
     }
 
     // Normalize the vertex normals
-    for (int i = 0; i < vertex_normals.size(); i++) {
+    for (uint32 i = 0; i < vertex_normals.size(); i++) {
         vertex_normals[i] = unit_vector(vertex_normals[i]);
     }
 
@@ -86,7 +86,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleCube(Context& context, const 
     return mesh;
 }
 
-std::unique_ptr<Mesh> MeshUtils::GenerateLineCube(unsigned int num_of_vert, vec3 center, vec3 size) {
+std::unique_ptr<Mesh> MeshUtils::GenerateLineCube(uint32 num_of_vert, vec3 center, vec3 size) {
     std::vector<float> vertices;
 
     vec3 min = center - (size * 0.5);
@@ -110,7 +110,7 @@ std::unique_ptr<Mesh> MeshUtils::GenerateLineCube(unsigned int num_of_vert, vec3
         addVertex(false, center, vertices, corner); // normalized and center are not used here, since this is a cube
     }
 
-    std::vector<unsigned int> indices = {
+    std::vector<uint32> indices = {
         0, 1,  1, 2,  2, 3,  3, 0, // Top face
         4, 5,  5, 6,  6, 7,  7, 4, // Bottom face
         0, 4,  1, 5,  2, 6,  3, 7  // Vertical edges
@@ -121,9 +121,7 @@ std::unique_ptr<Mesh> MeshUtils::GenerateLineCube(unsigned int num_of_vert, vec3
     return mesh;
 }
 
-std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(Context& context, const std::shared_ptr<Material>& mat,
-    unsigned int num_of_vert, vec3 center, vec3 size)
-{
+std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(Context& context, const std::shared_ptr<Material>& mat, uint32 num_of_vert, vec3 center, vec3 size) {
     std::vector<Attribute> attributes;
     std::vector<float> vertices;
 
@@ -138,7 +136,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(Context& context, cons
     createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, max.x(), max.y(), max.z(), -d.x(), 0.0f, -d.z(), tex_coords);  // top
     createFaceVertices(true, center, vertices, num_of_vert, num_of_vert, max.x(), min.y(), max.z(), -d.x(), 0.0f, -d.z(), tex_coords);  // bottom
 
-    std::vector<unsigned int> indices = createFaceIndices(num_of_vert);
+    std::vector<uint32> indices = createFaceIndices(num_of_vert);
 
     std::vector<vec3> vertex_normals(vertices.size() / 3, vec3(0, 0, 0));
     generateTriangleVertexNormals(vertex_normals, vertices, indices, 6);
@@ -158,14 +156,14 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleSphere(Context& context, cons
     return mesh;
 }
 
-std::unique_ptr<Mesh> MeshUtils::GenerateSphereLines(unsigned int num_of_vert, vec3 center, vec3 size) {
+std::unique_ptr<Mesh> MeshUtils::GenerateSphereLines(uint32 num_of_vert, vec3 center, vec3 size) {
     std::vector<Attribute> attributes;
     std::vector<float> vertices;
 
     float angle_step = 360.0f / num_of_vert; // Step size in degrees
 
     // Generate points for the circle around the X-axis
-    for (unsigned int i = 0; i < num_of_vert; ++i) {
+    for (uint32 i = 0; i < num_of_vert; ++i) {
         float rad = degrees_to_radians(i * angle_step);
         vertices.push_back(center.x()); // X-coordinate remains constant
         vertices.push_back(center.y() + size.y() * std::cos(rad));
@@ -173,7 +171,7 @@ std::unique_ptr<Mesh> MeshUtils::GenerateSphereLines(unsigned int num_of_vert, v
     }
 
     // Generate points for the circle around the Y-axis
-    for (unsigned int i = 0; i < num_of_vert; i++) {
+    for (uint32 i = 0; i < num_of_vert; i++) {
         float rad = degrees_to_radians(i * angle_step);
         vertices.push_back(center.x() + size.x() * std::cos(rad));
         vertices.push_back(center.y()); // Y-coordinate remains constant
@@ -181,34 +179,34 @@ std::unique_ptr<Mesh> MeshUtils::GenerateSphereLines(unsigned int num_of_vert, v
     }
 
     // Generate points for the circle around the Z-axis
-    for (unsigned int i = 0; i < num_of_vert; ++i) {
+    for (uint32 i = 0; i < num_of_vert; ++i) {
         float rad = degrees_to_radians(i * angle_step);
         vertices.push_back(center.x() + size.x() * std::cos(rad));
         vertices.push_back(center.y() + size.y() * std::sin(rad));
         vertices.push_back(center.z()); // Z-coordinate remains constant
     }
 
-    std::vector<std::uint32_t> indices;
+    std::vector<uint32> indices;
 
     // Offset to track where each axis' vertices begin
-    unsigned int offset_x = 0;
-    unsigned int offset_y = num_of_vert;
-    unsigned int offset_z = 2 * num_of_vert;
+    uint32 offset_x = 0;
+    uint32 offset_y = num_of_vert;
+    uint32 offset_z = 2 * num_of_vert;
 
     // X-axis circle
-    for (unsigned int i = 0; i < num_of_vert; ++i) {
+    for (uint32 i = 0; i < num_of_vert; ++i) {
         indices.push_back(offset_x + i);
         indices.push_back(offset_x + (i + 1) % num_of_vert); // secures that last vertex is connected to first one
     }
 
     // Y-axis circle
-    for (unsigned int i = 0; i < num_of_vert; ++i) {
+    for (uint32 i = 0; i < num_of_vert; ++i) {
         indices.push_back(offset_y + i);
         indices.push_back(offset_y + (i + 1) % num_of_vert);
     }
 
     // Z-axis circle
-    for (unsigned int i = 0; i < num_of_vert; ++i) {
+    for (uint32 i = 0; i < num_of_vert; ++i) {
         indices.push_back(offset_z + i);
         indices.push_back(offset_z + (i + 1) % num_of_vert);
     }
@@ -218,15 +216,15 @@ std::unique_ptr<Mesh> MeshUtils::GenerateSphereLines(unsigned int num_of_vert, v
 }
 
 std::shared_ptr<RTMesh> MeshUtils::GenerateIcosphere(Context& context, const std::shared_ptr<Material>& mat,
-    std::uint32_t subdivisions, vec3 center, vec3 size)
+    uint32 subdivisions, vec3 center, vec3 size)
 {
     std::vector<Attribute> attributes;
     std::vector<float> vertices;
-    std::vector<std::uint32_t> indices;
+    std::vector<uint32> indices;
 
     icosahedron(vertices, indices);
 
-    for (std::uint32_t i = 0; i < subdivisions; i++) { // Subdivide triangles into smaller triangles (each iteration 1 triangle becomes 4)
+    for (uint32 i = 0; i < subdivisions; i++) { // Subdivide triangles into smaller triangles (each iteration 1 triangle becomes 4)
         loopSubdivision(vertices, indices);
         projectToUnitSphere(vertices);
     }
@@ -234,7 +232,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateIcosphere(Context& context, const std
     translateAndScale(vertices, center, size);
 
     std::vector<float> tex_coords;
-    for (size_t i = 0; i < vertices.size(); i += 3) {
+    for (uint32 i = 0; i < vertices.size(); i += 3) {
         float x = vertices[i];
         float y = vertices[i + 1];
         float z = vertices[i + 2];
@@ -265,7 +263,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateIcosphere(Context& context, const std
 }
 
 std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(Context& context, const std::shared_ptr<Material>& mat,
-    std::uint32_t num_of_vert_row, std::uint32_t num_of_vert_col, vec3 center, vec3 size)
+    uint32 num_of_vert_row, uint32 num_of_vert_col, vec3 center, vec3 size)
 {
     std::vector<Attribute> attributes;
     std::vector<float> vertices;
@@ -277,10 +275,10 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(Context& context, c
     // center and normalize variables are not used here, since we are drawing rectangle
     createFaceVertices(false, center, vertices, num_of_vert_row, num_of_vert_col, -0.5f, 0.0f, -0.5f, d.x(), 0.0f, d.z(), tex_coords); // bottom
 
-    std::vector<std::uint32_t> indices;
+    std::vector<uint32> indices;
 
-    for (std::uint32_t i = 0; i < num_of_vert_row - 1; i++) {
-        for (std::uint32_t j = 0; j < num_of_vert_col - 1; j++) {
+    for (uint32 i = 0; i < num_of_vert_row - 1; i++) {
+        for (uint32 j = 0; j < num_of_vert_col - 1; j++) {
             // first triangle (bottom-left triangle)
             indices.emplace_back(i * num_of_vert_col + j);
             indices.emplace_back((i + 1) * num_of_vert_col + j);
@@ -294,7 +292,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(Context& context, c
 
     std::vector<vec3> normals;
 
-    for (int i = 0; i < indices.size(); i += 3) {
+    for (uint32 i = 0; i < indices.size(); i += 3) {
         const point3 p1 = point3(vertices[indices[i] * 3], vertices[indices[i] * 3 + 1], vertices[indices[i] * 3 + 2]);
         const point3 p2 = point3(vertices[indices[i + 1] * 3], vertices[indices[i + 1] * 3 + 1], vertices[indices[i + 1] * 3 + 2]);
         const point3 p3 = point3(vertices[indices[i + 2] * 3], vertices[indices[i + 2] * 3 + 1], vertices[indices[i + 2] * 3 + 2]);
@@ -306,7 +304,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(Context& context, c
     std::vector<vec3> vertex_normals(vertices.size() / 3, vec3(0, 0, 0));
 
     // For each vertex add triangle normal of the triangle it belongs to (1 vertex can be part of multiple triangles, so we add all those normals together)
-    for (int i = 0; i < indices.size(); i += 3) {
+    for (uint32 i = 0; i < indices.size(); i += 3) {
         const vec3& triangle_normal = normals[i / 3];
         vertex_normals[indices[i]] += triangle_normal;
         vertex_normals[indices[i + 1]] += triangle_normal;
@@ -314,7 +312,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTriangleRectangle(Context& context, c
     }
 
     // Normalize the vertex normals
-    for (int i = 0; i < vertex_normals.size(); i++) {
+    for (uint32 i = 0; i < vertex_normals.size(); i++) {
         vertex_normals[i] = unit_vector(vertex_normals[i]);
     }
 
@@ -360,7 +358,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTestMesh(Context& context, const std:
         center.x() - size.x() * 0.5f, center.y() + size.y(), center.z() - size.z()
         });
 
-    std::vector<unsigned int> indices = {
+    std::vector<uint32> indices = {
         0, 1, 2,  // Triangle 1
         3, 4, 5,  // Triangle 2
         6, 7, 8   // Triangle 3
@@ -368,7 +366,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTestMesh(Context& context, const std:
 
     // Compute normals for each triangle
     std::vector<vec3> normals(vertices.size() / 3, vec3(0, 0, 0));
-    for (size_t i = 0; i < indices.size(); i += 3) {
+    for (uint32 i = 0; i < indices.size(); i += 3) {
         vec3 p1(vertices[indices[i] * 3], vertices[indices[i] * 3 + 1], vertices[indices[i] * 3 + 2]);
         vec3 p2(vertices[indices[i + 1] * 3], vertices[indices[i + 1] * 3 + 1], vertices[indices[i + 1] * 3 + 2]);
         vec3 p3(vertices[indices[i + 2] * 3], vertices[indices[i + 2] * 3 + 1], vertices[indices[i + 2] * 3 + 2]);
@@ -380,7 +378,7 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTestMesh(Context& context, const std:
     }
 
     // Normalize vertex normals
-    for (auto& normal : normals) {
+    for (vec3& normal : normals) {
         normal = unit_vector(normal);
     }
 
@@ -398,11 +396,11 @@ std::shared_ptr<RTMesh> MeshUtils::GenerateTestMesh(Context& context, const std:
     return mesh;
 }
 
-void MeshUtils::createFaceVertices(bool normalize, const vec3& center, std::vector<float>& vertices, int num_of_vert_row, int num_of_vert_col, float start_x,
-    float start_y, float start_z, float step_x, float step_y, float step_z, std::vector<float>& tex_coords)
+void MeshUtils::createFaceVertices(bool normalize, const vec3& center, std::vector<float>& vertices, uint32 num_of_vert_row, uint32 num_of_vert_col,
+                                   float start_x, float start_y, float start_z, float step_x, float step_y, float step_z, std::vector<float>& tex_coords)
 {
-    for (int i = 0; i < num_of_vert_row; i++) {
-        for (int j = 0; j < num_of_vert_col; j++) {
+    for (uint32 i = 0; i < num_of_vert_row; i++) {
+        for (uint32 j = 0; j < num_of_vert_col; j++) {
             float val_x = start_x + step_x * j;
             float val_y = start_y + step_y * i;
             float val_z;
@@ -431,14 +429,14 @@ void MeshUtils::createFaceVertices(bool normalize, const vec3& center, std::vect
     }
 }
 
-std::vector<unsigned int> MeshUtils::createFaceIndices(int num_of_vert) { // Filling indices vector with triangles (for cube)
-    std::vector<unsigned int> indices;
+std::vector<uint32> MeshUtils::createFaceIndices(uint32 num_of_vert) { // Filling indices vector with triangles (for cube)
+    std::vector<uint32> indices;
     int face_vertex_count = num_of_vert * num_of_vert; // Total vertices per face
 
-    for (int face = 0; face < 6; face++) {
-        int offset = face * face_vertex_count; // Starting index of the current face
-        for (int i = 0; i < num_of_vert - 1; i++) {
-            for (int j = 0; j < num_of_vert - 1; j++) {
+    for (uint32 face = 0; face < 6; face++) {
+        uint32 offset = face * face_vertex_count; // Starting index of the current face
+        for (uint32 i = 0; i < num_of_vert - 1; i++) {
+            for (uint32 j = 0; j < num_of_vert - 1; j++) {
                 // first triangle (bottom-left triangle)
                 indices.emplace_back(offset + i * num_of_vert + j);
                 indices.emplace_back(offset + (i + 1) * num_of_vert + j);
@@ -467,7 +465,7 @@ void MeshUtils::addVertex(bool normalize, const vec3& center, std::vector<float>
     }
 }
 
-void MeshUtils::generateTriangleVertexNormals(std::vector<vec3>& vertex_normals, std::vector<float>& vertices, std::vector<std::uint32_t>& indices, int stride) {
+void MeshUtils::generateTriangleVertexNormals(std::vector<vec3>& vertex_normals, std::vector<float>& vertices, std::vector<uint32>& indices, uint32 stride) {
     std::vector<vec3> normals(indices.size() / 3);
 
     for (int i = 0; i < indices.size(); i += 3) { // calculating triangle normals
@@ -479,7 +477,7 @@ void MeshUtils::generateTriangleVertexNormals(std::vector<vec3>& vertex_normals,
     }
 
     // For each vertex add triangle normal of the triangle it belongs to (1 vertex can be part of multiple triangles, so we add all those normals together)
-    for (int i = 0; i < indices.size(); i += 3) { 
+    for (uint32 i = 0; i < indices.size(); i += 3) { 
         const vec3& triangle_normal = normals[i / 3];
         vertex_normals[indices[i]] += triangle_normal;
         vertex_normals[indices[i + 1]] += triangle_normal;
@@ -487,12 +485,12 @@ void MeshUtils::generateTriangleVertexNormals(std::vector<vec3>& vertex_normals,
     }
 
     // Normalize the vertex normals
-    for (int i = 0; i < vertex_normals.size(); i++) {
+    for (uint32 i = 0; i < vertex_normals.size(); i++) {
         vertex_normals[i] = unit_vector(vertex_normals[i]);
     }
 }
 
-void MeshUtils::icosahedron(std::vector<float>& vertices, std::vector<std::uint32_t>& indices) {
+void MeshUtils::icosahedron(std::vector<float>& vertices, std::vector<uint32>& indices) {
     //const float phi = (1.0f + std::sqrt(5.0f)) / 2.0f; // Golden ratio
     const float a = 1.0f;
     const float b = 1.0f; // const float b = 1.0f / phi; other approach that is not working
@@ -513,20 +511,20 @@ void MeshUtils::icosahedron(std::vector<float>& vertices, std::vector<std::uint3
     };
 }
 
-void MeshUtils::loopSubdivision(std::vector<float>& vertices, std::vector<std::uint32_t>& indices) {
+void MeshUtils::loopSubdivision(std::vector<float>& vertices, std::vector<uint32>& indices) {
     // Midpoints are points between 2 vertices. We will create 3 of them.
-    std::map<std::pair<std::uint32_t, std::uint32_t>, std::uint32_t> midpoint_cache; // used to ensure midpoints are not duplicated
-    std::vector<std::uint32_t> new_indices; // new indices array, because now it will have more triangles to draw
+    std::map<std::pair<uint32, uint32>, uint32> midpoint_cache; // used to ensure midpoints are not duplicated
+    std::vector<uint32> new_indices; // new indices array, because now it will have more triangles to draw
 
-    for (size_t i = 0; i < indices.size(); i += 3) {
-        std::uint32_t v0 = indices[i];
-        std::uint32_t v1 = indices[i + 1];
-        std::uint32_t v2 = indices[i + 2];
+    for (uint32 i = 0; i < indices.size(); i += 3) {
+        uint32 v0 = indices[i];
+        uint32 v1 = indices[i + 1];
+        uint32 v2 = indices[i + 2];
 
         // Generate midpoints and get their indices
-        std::uint32_t m01 = getMidpoint(v0, v1, vertices, midpoint_cache);
-        std::uint32_t m12 = getMidpoint(v1, v2, vertices, midpoint_cache);
-        std::uint32_t m20 = getMidpoint(v2, v0, vertices, midpoint_cache);
+        uint32 m01 = getMidpoint(v0, v1, vertices, midpoint_cache);
+        uint32 m12 = getMidpoint(v1, v2, vertices, midpoint_cache);
+        uint32 m20 = getMidpoint(v2, v0, vertices, midpoint_cache);
 
         new_indices.insert(new_indices.end(), { v0, m01, m20 });
         new_indices.insert(new_indices.end(), { v1, m12, m01 });
@@ -536,7 +534,7 @@ void MeshUtils::loopSubdivision(std::vector<float>& vertices, std::vector<std::u
     indices = new_indices; // Replace old triangles with new subdivided triangles
 }
 
-std::uint32_t MeshUtils::getMidpoint(std::uint32_t v1, std::uint32_t v2, std::vector<float>& vertices, std::map<std::pair<std::uint32_t, std::uint32_t>, std::uint32_t>& midpoint_cache) {
+uint32 MeshUtils::getMidpoint(uint32 v1, uint32 v2, std::vector<float>& vertices, std::map<std::pair<uint32, uint32>, uint32>& midpoint_cache) {
     auto key = std::minmax(v1, v2); // Create a unique key for the edge (v1, v2). Minimax algorithm ensures that (v1, v2) is the same as (v2, v1)
     if (midpoint_cache.find(key) != midpoint_cache.end()) {
         return midpoint_cache[key]; // Return cached midpoint index if it exists
@@ -552,14 +550,14 @@ std::uint32_t MeshUtils::getMidpoint(std::uint32_t v1, std::uint32_t v2, std::ve
     vertices.push_back(midpoint.y());
     vertices.push_back(midpoint.z());
 
-    int index = static_cast<int>(vertices.size() / 3) - 1;
+    uint32 index = static_cast<int>(vertices.size() / 3) - 1;
     midpoint_cache[key] = index;  // Cache the midpoint index
 
     return index;
 }
 
 void MeshUtils::projectToUnitSphere(std::vector<float>& vertices) {
-    for (size_t i = 0; i < vertices.size(); i += 3) {
+    for (uint32 i = 0; i < vertices.size(); i += 3) {
         vec3 vertex(vertices[i], vertices[i + 1], vertices[i + 2]);
         vertex = unit_vector(vertex);
         vertices[i] = vertex.x();
@@ -569,7 +567,7 @@ void MeshUtils::projectToUnitSphere(std::vector<float>& vertices) {
 }
 
 void MeshUtils::translateAndScale(std::vector<float>& vertices, const vec3& center, const vec3& size) {
-    for (size_t i = 0; i < vertices.size(); i += 3) {
+    for (uint32 i = 0; i < vertices.size(); i += 3) {
         vec3 vertex(vertices[i], vertices[i + 1], vertices[i + 2]);
         vertex = vertex * size; // Scale the vertex
         vertex += center; // Translate to the center
@@ -581,7 +579,7 @@ void MeshUtils::translateAndScale(std::vector<float>& vertices, const vec3& cent
 
 void MeshUtils::PrintVertices(const std::vector<float>& vertices) {
     // Each vertex has 6 components: x, y, z, r, g, b
-    const int componentsPerVertex = 6;
+    const uint32 componentsPerVertex = 6;
 
     // Check if the vector size is a multiple of 6
     if (vertices.size() % componentsPerVertex != 0) {
@@ -592,7 +590,7 @@ void MeshUtils::PrintVertices(const std::vector<float>& vertices) {
     std::cout << std::fixed << std::setprecision(2); // Set fixed-point and precision for clarity
 
     // Iterate through the vertices
-    for (size_t i = 0; i < vertices.size(); i += componentsPerVertex) {
+    for (uint32 i = 0; i < vertices.size(); i += componentsPerVertex) {
         float x = vertices[i];
         float y = vertices[i + 1];
         float z = vertices[i + 2];

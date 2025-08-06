@@ -126,6 +126,12 @@
     <ClInclude Include="context.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ui_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="bvh_types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="obj_loader.cpp">

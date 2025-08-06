@@ -2,6 +2,7 @@
 #define BVH_BUILDER_H
 
 #include "types.h"
+#include "bvh_types.h"
 #include <span>
 #include <memory>
 
@@ -16,26 +17,26 @@ struct Triangle {
 class BVHBuilder {
 public:
     BVHBuilder() {};
-    BVHBuilder(std::span<const float> vertices, std::span<std::uint32_t> indices, std::span<const Triangle> triangles,
-        std::span<std::uint32_t> triangle_indices);
+    BVHBuilder(std::span<const float> vertices, std::span<uint32> indices, std::span<const Triangle> triangles,
+        std::span<uint32> triangle_indices);
 
     std::vector<BLASNode> buildBLAS();
     std::vector<BLASNode> buildBLASSAH();
-    void createBoundBox(std::uint32_t node_index);
-    void subdivide(std::uint32_t node_index);
-    void subdivideSAH(std::uint32_t node_index);
+    void createBoundBox(uint32 node_index);
+    void subdivide(uint32 node_index);
+    void subdivideSAH(uint32 node_index);
 
 private:
     std::span<const float> vertices_;
-    std::span<std::uint32_t> indices_;
+    std::span<uint32> indices_;
 
     std::vector<BLASNode> blas_nodes_;
     std::span<const Triangle> triangles_; // contains triangles (their coordinates) formed from indices and vertices arrays
-    std::span<std::uint32_t> triangle_indices_; // in order not to swap whole triangles, we will just swap these indices
+    std::span<uint32> triangle_indices_; // in order not to swap whole triangles, we will just swap these indices
 
-    std::uint32_t nodes_used_ = 1;
+    uint32 nodes_used_ = 1;
 
-    float evaluateSAH(BLASNode& node, int axis, float pos);
+    float evaluateSAH(BLASNode& node, uint32 axis, float pos);
     void reorderIndices(); // Because triangle_indices are getting swapped during BVH building, indices will have to swap also
 
 
@@ -43,7 +44,6 @@ private:
 public:
     std::vector<TLASNode> buildTLAS(std::span<const std::pair<vec3, vec3>> blas_bounds,
                                     std::span<std::shared_ptr<Hittable>> rt_meshes);
-    uint32_t buildTLASNode(std::span<uint32_t> indices, std::span<const std::pair<vec3, vec3>> blas_bounds, std::span<std::shared_ptr<Hittable>> rt_meshes);
 
 private:
     std::vector<TLASNode> tlas_nodes_;

@@ -32,7 +32,7 @@ void SceneMaterialTesting::initialize() {
     }
     TexDescription desc(tex_loader.getImageWidth(), tex_loader.getImageHeight(), tex_loader.getFormat());
     background_texture_ = std::make_shared<Texture>(tex_loader.getData(), desc);
-    for (int i = 0; i < cameras_.size(); i++) {
+    for (uint32 i = 0; i < cameras_.size(); i++) {
         cameras_[i]->setBackgroundTexture(background_texture_);
     }
 
@@ -61,20 +61,20 @@ void SceneMaterialTesting::initialize() {
     std::shared_ptr<Texture> tex = std::make_shared<Texture>(tex_loader2.getData(), desc2);
     std::shared_ptr<Texture> roughness_tex = std::make_shared<Texture>(tex_loader3.getData(), desc3);
     std::span<unsigned char> pixels = roughness_tex->getData();
-    for (std::size_t i = 0; i < pixels.size(); i += getChannelCount(roughness_tex->getFormat())) {
+    for (uint32 i = 0; i < pixels.size(); i += getChannelCount(roughness_tex->getFormat())) {
         pixels[i] = 255 - pixels[i];  // we only need to invert first color
     }
     //auto temp_mat = std::make_shared<Metal>(tex, roughness_tex, normal_map_tex);
     //auto temp_mat = std::make_shared<Lambertian>(tex, normal_map_tex);
     auto temp_mat = std::make_shared<Lambertian>(tex);
 
-    std::shared_ptr<Texture> rough_tex = std::make_shared<Texture>(vec3(1, 0, 0));
-    std::shared_ptr<Texture> rough_zero_tex = std::make_shared<Texture>(vec3(0, 0, 0));
-    std::shared_ptr<Texture> rough_mid_tex = std::make_shared<Texture>(vec3(0.3, 0.3, 0.3));
+    std::shared_ptr<Texture> rough_tex = std::make_shared<Texture>(vec3(1.0f, 0.0f, 0.0f));
+    std::shared_ptr<Texture> rough_zero_tex = std::make_shared<Texture>(vec3(0.0f, 0.0f, 0.0f));
+    std::shared_ptr<Texture> rough_mid_tex = std::make_shared<Texture>(vec3(0.3f, 0.3f, 0.3f));
     std::shared_ptr<Texture> rough_gradient_tex = std::make_shared<Texture>(generateGradient(desc3), desc3);
     std::shared_ptr<Texture> rough_checkered_tex = std::make_shared<Texture>(generateCheckerboard(desc3, vec3(0.0f, 0.0f, 0.0f), vec3(0.3f, 0.3f, 0.3f)), desc3);
     std::shared_ptr<Texture> rough_non_smooth_grad_tex = std::make_shared<Texture>(generateSmoothGradient(desc3, 170), desc3);
-    std::shared_ptr<Texture> white_tex = std::make_shared<Texture>(vec3(1, 1, 1));
+    std::shared_ptr<Texture> white_tex = std::make_shared<Texture>(vec3(1.0f, 1.0f, 1.0f));
 
     auto plane_mat = std::make_shared<Metal>(white_tex, rough_gradient_tex);
     //auto plane_mat = std::make_shared<Lambertian>(rough_zero_tex);
@@ -116,7 +116,7 @@ void SceneMaterialTesting::initialize() {
     initShader();
 }
 
-void SceneMaterialTesting::update(int display_w, int display_h) {
+void SceneMaterialTesting::update(uint32 display_w, uint32 display_h) {
     if (prev_BVH_technique_ != context.settings->BVH_technique) {
         world_->clear();
         initialize();
@@ -135,7 +135,7 @@ void SceneMaterialTesting::drawBVH() {
     if (context.settings->selected_option != -1) {
         bounding_boxes_.resize(world_->getSize());
 
-        for (int i = 0; i < world_->getSize(); i++) {  // Drawing BVH tree or leaves
+        for (uint32 i = 0; i < world_->getSize(); i++) {  // Drawing BVH tree or leaves
             std::shared_ptr<Hittable> object = world_->getObject(i);
             RTMesh* rtMesh = dynamic_cast<RTMesh*>(object.get());
 
