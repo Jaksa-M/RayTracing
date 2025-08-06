@@ -18,7 +18,7 @@
 #include "texture_utility.h"
 
 struct Subshape {
-    int material_id;
+    int32 material_id;
     std::vector<tinyobj::index_t> tri_indices;
 };
 
@@ -76,7 +76,7 @@ bool ObjLoader::load(Context& context) {
 
                 // We need to invert R pixel for correct roughness
                 std::span<unsigned char> pixels = roughness_tex->getData();
-                for (std::size_t i = 0; i < pixels.size(); i += getChannelCount(roughness_tex->getFormat())) {
+                for (uint32 i = 0; i < pixels.size(); i += getChannelCount(roughness_tex->getFormat())) {
                     pixels[i] = 255 - pixels[i];  // we only need to invert first color
                 }
             }
@@ -91,7 +91,7 @@ bool ObjLoader::load(Context& context) {
                 TexDescription desc(emissive_tex_loader.getImageWidth(), emissive_tex_loader.getImageHeight(), emissive_tex_loader.getFormat());
                 emissive_tex = std::make_shared<Texture>(emissive_tex_loader.getData(), desc);
             }
-        } 
+        }
         else {
             vec3 emission_color(mat.emission[0], mat.emission[1], mat.emission[2]);
             if (emission_color.length_squared() > 0.0001f) {
@@ -133,17 +133,17 @@ bool ObjLoader::load(Context& context) {
     }
 
     // Adding dummy material in case when material index is -1
-    std::shared_ptr<Material> mat = std::make_shared<Lambertian>(color(1, 0, 1)); // magenta
+    std::shared_ptr<Material> mat = std::make_shared<Lambertian>(color(1.0f, 0.0f, 1.0f)); // magenta
     materials_.push_back(mat);
-    int dummy_index = materials_.size() - 1;
+    int32 dummy_index = static_cast<int32>(materials_.size() - 1);
 
     std::vector<Subshape> all_shapes;
-    for (size_t s = 0; s < shapes.size(); s++) {
-        std::vector<int> unique_mat_ids = shapes[s].mesh.material_ids;
+    for (uint32 s = 0; s < shapes.size(); s++) {
+        std::vector<int32> unique_mat_ids = shapes[s].mesh.material_ids;
         std::sort(unique_mat_ids.begin(), unique_mat_ids.end());
         unique_mat_ids.erase(std::unique(unique_mat_ids.begin(), unique_mat_ids.end()), unique_mat_ids.end());
 
-        for (int& id : unique_mat_ids) {
+        for (int32& id : unique_mat_ids) {
             if (id == -1) {
                 id = dummy_index;  // Assign default material ID (0 in our case)
             } 
@@ -151,20 +151,20 @@ bool ObjLoader::load(Context& context) {
         }
 
         // Take the highest material_id to set the vector size properly
-        int max_material_id = unique_mat_ids.empty() ? 0 : unique_mat_ids.back();
+        int32 max_material_id = unique_mat_ids.empty() ? 0 : unique_mat_ids.back();
         std::vector<Subshape> subshapes(max_material_id + 1);
 
-        for (int material_id : unique_mat_ids) {
+        for (int32 material_id : unique_mat_ids) {
             subshapes[material_id].material_id = material_id;
         }
-        for (size_t i = 0; i < shapes[s].mesh.material_ids.size(); i++) {
+        for (uint32 i = 0; i < shapes[s].mesh.material_ids.size(); i++) {
             int material_id = shapes[s].mesh.material_ids[i];
             if (material_id == -1) material_id = dummy_index;
             subshapes[material_id].tri_indices.push_back(shapes[s].mesh.indices[i * 3 + 0]);
             subshapes[material_id].tri_indices.push_back(shapes[s].mesh.indices[i * 3 + 1]);
             subshapes[material_id].tri_indices.push_back(shapes[s].mesh.indices[i * 3 + 2]);
         }
-        for (const auto& subshape : subshapes) {
+        for (const Subshape& subshape : subshapes) {
             if (subshape.tri_indices.empty() == false) { // Avoid pushing empty subshapes
                 all_shapes.push_back(subshape);
             }
@@ -172,25 +172,25 @@ bool ObjLoader::load(Context& context) {
     }
 
     // Loading materials
-    for (size_t s = 0; s < all_shapes.size(); s++) {
+    for (uint32 s = 0; s < all_shapes.size(); s++) {
         materials_indices_.push_back(all_shapes[s].material_id);
     }
 
-    std::vector<std::uint32_t> indices;
+    std::vector<uint32> indices;
     std::vector<float> vertices;
     std::vector<float> vertex_normals;
     std::vector<float> uv;
-    std::unordered_map<std::uint64_t, std::uint32_t> vertex_map;
-    for (size_t s = 0; s < all_shapes.size(); s++) {
+    std::unordered_map<uint64, uint32> vertex_map;
+    for (uint32 s = 0; s < all_shapes.size(); s++) {
         indices.clear();
         vertices.clear();
         vertex_normals.clear();
         uv.clear();
         vertex_map.clear();
-        std::uint32_t new_index = 0;
+        uint32 new_index = 0;
 
-        for (int i = 0; i < all_shapes[s].tri_indices.size(); i++) {
-            const auto& index = all_shapes[s].tri_indices[i];
+        for (uint32 i = 0; i < all_shapes[s].tri_indices.size(); i++) {
+            const tinyobj::index_t& index = all_shapes[s].tri_indices[i];
 
             // Ensure indices fit within 21 bits
             assert(index.vertex_index <= 0x1FFFFF);
@@ -198,9 +198,9 @@ bool ObjLoader::load(Context& context) {
             assert(index.texcoord_index <= 0x1FFFFF);
 
             // Create a unique key using 21 bits for each index
-            std::uint64_t key = (static_cast<std::uint64_t>(index.vertex_index) & 0x1FFFFF) |
-                                ((static_cast<std::uint64_t>(index.normal_index) & 0x1FFFFF) << 21) |
-                                ((static_cast<std::uint64_t>(index.texcoord_index) & 0x1FFFFF) << 42);
+            uint64 key = (static_cast<uint64>(index.vertex_index) & 0x1FFFFF) |
+                                ((static_cast<uint64>(index.normal_index) & 0x1FFFFF) << 21) |
+                                ((static_cast<uint64>(index.texcoord_index) & 0x1FFFFF) << 42);
 
             // If vertex is already mapped, reuse the mapped index
             if (vertex_map.count(key)) {
@@ -239,10 +239,10 @@ bool ObjLoader::load(Context& context) {
             std::vector<vec3> temp_normals(vertices.size() / 3, vec3(0.0f));
             
             // Loop through each face and accumulate normals
-            for (size_t i = 0; i < indices.size(); i += 3) {
-                std::uint32_t i0 = indices[i];
-                std::uint32_t i1 = indices[i + 1];
-                std::uint32_t i2 = indices[i + 2];
+            for (uint32 i = 0; i < indices.size(); i += 3) {
+                uint32 i0 = indices[i];
+                uint32 i1 = indices[i + 1];
+                uint32 i2 = indices[i + 2];
             
                 vec3 v0(vertices[i0 * 3], vertices[i0 * 3 + 1], vertices[i0 * 3 + 2]);
                 vec3 v1(vertices[i1 * 3], vertices[i1 * 3 + 1], vertices[i1 * 3 + 2]);
@@ -285,7 +285,7 @@ std::span<const std::shared_ptr<Material>> ObjLoader::getMaterials() const {
     return materials_;
 }
 
-std::span<const int> ObjLoader::getMaterialsIndices() const {
+std::span<const int32> ObjLoader::getMaterialsIndices() const {
     return materials_indices_;
 }
 

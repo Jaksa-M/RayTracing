@@ -40,7 +40,7 @@ void SceneObjLoader::initialize() {
     }
     TexDescription desc(tex_loader.getImageWidth(), tex_loader.getImageHeight(), tex_loader.getFormat());
     background_texture_ = std::make_shared<Texture>(tex_loader.getData(), desc);
-    for (int i = 0; i < cameras_.size(); i++) {
+    for (uint32 i = 0; i < cameras_.size(); i++) {
         cameras_[i]->setBackgroundTexture(background_texture_);
     }
 
@@ -63,8 +63,8 @@ void SceneObjLoader::initialize() {
 
     std::span<MeshHandle> meshes = obj_loader_->getMeshes();
     std::span<const std::shared_ptr<Material>> materials = obj_loader_->getMaterials();
-    std::span<const int> materials_indices = obj_loader_->getMaterialsIndices();
-    for (std::uint32_t i = 0; i < meshes.size(); i++) {
+    std::span<const int32> materials_indices = obj_loader_->getMaterialsIndices();
+    for (uint32 i = 0; i < meshes.size(); i++) {
         if (materials.empty() == false) {
             addMesh(meshes[i], materials[materials_indices[i]], m);
         } else { // if there are no materials specified in obj file
@@ -98,7 +98,7 @@ void SceneObjLoader::initialize() {
     initShader();
 }
 
-void SceneObjLoader::update(int display_w, int display_h) {
+void SceneObjLoader::update(uint32 display_w, uint32 display_h) {
     if (prev_BVH_technique_ != context.settings->BVH_technique) {
         world_->clear();
         initialize();
@@ -118,7 +118,7 @@ void SceneObjLoader::drawBVH() {
     if (context.settings->selected_option != -1) {
         bounding_boxes_.resize(world_->getSize());
 
-        for (int i = 0; i < world_->getSize(); i++) { // Drawing BVH tree or leaves
+        for (uint32 i = 0; i < world_->getSize(); i++) { // Drawing BVH tree or leaves
             std::shared_ptr<Hittable> object = world_->getObject(i);
             RTMesh* rtMesh = dynamic_cast<RTMesh*>(object.get());
 

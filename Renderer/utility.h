@@ -29,18 +29,16 @@ inline float linearToGamma(float x) {
     else return 0;
 }
 
-inline float fromUnorm(std::uint8_t value) {
+inline float fromUnorm(uint8 value) {
     return static_cast<float>(value) / 255.0f;
 }
 
-inline std::uint8_t toUnorm(float value) {
-    return static_cast<std::uint8_t>(std::clamp(value, 0.0f, 1.0f) * 255.0f + 0.5f);
+inline uint8 toUnorm(float value) {
+    return static_cast<uint8>(std::clamp(value, 0.0f, 1.0f) * 255.0f + 0.5f);
 }
 
-inline void convertAccumulatedToImageData(std::span<std::uint8_t> image_data, const std::vector<vec4>& acc,
-    int width, int height)
-{
-    for (int i = 0; i < width * height; i++) {
+inline void convertAccumulatedToImageData(std::span<uint8> image_data, const std::vector<vec4>& acc, uint32 width, uint32 height) {
+    for (uint32 i = 0; i < width * height; i++) {
         const vec4& pixel = acc[i];
         float sample_count = pixel.w();
         float inv_sample_count = sample_count > 0.0f ? 1.0f / sample_count : 0.0f;
@@ -55,8 +53,8 @@ inline void convertAccumulatedToImageData(std::span<std::uint8_t> image_data, co
     }
 }
 
-inline void convertAccumulatedToFloatImage(std::span<vec3> image_data_float, const std::vector<vec4>& acc, int width, int height) {
-    for (int i = 0; i < width * height; i++) {
+inline void convertAccumulatedToFloatImage(std::span<vec3> image_data_float, const std::vector<vec4>& acc, uint32 width, uint32 height) {
+    for (uint32 i = 0; i < width * height; i++) {
         const vec4& pixel = acc[i];
         float sample_count = pixel.w();
 

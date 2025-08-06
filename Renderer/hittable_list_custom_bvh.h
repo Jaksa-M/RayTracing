@@ -2,7 +2,7 @@
 #define HITTABLE_LIST_CUSTOM_BVH_H
 
 #include "hittable_list.h"
-#include "types.h"
+#include "bvh_types.h"
 #include <span>
 #include <memory>
 

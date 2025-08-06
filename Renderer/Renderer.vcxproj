@@ -82,6 +82,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir)..\ExternalLibraries\;$(ProjectDir)..\ExternalLibraries\glfw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -103,6 +104,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir)..\ExternalLibraries\;$(ProjectDir)..\ExternalLibraries\glfw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -124,6 +126,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir)..\ExternalLibraries\;$(ProjectDir)..\ExternalLibraries\glfw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -145,6 +148,7 @@
       <AdditionalIncludeDirectories>$(ProjectDir)..\ExternalLibraries\;$(ProjectDir)..\ExternalLibraries\glfw\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <TreatWarningAsError>true</TreatWarningAsError>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -157,6 +161,7 @@
   <ItemGroup>
     <ClInclude Include="bvh_builder.h" />
     <ClInclude Include="bvh_manager.h" />
+    <ClInclude Include="bvh_types.h" />
     <ClInclude Include="camera.h" />
     <ClInclude Include="context.h" />
     <ClInclude Include="gui_settings.h" />
@@ -190,6 +195,7 @@
     <ClInclude Include="texture_utility.h" />
     <ClInclude Include="transformations.h" />
     <ClInclude Include="types.h" />
+    <ClInclude Include="ui_types.h" />
     <ClInclude Include="utility.h" />
     <ClInclude Include="vec3.h" />
   </ItemGroup>

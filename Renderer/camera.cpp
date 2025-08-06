@@ -35,9 +35,9 @@ void Camera::render(const HittableList& world, std::vector<vec4>& image_data_acc
     }
 
     // Computing the number of blocks dynamically
-    int block_size = settings.block_size;
-    int BLOCKS_X;
-    int BLOCKS_Y;
+    uint32 block_size = settings.block_size;
+    uint32 BLOCKS_X;
+    uint32 BLOCKS_Y;
     if (settings_.multithreading == true) {
         BLOCKS_X = (image_width + settings.block_size - 1) / settings.block_size;
         BLOCKS_Y = (image_height + settings.block_size - 1) / settings.block_size;
@@ -48,16 +48,16 @@ void Camera::render(const HittableList& world, std::vector<vec4>& image_data_acc
         block_size = std::max(image_width, image_height);
     }
 
-    std::vector<std::pair<int, int>> jobs;
-    for (int i = 0; i < BLOCKS_X; i++) {
-        for (int j = 0; j < BLOCKS_Y; j++) {
+    std::vector<std::pair<uint32, uint32>> jobs;
+    for (uint32 i = 0; i < BLOCKS_X; i++) {
+        for (uint32 j = 0; j < BLOCKS_Y; j++) {
             jobs.push_back({i, j});
         }
     }
 
     auto render_block = [&]() {
         while (true) {
-            std::pair<int, int> block_id;
+            std::pair<uint32, uint32> block_id;
             {
                 std::scoped_lock lock(mutex_render_);  // Unlock right after this small scope ends
                 if (jobs.empty()) break;
@@ -65,16 +65,16 @@ void Camera::render(const HittableList& world, std::vector<vec4>& image_data_acc
                 jobs.pop_back();
             }
 
-            std::uint32_t start_x = block_id.first * block_size;
-            std::uint32_t start_y = block_id.second * block_size;
+            uint32 start_x = block_id.first * block_size;
+            uint32 start_y = block_id.second * block_size;
 
             // This will all be called for every frame (like a while loop that executes every frame)
             vec3 offset = sample_square();
-            for (std::uint32_t j = start_y; j < std::min(start_y + block_size, std::uint32_t(image_height)); j++) {
+            for (uint32 j = start_y; j < std::min(start_y + block_size, uint32(image_height)); j++) {
                 //int flipped_j = image_height_ - j - 1;  // Flip the row index
                 int flipped_j = j;
-                for (std::uint32_t i = start_x; i < std::min(start_x + block_size, std::uint32_t(image_width)); i++) {
-                    std::uint32_t index_acc = flipped_j * image_width + i;
+                for (uint32 i = start_x; i < std::min(start_x + block_size, uint32(image_width)); i++) {
+                    uint32 index_acc = flipped_j * image_width + i;
                     color pixel_color(0.0f, 0.0f, 0.0f);
 
                     // decides whether to trace current pixel or skip it and go on next
@@ -85,7 +85,7 @@ void Camera::render(const HittableList& world, std::vector<vec4>& image_data_acc
 
                     ray ra = get_ray(i, j, offset);
 
-                    int step_size = std::max(10, image_width / 2000);  // Adjust step based on resolution
+                    uint32 step_size = std::max(static_cast<uint32>(10), image_width / 2000); // Adjust step based on resolution
                     if (settings.debug_rays == true && settings.freeze_camera == false && i % step_size == 0 && j % step_size == 0) {
                         std::scoped_lock lock(mutex_render_);
                         rays_to_trace_intersection_.push_back(std::pair(ra, false));  // Save ray on every step size
@@ -102,13 +102,13 @@ void Camera::render(const HittableList& world, std::vector<vec4>& image_data_acc
     if (settings_.multithreading == true) {
         // Create worker threads
         std::array<std::future<void>, 16> futures;  //  std::thread::hardware_concurrency() = 12 for my PC
-        int num_threads = std::min(16, static_cast<int>(std::thread::hardware_concurrency()));
-        for (int i = 0; i < num_threads; i++) {
+        uint32 num_threads = std::min(static_cast<uint32>(16), static_cast<uint32>(std::thread::hardware_concurrency()));
+        for (uint32 i = 0; i < num_threads; i++) {
             futures[i] = (std::async(std::launch::async, render_block));
         }
 
         // Swap + Decrease Count Approach
-        int last = num_threads - 1;
+        int32 last = num_threads - 1;
         while (last >= 0) {
             if (futures[0].wait_for(std::chrono::milliseconds(1)) == std::future_status::ready) {
                 std::swap(futures[0], futures[last]);
@@ -145,7 +145,7 @@ void Camera::initialize() {
     projection_matrix_ = transformation::makeInfinitePerspectiveMatrix(0.1f, vec3(viewport_width, viewport_height, 0.0f), vec3(0.0f, 0.0f, 0.0f), focal_length_);
 }
 
-ray Camera::get_ray(int i, int j, vec3 offset) const {
+ray Camera::get_ray(uint32 i, uint32 j, vec3 offset) const {
     // Construct a camera ray originating from the origin and directed at randomly sampled point around the pixel location i, j.
 
     vec3 pixel_sample = pixel00_loc_
@@ -163,7 +163,7 @@ vec3 Camera::sample_square() const {
     return vec3(random_double() - 0.5f, random_double() - 0.5f, 0.0f);
 }
 
-color Camera::ray_color(const ray& r, int depth, const HittableList& world) {
+color Camera::ray_color(const ray& r, int32 depth, const HittableList& world) {
     // If we've exceeded the ray bounce limit, no more light is gathered.
     if (depth <= 0) return color(0.0f, 0.0f, 0.0f);
 
@@ -171,7 +171,6 @@ color Camera::ray_color(const ray& r, int depth, const HittableList& world) {
 
     // Variables can't be declared inside switch case
     vec3 unit_direction;
-    float a;
     float u, v;
     switch (settings_.mesh_color) {
         case MeshColor::MATERIAL:

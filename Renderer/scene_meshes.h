@@ -13,11 +13,11 @@ public:
 
     void initShader();
 
-    void update(int display_w, int display_h) override;
+    void update(uint32 display_w, uint32 display_h) override;
 
-    std::vector<float> createVerticesArr(int num_of_vert);
+    std::vector<float> createVerticesArr(uint32 num_of_vert);
 
-    std::vector<unsigned int> createIndicesArr(int num_of_vert);
+    std::vector<uint32> createIndicesArr(uint32 num_of_vert);
 
     void draw_mesh_gizmos() override;
 

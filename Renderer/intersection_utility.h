@@ -1,7 +1,7 @@
 #ifndef INTERSECTION_UTILITY_H
 #define INTERSECTION_UTILITY_H
 
-#include "types.h"
+#include "bvh_types.h"
 #include "interval.h"
 #include "matrix.h"
 #include "ray.h"
@@ -162,11 +162,11 @@ inline void transformAABB(vec3& pmin, vec3& pmax, const matrix4x4& transform) {
     };
 
     // Initialize new AABB bounds
-    pmin = vec3(std::numeric_limits<float>::max());
+    pmin = vec3(float_max);
     pmax = vec3(std::numeric_limits<float>::lowest());
 
     // Finding min/max of transformed corners
-    for (int i = 0; i < 8; i++) {
+    for (uint32 i = 0; i < 8; i++) {
         pmin = vec3(std::min(pmin.x(), corners[i].x()),
             std::min(pmin.y(), corners[i].y()),
             std::min(pmin.z(), corners[i].z()));

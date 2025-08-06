@@ -6,11 +6,11 @@
 #include <algorithm>
 #include "hittable.h"
 
-inline int findBestMatch(std::span<const TLASNode> tlas_nodes, const std::span<const uint32_t> list, int N, int A) {
+inline int findBestMatch(std::span<const TLASNode> tlas_nodes, const std::span<const uint32> list, uint32 N, uint32 A) {
     float smallest = 1e30f;
-    int bestB = -1;
+    int32 bestB = -1;
 
-    for (int B = 0; B < N; B++) {
+    for (uint32 B = 0; B < N; B++) {
         if (B == A) continue;
 
         const TLASNode& nodeA = tlas_nodes[list[A]];
@@ -29,14 +29,14 @@ inline int findBestMatch(std::span<const TLASNode> tlas_nodes, const std::span<c
     return bestB;
 }
 
-BVHBuilder::BVHBuilder(std::span<const float> vertices, std::span<std::uint32_t> indices,
-    std::span<const Triangle> triangles, std::span<std::uint32_t> triangle_indices):
+BVHBuilder::BVHBuilder(std::span<const float> vertices, std::span<uint32> indices,
+    std::span<const Triangle> triangles, std::span<uint32> triangle_indices):
     vertices_(vertices), indices_(indices), triangles_(triangles), triangle_indices_(triangle_indices) {}
 
 std::vector<BLASNode> BVHBuilder::buildBLAS() {
-    std::uint32_t N = static_cast<std::uint32_t>(indices_.size() / 3);
+    uint32 N = static_cast<uint32>(indices_.size() / 3);
 
-    for (std::uint32_t i = 0; i < 2 * N - 1; i++) {
+    for (uint32 i = 0; i < 2 * N - 1; i++) {
         blas_nodes_.push_back(BLASNode());
     }
     BLASNode& root = blas_nodes_[0];
@@ -56,9 +56,9 @@ std::vector<BLASNode> BVHBuilder::buildBLAS() {
 }
 
 std::vector<BLASNode> BVHBuilder::buildBLASSAH() {
-    std::uint32_t N = static_cast<std::uint32_t>(indices_.size() / 3);
+    uint32 N = static_cast<uint32>(indices_.size() / 3);
 
-    for (std::uint32_t i = 0; i < 2 * N - 1; i++) {
+    for (uint32 i = 0; i < 2 * N - 1; i++) {
         blas_nodes_.push_back(BLASNode());
     }
     BLASNode& root = blas_nodes_[0];
@@ -78,15 +78,15 @@ std::vector<BLASNode> BVHBuilder::buildBLASSAH() {
     return blas_nodes_;
 }
 
-void BVHBuilder::createBoundBox(std::uint32_t node_index) {
+void BVHBuilder::createBoundBox(uint32 node_index) {
     BLASNode& node = blas_nodes_[node_index];
-    point3 min_point = point3(std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max()); // bottom left corner
+    point3 min_point = point3(float_max, float_max, float_max); // bottom left corner
     point3 max_point = point3(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest(), std::numeric_limits<float>::lowest()); // top right corner
 
-    std::uint32_t first = node.first_triangle_index;
+    uint32 first = node.first_triangle_index;
     // Iterating over every triangle that is inside this bounding box and finding the boundaries of the box
-    for (std::uint32_t i = 0; i < node.triangle_cnt; i++) {
-        std::uint32_t triangle_index = triangle_indices_[first + i];
+    for (uint32 i = 0; i < node.triangle_cnt; i++) {
+        uint32 triangle_index = triangle_indices_[first + i];
         const Triangle& triangle = triangles_[triangle_index]; // this is currently leaf triangle
 
         min_point.setX(std::min({ min_point.x(), triangle.v0.x(), triangle.v1.x(), triangle.v2.x() }));
@@ -102,7 +102,7 @@ void BVHBuilder::createBoundBox(std::uint32_t node_index) {
     node.aabb_max = max_point;
 }
 
-void BVHBuilder::subdivide(std::uint32_t node_index) {
+void BVHBuilder::subdivide(uint32 node_index) {
     // Current split method: split along longest axis
     BLASNode& node = blas_nodes_[node_index];
 
@@ -112,14 +112,14 @@ void BVHBuilder::subdivide(std::uint32_t node_index) {
 
     // Midpoint split
     vec3 extent = node.aabb_max - node.aabb_min;
-    int axis = 0; // x-axis
+    uint32 axis = 0; // x-axis
     if (extent.y() > extent.x()) axis = 1; // y-axis
     if (extent.z() > extent.x() && extent.z() > extent.y()) axis = 2; // z-axis
     float split_pos = node.aabb_min[axis] + extent[axis] * 0.5f; // split that axis in half
 
     // split the box in halves
-    int i = node.first_triangle_index;
-    int j = i + node.triangle_cnt - 1;
+    uint32 i = node.first_triangle_index;
+    uint32 j = i + node.triangle_cnt - 1;
     while (i <= j) {
         if (triangles_[triangle_indices_[i]].centroid[axis] < split_pos) {
             i++;
@@ -130,15 +130,15 @@ void BVHBuilder::subdivide(std::uint32_t node_index) {
         }
     }
 
-    int left_count = i - node.first_triangle_index; // How many nodes will be in left child
+    uint32 left_count = i - node.first_triangle_index; // How many nodes will be in left child
 
     // This check ensures to avoid empty child nodes and infinite recursion
     // (the function could keep attempting to split nodes indefinitely, especially when triangles align along the splitting axis)
     if (left_count == 0 || left_count == node.triangle_cnt) return;
 
     // Create child nodes
-    int left_child_index = nodes_used_++;
-    int right_child_index = nodes_used_++;
+    uint32 left_child_index = nodes_used_++;
+    uint32 right_child_index = nodes_used_++;
     node.left_child = left_child_index;
     node.right_child = right_child_index;
     blas_nodes_[left_child_index].first_triangle_index = node.first_triangle_index;
@@ -158,7 +158,7 @@ void BVHBuilder::subdivide(std::uint32_t node_index) {
     subdivide(right_child_index);
 }
 
-void BVHBuilder::subdivideSAH(std::uint32_t node_index) {
+void BVHBuilder::subdivideSAH(uint32 node_index) {
     // Current split method: split along longest axis
     BLASNode& node = blas_nodes_[node_index];
 
@@ -167,11 +167,11 @@ void BVHBuilder::subdivideSAH(std::uint32_t node_index) {
     if (node.triangle_cnt <= 2) return;
 
     // Determine split axis using SAH
-    int best_axis = -1; // x = 0, y = 1, z = 2
+    int32 best_axis = -1; // x = 0, y = 1, z = 2
     float best_pos = 0;
     float best_cost = float_max; // Maximum value for float, it is taken from math_constants.h file
-    for (int axis = 0; axis < 3; axis++) { // Iterate over every axis
-        for (std::uint32_t i = 0; i < node.triangle_cnt; i++) { // Iterate over every triangle inside current node
+    for (uint32 axis = 0; axis < 3; axis++) { // Iterate over every axis
+        for (uint32 i = 0; i < node.triangle_cnt; i++) { // Iterate over every triangle inside current node
             const Triangle& triangle = triangles_[triangle_indices_[node.first_triangle_index + i]];
             float val = triangle.centroid[axis];
             float cost = evaluateSAH(node, axis, val);
@@ -182,7 +182,7 @@ void BVHBuilder::subdivideSAH(std::uint32_t node_index) {
             }
         }
     }
-    int axis = best_axis;
+    int32 axis = best_axis;
     float splitPos = best_pos;
 
     vec3 e = node.aabb_max - node.aabb_min; // extent of parent
@@ -190,8 +190,8 @@ void BVHBuilder::subdivideSAH(std::uint32_t node_index) {
     float parentCost = node.triangle_cnt * parent_area;
 
     // split the box in halves
-    int i = node.first_triangle_index;
-    int j = i + node.triangle_cnt - 1;
+    uint32 i = node.first_triangle_index;
+    uint32 j = i + node.triangle_cnt - 1;
     while (i <= j) {
         if (triangles_[triangle_indices_[i]].centroid[axis] < splitPos) {
             i++;
@@ -202,15 +202,15 @@ void BVHBuilder::subdivideSAH(std::uint32_t node_index) {
         }
     }
 
-    int leftCount = i - node.first_triangle_index; // How many nodes will be in left child
+    uint32 leftCount = i - node.first_triangle_index; // How many nodes will be in left child
 
     // This check ensures to avoid empty child nodes and infinite recursion
     // (the function could keep attempting to split nodes indefinitely, especially when triangles_ align along the splitting axis)
     if (leftCount == 0 || leftCount == node.triangle_cnt) return;
 
     // Create child nodes
-    int left_child_index = nodes_used_++;
-    int right_child_index = nodes_used_++;
+    uint32 left_child_index = nodes_used_++;
+    uint32 right_child_index = nodes_used_++;
     node.left_child = left_child_index;
     node.right_child = right_child_index;
     blas_nodes_[left_child_index].first_triangle_index = node.first_triangle_index;
@@ -230,14 +230,14 @@ void BVHBuilder::subdivideSAH(std::uint32_t node_index) {
     subdivideSAH(right_child_index);
 }
 
-float BVHBuilder::evaluateSAH(BLASNode& node, int axis, float pos) {
+float BVHBuilder::evaluateSAH(BLASNode& node, uint32 axis, float pos) {
     // Initialize bounds and counts
     vec3 left_box_min(float_max), left_box_max(float_min); // Left aabb (axis aligned bounding box)
     vec3 right_box_min(float_max), right_box_max(float_min); // Right aabb
     int leftCount = 0, rightCount = 0;
 
     // Determine triangle counts and bounds for this split candidate
-    for (std::uint32_t i = 0; i < node.triangle_cnt; i++) {
+    for (uint32 i = 0; i < node.triangle_cnt; i++) {
         const Triangle& triangle = triangles_[triangle_indices_[node.first_triangle_index + i]];
         if (triangle.centroid[axis] < pos) {
             leftCount++;
@@ -274,11 +274,11 @@ float BVHBuilder::evaluateSAH(BLASNode& node, int axis, float pos) {
 }
 
 void BVHBuilder::reorderIndices() {
-    std::vector<uint32_t> new_indices(indices_.size());
+    std::vector<uint32> new_indices(indices_.size());
 
     // Reorder the indices based on triangle_indices
-    for (std::size_t i = 0; i < triangle_indices_.size(); i++) {
-        std::uint32_t tri_index = triangle_indices_[i];
+    for (uint32 i = 0; i < triangle_indices_.size(); i++) {
+        uint32 tri_index = triangle_indices_[i];
 
         // Each triangle has 3 indices
         new_indices[i * 3 + 0] = indices_[tri_index * 3 + 0];
@@ -287,20 +287,20 @@ void BVHBuilder::reorderIndices() {
     }
 
     // Copy new_indices to original indices
-    std::memcpy(indices_.data(), new_indices.data(), new_indices.size() * sizeof(uint32_t));
+    std::memcpy(indices_.data(), new_indices.data(), new_indices.size() * sizeof(uint32));
 }
 
 std::vector<TLASNode> BVHBuilder::buildTLAS(std::span<const std::pair<vec3, vec3>> blas_bounds,
                                             std::span<std::shared_ptr<Hittable>> rt_meshes) {
-    const int blas_count = static_cast<int>(blas_bounds.size());
+    const uint32 blas_count = static_cast<int>(blas_bounds.size());
     tlas_nodes_.resize(2 * blas_count); // Reserve enough space for full binary tree
-    uint32_t nodes_used = 1;
+    uint32 nodes_used = 1;
 
-    std::vector<uint32_t> nodes_indices(blas_count); // Holds the index of each leaf inside nodes_
+    std::vector<uint32> nodes_indices(blas_count); // Holds the index of each leaf inside nodes_
 
     // Create leaf nodes from BLAS bounds
-    for (uint32_t i = 0; i < blas_count; i++) {
-        int index = nodes_used++;
+    for (uint32 i = 0; i < blas_count; i++) {
+        uint32 index = nodes_used++;
         nodes_indices[i] = index;
 
         tlas_nodes_[index].aabb_min = blas_bounds[i].first;
@@ -310,16 +310,16 @@ std::vector<TLASNode> BVHBuilder::buildTLAS(std::span<const std::pair<vec3, vec3
     }
 
     // Agglomerative clustering algorithm (Building the tree bottom up)
-    uint32_t A = 0;
-    uint32_t B = findBestMatch(tlas_nodes_, nodes_indices, blas_count, A);
-    uint32_t active_indices = blas_count; // number of active nodes currently in nodes_indices
+    uint32 A = 0;
+    int32 B = findBestMatch(tlas_nodes_, nodes_indices, blas_count, A);
+    uint32 active_indices = blas_count; // number of active nodes currently in nodes_indices
 
     while (active_indices > 1) {
-        uint32_t C = findBestMatch(tlas_nodes_, nodes_indices, active_indices, B);
+        uint32 C = findBestMatch(tlas_nodes_, nodes_indices, active_indices, B);
 
         if (A == C) {
-            uint32_t node_index_A = nodes_indices[A];
-            uint32_t node_index_B = nodes_indices[B];
+            uint32 node_index_A = nodes_indices[A];
+            uint32 node_index_B = nodes_indices[B];
 
             TLASNode& nodeA = tlas_nodes_[node_index_A];
             TLASNode& nodeB = tlas_nodes_[node_index_B];

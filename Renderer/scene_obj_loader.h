@@ -7,7 +7,6 @@
 #include "obj_loader.h"
 #include "scene.h"
 #include "shader.h"
-#include "types.h"
 
 class SceneObjLoader : public Scene {
    public:
@@ -15,7 +14,7 @@ class SceneObjLoader : public Scene {
 
     void initialize() override;
 
-    void update(int display_w, int display_h) override;
+    void update(uint32 display_w, uint32 display_h) override;
 
     void initShader();
     void drawBVH() override;

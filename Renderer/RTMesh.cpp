@@ -14,11 +14,11 @@
 #include "vec3.h"
 
 template <bool posX, bool posY, bool posZ>
-void templatedIntersectBLAS(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t node_idx, float& closest_hit_t,
+void templatedIntersectBLAS(const ray& r, interval ray_t, IntersectResult& intersect_result, const uint32 node_idx, float& closest_hit_t,
                            std::span<const BLASNode> bvh_nodes, const ResolvedMeshInfo& res_mesh_info) { // version without cost
-    constexpr int MAX_STACK_SIZE = 64;
-    std::uint32_t node_stack[MAX_STACK_SIZE];
-    int stack_top = 0;
+    const uint32 MAX_STACK_SIZE = 64;
+    uint32 node_stack[MAX_STACK_SIZE];
+    uint32 stack_top = 0;
 
     node_stack[stack_top++] = node_idx;
 
@@ -32,18 +32,18 @@ void templatedIntersectBLAS(const ray& r, interval ray_t, IntersectResult& inter
     float roz = ori.z() * inv_dir.z();
 
     while (stack_top > 0) {
-        std::uint32_t nodeIdx = node_stack[--stack_top];
+        uint32 nodeIdx = node_stack[--stack_top];
         const BLASNode& node = bvh_nodes[nodeIdx];
 
         // Leaf node: test triangles
         if (node.isLeaf()) {
-            for (std::uint32_t i = 0; i < node.triangle_cnt; i++) {
-                std::uint32_t triangle_index = node.first_triangle_index * 3 + i * 3;
+            for (uint32 i = 0; i < node.triangle_cnt; i++) {
+                uint32 triangle_index = node.first_triangle_index * 3 + i * 3;
 
                 vec3 v0, v1, v2;
-                std::uint32_t i0 = res_mesh_info.indices[triangle_index];
-                std::uint32_t i1 = res_mesh_info.indices[triangle_index + 1];
-                std::uint32_t i2 = res_mesh_info.indices[triangle_index + 2];
+                uint32 i0 = res_mesh_info.indices[triangle_index];
+                uint32 i1 = res_mesh_info.indices[triangle_index + 1];
+                uint32 i2 = res_mesh_info.indices[triangle_index + 2];
                 getTriangleVertices(res_mesh_info, i0, i1, i2, v0, v1, v2);
 
                 IntersectResult intersect_res = intersectTriangle(r, ray_t, v0, v1, v2);
@@ -58,8 +58,8 @@ void templatedIntersectBLAS(const ray& r, interval ray_t, IntersectResult& inter
 
         const BLASNode* node_left = &bvh_nodes[node.left_child];
         const BLASNode* node_right = &bvh_nodes[node.right_child];
-        std::uint32_t left_child = node.left_child;
-        std::uint32_t right_child = node.right_child;
+        uint32 left_child = node.left_child;
+        uint32 right_child = node.right_child;
 
         float dist_left = infinity;
         float dist_right = infinity;
@@ -124,9 +124,9 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
     if (closest_hit_t != std::numeric_limits<float>::max()) {
         rec.mat = mat_;
 
-        std::uint32_t i0 = res_mesh_info_.indices[intersect_result.closest_tri_index];
-        std::uint32_t i1 = res_mesh_info_.indices[intersect_result.closest_tri_index + 1];
-        std::uint32_t i2 = res_mesh_info_.indices[intersect_result.closest_tri_index + 2];
+        uint32 i0 = res_mesh_info_.indices[intersect_result.closest_tri_index];
+        uint32 i1 = res_mesh_info_.indices[intersect_result.closest_tri_index + 1];
+        uint32 i2 = res_mesh_info_.indices[intersect_result.closest_tri_index + 2];
 
         vec3 v0, v1, v2;
         getTriangleVertices(res_mesh_info_, i0, i1, i2, v0, v1, v2);
@@ -148,7 +148,7 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
         rec.local_to_world_mat = local_to_world_mat_;
     }
 
-    return closest_hit_t != std::numeric_limits<float>::max();
+    return closest_hit_t != float_max;
 }
 
 bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
@@ -170,7 +170,7 @@ bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
         IntersectResult closest_intersection;
         
         // Iterate over every triangle inside the mesh
-        for (int i = 0; i < res_mesh_info_.indices.size(); i += 3) {
+        for (uint32 i = 0; i < res_mesh_info_.indices.size(); i += 3) {
             point3 p1 = point3(res_mesh_info_.vertices[res_mesh_info_.indices[i] * 3], res_mesh_info_.vertices[res_mesh_info_.indices[i] * 3 + 1],
                                res_mesh_info_.vertices[res_mesh_info_.indices[i] * 3 + 2]);
             point3 p2 = point3(res_mesh_info_.vertices[res_mesh_info_.indices[i + 1] * 3], res_mesh_info_.vertices[res_mesh_info_.indices[i + 1] * 3 + 1],
@@ -187,9 +187,9 @@ bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
         if (closest_intersection.t != float_max) {
             rec.mat = mat_;
 
-            std::uint32_t i0 = res_mesh_info_.indices[closest_intersection.closest_tri_index];
-            std::uint32_t i1 = res_mesh_info_.indices[closest_intersection.closest_tri_index + 1];
-            std::uint32_t i2 = res_mesh_info_.indices[closest_intersection.closest_tri_index + 2];
+            uint32 i0 = res_mesh_info_.indices[closest_intersection.closest_tri_index];
+            uint32 i1 = res_mesh_info_.indices[closest_intersection.closest_tri_index + 1];
+            uint32 i2 = res_mesh_info_.indices[closest_intersection.closest_tri_index + 2];
 
             vec3 v0, v1, v2;
             getTriangleVertices(res_mesh_info_, i0, i1, i2, v0, v1, v2);
@@ -222,21 +222,20 @@ bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
     }
 }
 
-void RTMesh::drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32_t index,
-                         std::unique_ptr<Shader>& shader_prog, Camera& cam) {
+void RTMesh::drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32 index, std::unique_ptr<Shader>& shader_prog, Camera& cam) {
     shader_prog->bind();
     shader_prog->setMat4("view", cam.getViewMatrix().asPointer());
     shader_prog->setMat4("projection", cam.getProjectionMatrix().asPointer());
     bounding_boxes[index] = MeshUtils::GenerateLineCube(7);
 
     // BFS traversal
-    std::queue<std::pair<std::uint32_t, int>> queue;  // Each entry contains the node index and its level
+    std::queue<std::pair<uint32, int32>> queue;  // Each entry contains the node index and its level
     queue.push(std::make_pair(0u, 0));                // Root node, level 0
 
     while (queue.empty() == false) {
-        std::pair<std::uint32_t, int> front = queue.front();
-        std::uint32_t node_index = front.first;
-        int level = front.second;
+        std::pair<uint32, int32> front = queue.front();
+        uint32 node_index = front.first;
+        int32 level = front.second;
         queue.pop();
 
         const BLASNode& node = bvh_nodes_[node_index];
@@ -266,8 +265,7 @@ void RTMesh::drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32
     shader_prog->unbind();
 }
 
-void RTMesh::drawBVHLeaves(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32_t index,
-                           std::unique_ptr<Shader>& shader_prog, Camera& cam) {
+void RTMesh::drawBVHLeaves(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32 index, std::unique_ptr<Shader>& shader_prog, Camera& cam) {
     shader_prog->bind();
     shader_prog->setMat4("view", cam.getViewMatrix().asPointer());
     shader_prog->setMat4("projection", cam.getProjectionMatrix().asPointer());
@@ -306,11 +304,11 @@ void RTMesh::update() {
     res_mesh_info_.uv = context_.mesh_buf_manager->getAttribute(mesh_handle_, AttributeType::UV);
 }
 
-int RTMesh::getTriangleCount() const {
-    return res_mesh_info_.indices.size() / 3;
+uint32 RTMesh::getTriangleCount() const {
+    return static_cast<uint32>(res_mesh_info_.indices.size() / 3);
 }
 
-void RTMesh::intersectBLAS(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx,
+void RTMesh::intersectBLAS(const ray& r, interval ray_t, IntersectResult& intersect_result, const uint32 nodeIdx,
                                   float& closest_hit_t) const
 {
     bool posX = r.direction().x() >= 0;

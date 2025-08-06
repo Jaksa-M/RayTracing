@@ -34,7 +34,7 @@ void SceneRtMeshes::initialize() {
 
     TexDescription desc(tex_loader.getImageWidth(), tex_loader.getImageHeight(), tex_loader.getFormat());
     background_texture_ = std::make_shared<Texture>(tex_loader.getData(), desc);
-    for (int i = 0; i < cameras_.size(); i++) {
+    for (uint32 i = 0; i < cameras_.size(); i++) {
         cameras_[i]->setBackgroundTexture(background_texture_);
     }
 
@@ -63,7 +63,7 @@ void SceneRtMeshes::initialize() {
 
     rt_meshes_.push_back(std::move(rect_prism_mesh1_));
     rt_meshes_.push_back(std::move(rect_prism_mesh2_));
-    for (uint32_t i = 0; i < rt_meshes_.size(); i++) {
+    for (uint32 i = 0; i < rt_meshes_.size(); i++) {
         world_->add(rt_meshes_[i]);
     }
 
@@ -72,7 +72,7 @@ void SceneRtMeshes::initialize() {
     initShader();
 }
 
-void SceneRtMeshes::update(int display_w, int display_h) {
+void SceneRtMeshes::update(uint32 display_w, uint32 display_h) {
     if (prev_BVH_technique_ != context.settings->BVH_technique) {
         world_->clear();
         initialize();
@@ -91,7 +91,7 @@ void SceneRtMeshes::drawBVH() {
     if (context.settings->selected_option != -1) {
         bounding_boxes_.resize(world_->getSize());
         
-        for (int i = 0; i < world_->getSize(); i++) {  // Drawing BVH tree or leaves
+        for (uint32 i = 0; i < world_->getSize(); i++) { // Drawing BVH tree or leaves
             std::shared_ptr<Hittable> object = world_->getObject(i);
             RTMesh* rtMesh = dynamic_cast<RTMesh*>(object.get());
 
@@ -109,7 +109,7 @@ void SceneRtMeshes::drawBVH() {
 
 //void SceneRtMeshes::draw_mesh_gizmos(camera& cam) {
 //    std::vector<vec3> lines(vertex_normals.size() * 2);
-//    for (std::uint32_t i = 0; i < vertex_normals.size(); i++)
+//    for (uint32 i = 0; i < vertex_normals.size(); i++)
 //    {
 //        const point3 v = point3(vertices[i * 3], vertices[i * 3 + 1], vertices[i * 3 + 2]);
 //        lines[i * 2 + 0] = v;

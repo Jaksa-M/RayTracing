@@ -2,86 +2,16 @@
 #define TYPES_H
 
 #include <cstdint> // std::size_t
-#include "vec3.h"
-#include <span>
-#include <filesystem>
-#include <chrono>
+#include <chrono> // for time
 
-class Hittable; // Had to put it because of TLASNode
+#include <filesystem>
 
 using MeshHandle = std::size_t;
-
-// UI types
-enum class SceneType {
-    RT_MESHES,       // scene_rt_meshes
-    CORNELL_BOX,     // scene_cornell_box
-    OBJ_LOADER,      // scene_custom_meshes
-    MATERIAL_TESTING // scene_material_testing
-};
-
-enum class BVHTechnique {
-    MIDPOINT_SPLIT,
-    SAH
-};
-
-enum class MeshColor {
-    MATERIAL,
-    GEOMETRIC_NORMAL,
-    SHADING_NORMAL,
-    DEPTH,
-    UV,
-    ROUGHNESS
-};
-
-// Code types
 namespace fs = std::filesystem;
-
-struct BLASNode {
-    vec3 aabb_min, aabb_max;
-    std::uint32_t left_child, right_child;
-    std::uint32_t first_triangle_index, triangle_cnt;
-
-    bool isLeaf() const { return triangle_cnt > 0; }
-};
-
-struct TLASNode {
-    vec3 aabb_min, aabb_max;
-    std::uint32_t left_right; // 2x16 bits for left and right child index
-    const Hittable* blas; // Valid only for leaf nodes
-    bool isLeaf() const { return left_right == 0; } // for interior nodes one of the childs must be greater than 0
-};
-
-struct IntersectResult {
-    float t = float_max;  // Intersection distance
-    // buv is short for barycentrics uv, vec3(alpha, beta, gamma), we currently store only beta and gamma and calculate alpha with those 2
-    vec2 buv = vec2();
-    std::uint32_t closest_tri_index = ~0u;
-};
-
-enum class AttributeType {
-    Position,
-    Normal,
-    Color,
-    UV
-};
-
-struct Attribute {
-    Attribute(AttributeType type, std::span<const float> data) : type(type), data(data) {}
-    const AttributeType type;
-    const std::span<const float> data;
-};
-
-struct CameraPreset {
-    CameraPreset() {}
-    CameraPreset(std::string name, vec3 dir, vec3 pos, vec3 up, vec3 right, float focal_len) : 
-        name(name), dir(dir), pos(pos), up(up), right(right), focal_len(focal_len) {}
-    std::string name;
-    vec3 dir;
-    vec3 pos;
-    vec3 up;
-    vec3 right;
-    float focal_len;
-};
+using uint8 = std::uint8_t;
+using uint32 = std::uint32_t;
+using uint64 = std::uint64_t;
+using int32 = std::int32_t;
 
 enum class TexFormat {
     R8_UNORM, // UNORM -> unsigned normalized
@@ -95,11 +25,10 @@ enum class TexFormat {
 };
 
 struct TexDescription {
-    TexDescription(): image_width(0), image_height(0) {}
-    TexDescription(std::uint32_t width, std::uint32_t height, TexFormat format) :
-        image_width(width), image_height(height), format(format) {}
-    std::uint32_t image_width;
-    std::uint32_t image_height;
+    TexDescription() : image_width(0), image_height(0) {}
+    TexDescription(uint32 width, uint32 height, TexFormat format) : image_width(width), image_height(height), format(format) {}
+    uint32 image_width;
+    uint32 image_height;
     TexFormat format;
 };
 

@@ -1,20 +1,21 @@
 #ifndef MESH_H
 #define MESH_H
 #include <span>
+#include "types.h"
 
 class Mesh {
 public:
 	// size is size of vertex attribute (we will mostly be using vec3, so size is 3)
-	Mesh(std::span<float> vertices, int size, int stride, int offset_pos, int offset_col, bool with_EBO, std::span<unsigned int> indices);
+    Mesh(std::span<float> vertices, uint32 size, uint32 stride, uint32 offset_pos, uint32 offset_col, bool with_EBO, std::span<uint32> indices);
 
 	void updateVBO(std::span<float> vertices);
-	void updateEBO(std::span<unsigned int> indices);
+	void updateEBO(std::span<uint32> indices);
 
-	void draw(unsigned int shape);
+	void draw(uint32 shape);
 
 	~Mesh();
 private:
 	unsigned int VBO_, VAO_, EBO_;
-	std::uint32_t indices_size_;
+	uint32 indices_size_;
 };
 #endif

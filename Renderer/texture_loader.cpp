@@ -18,7 +18,7 @@ TextureLoader::~TextureLoader() {
 }
 
 bool TextureLoader::load(bool is_color) {
-    int w, h, channels;
+    int32 w, h, channels;
 
     bool is_float = stbi_is_hdr(file_path.c_str());
 
@@ -27,25 +27,25 @@ bool TextureLoader::load(bool is_color) {
         float* raw_fdata = stbi_loadf(file_path.c_str(), &w, &h, &channels, 0);
         if (!raw_fdata || w <= 0 || h <= 0) return false;
 
-        image_width_ = static_cast<uint32_t>(w);
-        image_height_ = static_cast<uint32_t>(h);
+        image_width_ = static_cast<uint32>(w);
+        image_height_ = static_cast<uint32>(h);
         bytes_per_scanline_ = image_width_ * channels * sizeof(float);
 
-        size_t total_floats = static_cast<size_t>(image_width_) * image_height_ * channels;
+        std::size_t total_floats = static_cast<std::size_t>(image_width_) * image_height_ * channels;
         bdata_.resize(total_floats * sizeof(float));
         std::memcpy(bdata_.data(), raw_fdata, bdata_.size());
 
         stbi_image_free(raw_fdata);
     } 
     else {
-        std::uint8_t* raw_data = stbi_load(file_path.c_str(), &w, &h, &channels, 0);
+        uint8* raw_data = stbi_load(file_path.c_str(), &w, &h, &channels, 0);
         if (!raw_data || w <= 0 || h <= 0) return false;
 
-        image_width_ = static_cast<uint32_t>(w);
-        image_height_ = static_cast<uint32_t>(h);
-        bytes_per_scanline_ = image_width_ * channels * sizeof(std::uint8_t);
+        image_width_ = static_cast<uint32>(w);
+        image_height_ = static_cast<uint32>(h);
+        bytes_per_scanline_ = image_width_ * channels * sizeof(uint8);
 
-        size_t total_bytes = static_cast<size_t>(image_width_) * image_height_ * channels;
+        std::size_t total_bytes = static_cast<std::size_t>(image_width_) * image_height_ * channels;
         bdata_.resize(total_bytes);
         std::memcpy(bdata_.data(), raw_data, bdata_.size());
 
@@ -61,15 +61,15 @@ bool TextureLoader::load(bool is_color) {
     return true;
 }
 
-std::vector<std::uint8_t> TextureLoader::getData() const {
+std::vector<uint8> TextureLoader::getData() const {
     return bdata_;
 }
 
-std::uint32_t TextureLoader::getImageWidth() const {
+uint32 TextureLoader::getImageWidth() const {
     return image_width_;
 }
 
-std::uint32_t TextureLoader::getImageHeight() const {
+uint32 TextureLoader::getImageHeight() const {
     return image_height_;
 }
 
@@ -77,7 +77,7 @@ TexFormat TextureLoader::getFormat() const {
     return format_;
 }
 
-TexFormat TextureLoader::decideFormat(int channels, bool is_float, bool is_color) {
+TexFormat TextureLoader::decideFormat(uint32 channels, bool is_float, bool is_color) {
     if (is_float) {
         if (channels == 1) return TexFormat::R32_FLOAT;
         if (channels == 3) return TexFormat::RGB32_FLOAT;

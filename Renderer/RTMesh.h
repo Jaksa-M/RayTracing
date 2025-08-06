@@ -22,17 +22,17 @@ public:
     bool hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const; // With BVH
 
     // Functions to draw box for every node inside BVH tree
-    void drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, std::uint32_t index, std::unique_ptr<Shader>& shader_prog, Camera& cam);
-    void drawBVHLeaves(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32_t index, std::unique_ptr<Shader>& shader_prog, Camera& cam);
+    void drawBVHTree(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32 index, std::unique_ptr<Shader>& shader_prog, Camera& cam);
+    void drawBVHLeaves(std::span<std::unique_ptr<Mesh>> bounding_boxes, uint32 index, std::unique_ptr<Shader>& shader_prog, Camera& cam);
 
     MeshHandle getMeshHandle() const;
 
     void setTransformationMatrix(const matrix4x4& mat) override;
 
     void update() override;
-    int getTriangleCount() const override;
+    uint32 getTriangleCount() const override;
 
-    void intersectBLAS(const ray& r, interval ray_t, IntersectResult& intersect_result, const std::uint32_t nodeIdx, float& closest_hit_t) const;
+    void intersectBLAS(const ray& r, interval ray_t, IntersectResult& intersect_result, const uint32 nodeIdx, float& closest_hit_t) const;
 
     void getWorldBoundingBox(vec3& aabb_min, vec3& aabb_max);
 

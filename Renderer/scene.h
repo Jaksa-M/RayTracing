@@ -19,7 +19,7 @@ public:
 
     virtual void initialize() = 0;
 
-    virtual void update(int display_w, int display_h) = 0;
+    virtual void update(uint32 display_w, uint32 display_h) = 0;
 
     virtual ~Scene() = default;
 
@@ -32,7 +32,7 @@ public:
 
     virtual void setCameras(std::vector<std::unique_ptr<Camera>> cameras) { cameras_ = std::move(cameras); }
 
-    virtual void setActiveCamera(int index) { active_camera_ = index; }
+    virtual void setActiveCamera(uint32 index) { active_camera_ = index; }
     virtual Camera& getActiveCamera() { return *cameras_[active_camera_]; };
     virtual const std::vector<std::unique_ptr<Camera>>& getCameras() const { return cameras_; };
 

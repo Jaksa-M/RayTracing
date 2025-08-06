@@ -6,7 +6,7 @@
 
 #include "utility.h"
 
-void saveImage(std::string file_name, std::span<const vec3> data, int width, int height, bool hdr) {
+void saveImage(std::string file_name, std::span<const vec3> data, uint32 width, uint32 height, bool hdr) {
     fs::create_directories("../TestResults"); // Creates directory if it doesn't already exist
 
     stbi_flip_vertically_on_write(1); // Tell stb_image_write to flip the image vertically
@@ -17,9 +17,9 @@ void saveImage(std::string file_name, std::span<const vec3> data, int width, int
     }
     else {
         // Gamma-correct and store in a new vector
-        std::vector<std::uint8_t> gamma_corrected_data(width * height * 3);
+        std::vector<uint8> gamma_corrected_data(width * height * 3);
 
-        for (int i = 0; i < width * height; i++) {
+        for (uint32 i = 0; i < width * height; i++) {
             const vec3& color = data[i];
 
             // First apply gamma correction to each component
