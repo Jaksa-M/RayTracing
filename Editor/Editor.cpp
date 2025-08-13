@@ -70,6 +70,13 @@ static void glfw_error_callback(int error, const char* description) {
 //    }
 //}
 
+// Called after you know width and height
+void resizeTexture(GLuint tex, int width, int height) {
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glBindImageTexture(0, tex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+}
+
 // Main code
 int main(int, char**) {
     glfwSetErrorCallback(glfw_error_callback);
@@ -77,11 +84,13 @@ int main(int, char**) {
         return 1;
 
     // GL 3.0 + GLSL 130
-    const char* glsl_version = "#version 130";
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
-    //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
+    //const char* glsl_version = "#version 130";
+    //glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    //glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    const char* glsl_version = "#version 430";
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+
 
     // Create window with graphics context
     GLFWwindow* window = glfwCreateWindow(1280, 720, "Dear ImGui GLFW+OpenGL3 example", nullptr, nullptr);
@@ -163,6 +172,25 @@ int main(int, char**) {
     std::vector<CameraPreset> camera_presets;
 
     loadPresetsFromFile(camera_file, camera_presets);
+
+
+    std::shared_ptr<Shader> comp_shader;
+    GLuint tex;
+    GLsizei tex_width = 512, tex_height = 512;
+    std::vector<unsigned char> pixels;
+
+    if (gui_settings->use_gpu) { // using compute shader
+        comp_shader = std::make_shared<Shader>("../ShaderFiles/compute_shader_image_generation.comp");
+
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, tex_width, tex_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        glBindImageTexture(0, tex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+    }
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -403,6 +431,14 @@ int main(int, char**) {
             ImGui::Checkbox("Multithreading", &active_scene->context.settings->multithreading);
 
             ImGui::Separator();
+            // Option to hot reload shader during program execution
+            if (!gui_settings->use_gpu) ImGui::BeginDisabled();
+            if (ImGui::Button("Reload shader")) {
+                comp_shader = std::make_shared<Shader>("../ShaderFiles/compute_shader_image_generation.comp");
+            }
+            if (!gui_settings->use_gpu) ImGui::EndDisabled();
+
+            ImGui::Separator();
             ImGui::Text("------------------Statistics------------------");
             ImGui::Text("FPS: %.1f", io.Framerate);
             ImGui::Text("Triangle count: %d", statistics->triangle_cnt);
@@ -433,37 +469,69 @@ int main(int, char**) {
         active_scene->context.settings->block_size = block_size;
         active_scene->update(display_w, display_h);
 
-        Camera& cam = active_scene->getActiveCamera();
-        cam.render(active_scene->getWorld(), image_data_acc, *(context.settings));
+        if (!gui_settings->use_gpu) {
+            Camera& cam = active_scene->getActiveCamera();
+            cam.render(active_scene->getWorld(), image_data_acc, *(context.settings));
 
+            // Filling image_data
+            image_data.resize(display_w * display_h * 3);
+            convertAccumulatedToImageData(image_data, image_data_acc, display_w, display_h);
 
-        // Filling image_data
-        image_data.resize(display_w * display_h * 3);
-        convertAccumulatedToImageData(image_data, image_data_acc, display_w, display_h);
-
-        // Screenshots processing
-        if (screenshot_button_pressed) {
-            image_data_float.resize(display_w * display_h);
-            convertAccumulatedToFloatImage(image_data_float, image_data_acc, display_w, display_h);
-            saveScreenshot(image_data_float, display_w, display_h, hdr);
-        }
-
-        if (capturing_high_qual_screenshot) {
-            frames_captured++;
-            if (frames_captured >= frames_to_accumulate) {
-                // Done accumulating
+            // Screenshots processing
+            if (screenshot_button_pressed) {
                 image_data_float.resize(display_w * display_h);
                 convertAccumulatedToFloatImage(image_data_float, image_data_acc, display_w, display_h);
                 saveScreenshot(image_data_float, display_w, display_h, hdr);
+            }
 
-                switchToFastMode(trace_percentage, reflection_depth);
+            if (capturing_high_qual_screenshot) {
+                frames_captured++;
+                if (frames_captured >= frames_to_accumulate) {
+                    // Done accumulating
+                    image_data_float.resize(display_w * display_h);
+                    convertAccumulatedToFloatImage(image_data_float, image_data_acc, display_w, display_h);
+                    saveScreenshot(image_data_float, display_w, display_h, hdr);
 
-                capturing_high_qual_screenshot = false; // Release button
+                    switchToFastMode(trace_percentage, reflection_depth);
+
+                    capturing_high_qual_screenshot = false; // Release button
+                }
             }
         }
-      
+
+        if (gui_settings->use_gpu) { // Use compute shader
+            /*if (ImGui::Button("Reload shader")) {
+                comp_shader = std::make_shared<Shader>("../ShaderFiles/compute_shader_image_generation.comp");
+            }*/
+
+            const uint32 WG_SIZE_X = 16;
+            const uint32 WG_SIZE_Y = 16;
+
+            uint32_t num_groups_x = (display_w + WG_SIZE_X - 1) / WG_SIZE_X;
+            uint32_t num_groups_y = (display_h + WG_SIZE_Y - 1) / WG_SIZE_Y;
+
+            comp_shader->bind();
+            comp_shader->setIVec2("resolution", display_w, display_h);
+            pixels.resize(display_w * display_h * 4);
+
+            if (display_w != tex_width || display_h != tex_height) {
+                tex_width = display_w;
+                tex_height = display_h;
+                resizeTexture(tex, tex_width, tex_height);
+            }
+
+            glDispatchCompute(num_groups_x, num_groups_y, 1);
+            // Barrier that ensures that data writting is completely finished
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+            glBindTexture(GL_TEXTURE_2D, tex);
+            glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+        }
+
+        
         glEnable(GL_FRAMEBUFFER_SRGB);
-        glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
+        if (gui_settings->use_gpu) glDrawPixels(display_w, display_h, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+        else glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
         glDisable(GL_FRAMEBUFFER_SRGB);
 
         active_scene->drawBVH(); // Drawing of BVH tree/leaves

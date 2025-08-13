@@ -16,6 +16,7 @@ struct GUISettings {
     uint32 block_size = 8;
     bool multithreading = true;
     bool use_tiny_bvh = false;
+    bool use_gpu = true;
 };
 
 #endif
