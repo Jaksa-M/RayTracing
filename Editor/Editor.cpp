@@ -62,6 +62,8 @@ static void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
 
+
+
 //void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
 //    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
 //        double xpos, ypos;
@@ -130,7 +132,7 @@ int main(int, char**) {
     std::unique_ptr<Statistics> statistics = std::make_unique<Statistics>();
     std::unique_ptr<TimeMeasurement> time_measurement = std::make_unique<TimeMeasurement>();
 
-    SceneType selected_scene_index = SceneType::OBJ_LOADER;
+    SceneType selected_scene_index = SceneType::RT_MESHES;
     BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
     MeshColor chosen_mesh_color = MeshColor::MATERIAL;
 
@@ -173,14 +175,16 @@ int main(int, char**) {
 
     loadPresetsFromFile(camera_file, camera_presets);
 
+    uint32 frame_index = 0;
 
     std::shared_ptr<Shader> comp_shader;
-    GLuint tex;
+    GLuint tex = 0, background_tex = 0;
     GLsizei tex_width = 512, tex_height = 512;
+    GLsizei background_tex_width = 512, background_tex_height = 512;
     std::vector<unsigned char> pixels;
 
     if (gui_settings->use_gpu) { // using compute shader
-        comp_shader = std::make_shared<Shader>("../ShaderFiles/compute_shader_image_generation.comp");
+        comp_shader = std::make_shared<Shader>("../ShaderFiles/compute_shader.comp");
 
         glGenTextures(1, &tex);
         glBindTexture(GL_TEXTURE_2D, tex);
@@ -189,8 +193,24 @@ int main(int, char**) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-        glBindImageTexture(0, tex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+        //glBindImageTexture(0, tex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
     }
+    TextureLoader tex_loader("../Resources/textures/san_giuseppe_bridge.hdr");
+    if (!tex_loader.load()) {
+        std::cerr << "ERROR: Could not load background texture file.\n";
+    }
+
+    if (gui_settings->use_gpu) {
+
+        glGenTextures(1, &background_tex);
+        glBindTexture(GL_TEXTURE_2D, background_tex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, tex_loader.getImageWidth(), tex_loader.getImageHeight(), 0, GL_RGB, GL_FLOAT,
+                     tex_loader.getData().data());
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    }
+
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -434,7 +454,7 @@ int main(int, char**) {
             // Option to hot reload shader during program execution
             if (!gui_settings->use_gpu) ImGui::BeginDisabled();
             if (ImGui::Button("Reload shader")) {
-                comp_shader = std::make_shared<Shader>("../ShaderFiles/compute_shader_image_generation.comp");
+                comp_shader = std::make_shared<Shader>("../ShaderFiles/compute_shader.comp");
             }
             if (!gui_settings->use_gpu) ImGui::EndDisabled();
 
@@ -500,10 +520,6 @@ int main(int, char**) {
         }
 
         if (gui_settings->use_gpu) { // Use compute shader
-            /*if (ImGui::Button("Reload shader")) {
-                comp_shader = std::make_shared<Shader>("../ShaderFiles/compute_shader_image_generation.comp");
-            }*/
-
             const uint32 WG_SIZE_X = 16;
             const uint32 WG_SIZE_Y = 16;
 
@@ -520,17 +536,45 @@ int main(int, char**) {
                 resizeTexture(tex, tex_width, tex_height);
             }
 
+            Camera& active_cam = active_scene->getActiveCamera();
+            active_cam.initialize();
+            vec3 center = active_cam.getPosition(); // center
+            //std::cout << active_cam.getDirection() << std::endl;
+            //std::cout << center << std::endl;
+            vec3 pixel_00 = active_cam.getPixel00();
+            vec3 delta_u = active_cam.getDeltaU();
+            vec3 delta_v = active_cam.getDeltaV();
+
+            comp_shader->setVec3("cam_center", center.x(), center.y(), center.z());
+            comp_shader->setVec3("pixel00_loc", pixel_00.x(), pixel_00.y(), pixel_00.z());
+            comp_shader->setVec3("pixel_delta_u", delta_u.x(), delta_u.y(), delta_u.z());
+            comp_shader->setVec3("pixel_delta_v", delta_v.x(), delta_v.y(), delta_v.z());
+            comp_shader->setFloat("trace_percentage", gui_settings->trace_percentage);
+            comp_shader->setUint("frame_index", frame_index);
+            comp_shader->setInt("reflection_depth", gui_settings->reflection_depth);
+            comp_shader->setFloat("environment_light", gui_settings->environment_light);
+            
+            glActiveTexture(GL_TEXTURE0); // activate the texture unit first before binding texture
+            glBindTexture(GL_TEXTURE_2D, background_tex);
+            comp_shader->setTexture("background_img", 0); // compute shader uniform background_img should sample from texture unit 0
+
             glDispatchCompute(num_groups_x, num_groups_y, 1);
             // Barrier that ensures that data writting is completely finished
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            if (GLenum err = glGetError(); err != GL_NO_ERROR) {
+                std::cout << "GLerror: " << err;
+            }
 
             glBindTexture(GL_TEXTURE_2D, tex);
             glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
-        }
 
+            // todo renders tex to backbuffer
+            //renderQuad()
+        }
         
+        // TODO: remove later, too slow. It should be all done on GPU.
         glEnable(GL_FRAMEBUFFER_SRGB);
-        if (gui_settings->use_gpu) glDrawPixels(display_w, display_h, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+        if (gui_settings->use_gpu) glDrawPixels(display_w, display_h, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data()); // EXTREMELY SLOW
         else glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
         glDisable(GL_FRAMEBUFFER_SRGB);
 
@@ -543,6 +587,8 @@ int main(int, char**) {
 
         // Reseting accumulating buffer every frame to better view rotation... etc
         if (reset_accumulated == true) active_scene->getActiveCamera().setCameraMoved(true);
+
+        frame_index++;
     }
     printMeasuredTime(context.time_measurement->total_bvh_time, context.time_measurement->total_bvh_calls, context.time_measurement->min_bvh_time,
                       context.time_measurement->max_bvh_time);

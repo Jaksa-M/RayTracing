@@ -76,7 +76,7 @@ public:
 
         bool type_of_normal = true; // TODO REMOVE ME
         vec3 normal = (type_of_normal == false) ? rec.face_normal : shading_normal;
-        auto scatter_direction = unit_vector(normal + random_unit_vector());
+        vec3 scatter_direction = unit_vector(normal + random_unit_vector());
         // Catch degenerate scatter direction
         if (scatter_direction.near_zero())
             (type_of_normal == false) ? scatter_direction = rec.face_normal : scatter_direction = shading_normal;

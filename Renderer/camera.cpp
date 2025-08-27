@@ -172,6 +172,7 @@ color Camera::ray_color(const ray& r, int32 depth, const HittableList& world) {
     // Variables can't be declared inside switch case
     vec3 unit_direction;
     float u, v;
+
     switch (settings_.mesh_color) {
         case MeshColor::MATERIAL:
         case MeshColor::SHADING_NORMAL:
@@ -392,4 +393,16 @@ ray Camera::createRayFromMousePos(float mouse_x, float mouse_y) {
     vec3 ray_direction = pixel_sample - ray_origin;
 
     return ray(ray_origin, unit_vector(ray_direction));
+}
+
+vec3 Camera::getPixel00() const {
+    return pixel00_loc_;
+}
+
+vec3 Camera::getDeltaU() const {
+    return pixel_delta_u_;
+}
+
+vec3 Camera::getDeltaV() const {
+    return pixel_delta_v_;
 }

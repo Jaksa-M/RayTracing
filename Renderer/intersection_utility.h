@@ -264,8 +264,8 @@ inline bool hitRectangle(const ray& r, interval ray_t, HitRecord& rec) {
 
 inline bool hitSphere(const ray& r, interval ray_t, HitRecord& rec) {
     // Setup real values when needed
-    vec3 center;
-    float radius = 1.0f;
+    vec3 center(0.0f, 0.0f, 1.3f);
+    float radius = 0.3f;
 
     vec3 oc = center - r.origin();
     auto a = r.direction().length_squared();
