@@ -132,7 +132,7 @@ int main(int, char**) {
     std::unique_ptr<Statistics> statistics = std::make_unique<Statistics>();
     std::unique_ptr<TimeMeasurement> time_measurement = std::make_unique<TimeMeasurement>();
 
-    SceneType selected_scene_index = SceneType::RT_MESHES;
+    SceneType selected_scene_index = SceneType::CORNELL_BOX;
     BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
     MeshColor chosen_mesh_color = MeshColor::MATERIAL;
 
@@ -456,6 +456,9 @@ int main(int, char**) {
             if (ImGui::Button("Reload shader")) {
                 comp_shader = std::make_shared<Shader>("../ShaderFiles/compute_shader.comp");
             }
+
+            ImGui::SetNextItemWidth(100);
+            ImGui::InputInt("samples per pixel", &gui_settings->spp);
             if (!gui_settings->use_gpu) ImGui::EndDisabled();
 
             ImGui::Separator();
@@ -552,6 +555,7 @@ int main(int, char**) {
             comp_shader->setFloat("trace_percentage", gui_settings->trace_percentage);
             comp_shader->setUint("frame_index", frame_index);
             comp_shader->setInt("reflection_depth", gui_settings->reflection_depth);
+            comp_shader->setInt("spp", gui_settings->spp);
             comp_shader->setFloat("environment_light", gui_settings->environment_light);
             
             glActiveTexture(GL_TEXTURE0); // activate the texture unit first before binding texture

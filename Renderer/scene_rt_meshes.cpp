@@ -52,7 +52,6 @@ void SceneRtMeshes::initialize() {
     rect_prism_mesh1_ = MeshUtils::GenerateTriangleCube(context, texture_mat, 4);
     matrix4x4 m = transformation::create_rotation_matrix(0.0f, 30.0f * (3.14159f / 180.0f), 0.0f) *
                   transformation::create_translation_matrix(vec3(-2.0f, 0.0f, 0.0f)); // 30 degree rotation on y-axis + translation on x-axis
-    m = matrix4x4::identity();
     rect_prism_mesh1_->setTransformationMatrix(m);
     meshes.push_back(rect_prism_mesh1_->getMeshHandle());
 

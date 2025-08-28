@@ -195,6 +195,8 @@ color Camera::ray_color(const ray& r, int32 depth, const HittableList& world) {
                     
                     if (settings_.mesh_color == MeshColor::MATERIAL) {
                         return color_from_emission + attenuation * ray_color(scattered, depth - 1, world);
+                        // TODO: figure out why the formula below results in the same image, and the one below should be correct.
+                        //return color_from_emission * attenuation + attenuation * ray_color(scattered, depth - 1, world);
                     } else {
                         return attenuation; // used for uv/shading normal views
                     }

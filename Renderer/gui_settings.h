@@ -17,6 +17,7 @@ struct GUISettings {
     bool multithreading = true;
     bool use_tiny_bvh = false;
     bool use_gpu = true;
+    int32 spp = 60; // Samples per pixel
 };
 
 #endif
