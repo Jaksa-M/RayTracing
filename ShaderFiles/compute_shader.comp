@@ -16,7 +16,6 @@ uniform vec3 u_pixel00_loc;
 uniform vec3 u_pixel_delta_u;
 uniform vec3 u_pixel_delta_v;
 
-uniform float u_trace_percentage;
 uniform uint u_frame_index; // count of how many frames have passed since start of program
 uniform float u_environment_light;
 uniform int u_max_bounces;
@@ -37,8 +36,8 @@ struct Material {
 
 struct Ray {
     vec3 ro;
-    vec3 rd;
     float tMin;
+    vec3 rd;
     float tMax;
 };
 void ray_struct_init(inout Ray ray){ // acts as it's constructor
@@ -89,18 +88,17 @@ vec3 randomUnitVector(inout uint rng_state) {
 }
 
 // Utility functions
-void writeColor(ivec2 pix, vec3 rgb) {
-    imageStore(u_display_img, pix, vec4(clamp(rgb, 0.0, 1.0), 1.0));
-}
-
 float atan2(float y, float x) {
     float s = abs(x) > abs(y) ? 1.0 : 0.0;
     return mix(PI / 2.0 - atan(x, y), atan(y, x), s);
 }
 
-void calculateUV(inout vec3 rd, inout float u, inout float v){
-    u = (atan2(-rd.z, rd.x) + PI) / (2 * PI);
-    v = acos(-rd.y) / PI;
+// The name comes from the equirectangular projection (also called lat-long mapping), which is a very common way of mapping
+// a 3D direction vector onto a 2D texture.
+vec2 directionToEquirecangularUV(in vec3 rd){
+    float u = (atan2(-rd.z, rd.x) + PI) / (2 * PI);
+    float v = acos(-rd.y) / PI;
+    return vec2(u, v);
 }
 
 void getRay(float i, float j, vec2 offset, out Ray ray) {
@@ -248,9 +246,9 @@ bool hitScene(inout Ray ray, inout Hit closest_hit) {
     if (hitRectangle(vec3(-1,-1,-5), vec3(-1,1,-5), vec3(1,1,-5), vec3(1,-1,-5), white, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp;
 
     // Light on ceiling
-    // if (hitRectangle(vec3(-0.25,0.999,-4.25), vec3(0.25,0.999,-4.25), vec3(0.25,0.999,-3.75), vec3(-0.25,0.999,-3.75), light,ray, tmp) && tmp.t < closest_hit.t) {
-    //     closest_hit = tmp;
-    // }
+    if (hitRectangle(vec3(-0.25,0.999,-4.25), vec3(0.25,0.999,-4.25), vec3(0.25,0.999,-3.75), vec3(-0.25,0.999,-3.75), light,ray, tmp) && tmp.t < closest_hit.t) {
+        closest_hit = tmp;
+    }
 
     // Spheres
     if (hitSphere(vec3(-0.5, -0.6, -4.0), 0.4, white, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp; // big white sphere near back
@@ -270,9 +268,8 @@ vec3 tracePath(inout Ray ray, inout uint rng_state) {
 
         if(!hitScene(ray, h)){
             // background
-            float u, v;
-            calculateUV(ray.rd, u, v);
-            vec3 bg = texture(u_background_img, vec2(u, 1-v)).rgb;
+            vec2 uv = directionToEquirecangularUV(ray.rd);
+            vec3 bg = texture(u_background_img, vec2(uv.x, 1-uv.y)).rgb;
             result += attenuation * bg;
             break;
         }
@@ -341,7 +338,4 @@ void main() {
 
     // Display final averaged color
     imageStore(u_display_img, gid, vec4(avg_color, 1.0));
-
-
-    //writeColor(gid, color);
 }

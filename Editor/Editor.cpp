@@ -555,7 +555,6 @@ int main(int, char**) {
             comp_shader->setVec3("u_pixel00_loc", pixel_00.x(), pixel_00.y(), pixel_00.z());
             comp_shader->setVec3("u_pixel_delta_u", delta_u.x(), delta_u.y(), delta_u.z());
             comp_shader->setVec3("u_pixel_delta_v", delta_v.x(), delta_v.y(), delta_v.z());
-            comp_shader->setFloat("u_trace_percentage", gui_settings->trace_percentage);
             comp_shader->setUint("u_frame_index", frame_index);
             comp_shader->setInt("u_max_bounces", gui_settings->max_bounces);
             comp_shader->setInt("u_spp", gui_settings->spp);
