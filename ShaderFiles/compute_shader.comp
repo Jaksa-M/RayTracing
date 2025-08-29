@@ -35,6 +35,17 @@ struct Material {
     vec3 emission;
 };
 
+struct Ray {
+    vec3 ro;
+    vec3 rd;
+    float tMin;
+    float tMax;
+};
+void ray_struct_init(inout Ray ray){ // acts as it's constructor
+    ray.tMin = 0;
+    ray.tMax = FLOAT_MAX;
+}
+
 struct Hit {
     float t;
     vec3 p;
@@ -92,15 +103,15 @@ void calculateUV(inout vec3 rd, inout float u, inout float v){
     v = acos(-rd.y) / PI;
 }
 
-void getRay(float i, float j, vec2 offset, out vec3 ro, out vec3 rd) {
+void getRay(float i, float j, vec2 offset, out Ray ray) {
     // Construct a camera ray originating from the origin and directed at randomly sampled point around the pixel location i, j.
     // Jitter is the process of selecting random offsets inside the pixel. 
     vec3 pixel_sample = u_pixel00_loc
         + ((i + offset.x) * u_pixel_delta_u)
         + ((j + offset.y) * u_pixel_delta_v);
 
-    ro = u_cam_center;
-    rd = normalize(pixel_sample - ro);
+    ray.ro = u_cam_center;
+    ray.rd = normalize(pixel_sample - ray.ro);
 }
 
 
@@ -109,7 +120,7 @@ vec3 emitted(in Hit h) {
     return h.mat.emission;
 }
 
-bool scatterLambertian(inout uint rng_state, vec3 ro, vec3 rd, Hit rec, out vec3 attenuation, out vec3 new_dir) {
+bool scatterLambertian(inout uint rng_state, Hit rec, out vec3 attenuation, out vec3 new_dir) {
     vec3 scatter_direction = normalize(rec.normal + randomUnitVector(rng_state));
 
     if (length(scatter_direction) < EPSILON) scatter_direction = rec.normal;
@@ -119,19 +130,19 @@ bool scatterLambertian(inout uint rng_state, vec3 ro, vec3 rd, Hit rec, out vec3
 }
 
 // Hit Object functions
-bool hitRectangle(in vec3 rect_p1, in vec3 rect_p2, in vec3 rect_p3, in vec3 rect_p4, in Material mat, in vec3 ro, in vec3 rd, out Hit h) {
+bool hitRectangle(in vec3 rect_p1, in vec3 rect_p2, in vec3 rect_p3, in vec3 rect_p4, in Material mat, in Ray ray, out Hit h) {
     //rect_p1 - bottom-left, rect_p2 - bottom-right, rect_p3 - top-right, rect_p4 - top-left
 
     vec3 rectangle_normal = normalize(cross(rect_p2 - rect_p1, rect_p3 - rect_p1));
 
     float c = dot(rectangle_normal, rect_p1);
-    float denominator = dot(rectangle_normal, rd);
+    float denominator = dot(rectangle_normal, ray.rd);
     if (abs(denominator) < EPSILON) return false;
 
-    float t = (c - dot(rectangle_normal, ro)) / denominator;
+    float t = (c - dot(rectangle_normal, ray.ro)) / denominator;
     if (t < 0.001) return false;
 
-    vec3 Q = ro + t * rd;
+    vec3 Q = ray.ro + t * ray.rd;
     if (dot(cross((rect_p2 - rect_p1), (Q - rect_p1)), rectangle_normal) < 0 ||
         dot(cross((rect_p3 - rect_p2), (Q - rect_p2)), rectangle_normal) < 0 ||
         dot(cross((rect_p4 - rect_p3), (Q - rect_p3)), rectangle_normal) < 0 ||
@@ -143,7 +154,7 @@ bool hitRectangle(in vec3 rect_p1, in vec3 rect_p2, in vec3 rect_p3, in vec3 rec
     h.p = Q; // hit point
 
     vec3 N = normalize(rectangle_normal);
-    if (dot(N, rd) > 0.0) N = -N;
+    if (dot(N, ray.rd) > 0.0) N = -N;
     h.normal = N;
     h.mat.albedo = mat.albedo;
     h.mat.emission = mat.emission;
@@ -151,25 +162,25 @@ bool hitRectangle(in vec3 rect_p1, in vec3 rect_p2, in vec3 rect_p3, in vec3 rec
     return true;
 }
 
-bool hitTriangle(in vec3 tri_v0, in vec3 tri_v1, in vec3 tri_v2, in Material mat, in vec3 ro, in vec3 rd, out Hit h) {
+bool hitTriangle(in vec3 tri_v0, in vec3 tri_v1, in vec3 tri_v2, in Material mat, in Ray ray, out Hit h) {
     // Moeller Trumbore
 
     vec3 edge1 = tri_v1 - tri_v0;
     vec3 edge2 = tri_v2 - tri_v0;
 
-    vec3 p  = cross(rd, edge2);
+    vec3 p  = cross(ray.rd, edge2);
     float det = dot(edge1, p);
 
     if (abs(det) < EPSILON) return false;
 
     float inv_det = 1.0 / det;
-    vec3 s = ro - tri_v0;
+    vec3 s = ray.ro - tri_v0;
     float u = inv_det * dot(s, p);
 
     if (u < 0.0 || u > 1.0) return false;
 
     vec3 q = cross(s, edge1);
-    float v = inv_det * dot(rd, q);
+    float v = inv_det * dot(ray.rd, q);
 
     if (v < 0.0 || u + v > 1.0) return false;
 
@@ -177,10 +188,10 @@ bool hitTriangle(in vec3 tri_v0, in vec3 tri_v1, in vec3 tri_v2, in Material mat
     if (t < 0.001) return false;
 
     h.t = t;
-    h.p = ro + t * rd; // hit point
+    h.p = ray.ro + t * ray.rd; // hit point
 
     vec3 N = normalize(cross(edge1, edge2));
-    if (dot(N, rd) > 0.0) N = -N;
+    if (dot(N, ray.rd) > 0.0) N = -N;
     h.normal = N;
     h.mat.albedo = mat.albedo;
     h.mat.emission = mat.emission;
@@ -188,10 +199,10 @@ bool hitTriangle(in vec3 tri_v0, in vec3 tri_v1, in vec3 tri_v2, in Material mat
     return true;
 }
 
-bool hitSphere(in vec3 sph_center, in float sph_radius, in Material mat, in vec3 ro, in vec3 rd, out Hit h) {
-    vec3 oc = sph_center - ro;
-    float a = dot(rd, rd);
-    float b = dot(rd, oc);
+bool hitSphere(in vec3 sph_center, in float sph_radius, in Material mat, in Ray ray, out Hit h) {
+    vec3 oc = sph_center - ray.ro;
+    float a = dot(ray.rd, ray.rd);
+    float b = dot(ray.rd, oc);
     float c = dot(oc, oc) - sph_radius * sph_radius;
     float discriminant = b*b - a*c;
     if (discriminant < 0.0) return false;
@@ -203,9 +214,9 @@ bool hitSphere(in vec3 sph_center, in float sph_radius, in Material mat, in vec3
         if (t < 0.001) return false;
     }
 
-    vec3 P = ro + t * rd;
+    vec3 P = ray.ro + t * ray.rd;
     vec3 N = normalize((P - sph_center) / sph_radius);
-    if (dot(N, rd) > 0.0) N = -N;
+    if (dot(N, ray.rd) > 0.0) N = -N;
 
     h.t = t;
     h.p = P; // hit point
@@ -216,7 +227,7 @@ bool hitSphere(in vec3 sph_center, in float sph_radius, in Material mat, in vec3
     return true;
 }
 
-bool hitScene(vec3 ro, vec3 rd, inout Hit closest_hit) {
+bool hitScene(inout Ray ray, inout Hit closest_hit) {
     // Materials
     Material red;   red.albedo = vec3(0.65, 0.05, 0.05); red.emission = vec3(0.0);
     Material green; green.albedo = vec3(0.12, 0.45, 0.15); green.emission = vec3(0.0);
@@ -226,30 +237,30 @@ bool hitScene(vec3 ro, vec3 rd, inout Hit closest_hit) {
     Hit tmp;
     hit_struct_init(tmp);
     // Left wall (red)
-    if (hitRectangle(vec3(-1,-1,-5), vec3(-1,-1,-3), vec3(-1,1,-3), vec3(-1,1,-5), red, ro, rd, tmp) && tmp.t < closest_hit.t) closest_hit = tmp;
+    if (hitRectangle(vec3(-1,-1,-5), vec3(-1,-1,-3), vec3(-1,1,-3), vec3(-1,1,-5), red, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp;
     // Right wall (green)
-    if (hitRectangle(vec3(1,-1,-3), vec3(1,-1,-5), vec3(1,1,-5), vec3(1,1,-3), green, ro, rd, tmp) && tmp.t < closest_hit.t) closest_hit = tmp;
+    if (hitRectangle(vec3(1,-1,-3), vec3(1,-1,-5), vec3(1,1,-5), vec3(1,1,-3), green, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp;
     // Floor (white)
-    if (hitRectangle(vec3(-1,-1,-5), vec3(1,-1,-5), vec3(1,-1,-3), vec3(-1,-1,-3), white, ro, rd, tmp) && tmp.t < closest_hit.t) closest_hit = tmp;
+    if (hitRectangle(vec3(-1,-1,-5), vec3(1,-1,-5), vec3(1,-1,-3), vec3(-1,-1,-3), white, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp;
     // Ceiling (white)
-    if (hitRectangle(vec3(-1,1,-5), vec3(-1,1,-3), vec3(1,1,-3), vec3(1,1,-5), white, ro, rd, tmp) && tmp.t < closest_hit.t) closest_hit = tmp;
+    if (hitRectangle(vec3(-1,1,-5), vec3(-1,1,-3), vec3(1,1,-3), vec3(1,1,-5), white, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp;
     // Back wall (white)
-    if (hitRectangle(vec3(-1,-1,-5), vec3(-1,1,-5), vec3(1,1,-5), vec3(1,-1,-5), white, ro, rd, tmp) && tmp.t < closest_hit.t) closest_hit = tmp;
+    if (hitRectangle(vec3(-1,-1,-5), vec3(-1,1,-5), vec3(1,1,-5), vec3(1,-1,-5), white, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp;
 
     // Light on ceiling
-    // if (hitRectangle(vec3(-0.25,0.999,-4.25), vec3(0.25,0.999,-4.25), vec3(0.25,0.999,-3.75), vec3(-0.25,0.999,-3.75), light, ro, rd, tmp) && tmp.t < closest_hit.t) {
+    // if (hitRectangle(vec3(-0.25,0.999,-4.25), vec3(0.25,0.999,-4.25), vec3(0.25,0.999,-3.75), vec3(-0.25,0.999,-3.75), light,ray, tmp) && tmp.t < closest_hit.t) {
     //     closest_hit = tmp;
     // }
 
     // Spheres
-    if (hitSphere(vec3(-0.5, -0.6, -4.0), 0.4, white, ro, rd, tmp) && tmp.t < closest_hit.t) closest_hit = tmp; // big white sphere near back
+    if (hitSphere(vec3(-0.5, -0.6, -4.0), 0.4, white, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp; // big white sphere near back
 
-    if (hitSphere(vec3(0.5, -0.8, -3.5), 0.2, red, ro, rd, tmp) && tmp.t < closest_hit.t) closest_hit = tmp; // smaller red sphere in front
+    if (hitSphere(vec3(0.5, -0.8, -3.5), 0.2, red, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp; // smaller red sphere in front
 
     return closest_hit.hit;
 }
 
-vec3 tracePath(vec3 ro, vec3 rd, inout uint rng_state) {
+vec3 tracePath(inout Ray ray, inout uint rng_state) {
     vec3 result = vec3(0.0, 0.0, 0.0);
     vec3 attenuation = vec3(1.0);
 
@@ -257,10 +268,10 @@ vec3 tracePath(vec3 ro, vec3 rd, inout uint rng_state) {
         Hit h;
         hit_struct_init(h);
 
-        if(!hitScene(ro, rd, h)){
+        if(!hitScene(ray, h)){
             // background
             float u, v;
-            calculateUV(rd, u, v);
+            calculateUV(ray.rd, u, v);
             vec3 bg = texture(u_background_img, vec2(u, 1-v)).rgb;
             result += attenuation * bg;
             break;
@@ -272,11 +283,11 @@ vec3 tracePath(vec3 ro, vec3 rd, inout uint rng_state) {
         vec3 color_from_emission = emitted(h);
         result += attenuation * color_from_emission;
 
-        scatterLambertian(rng_state, ro, rd, h, new_attenuation, new_dir);
+        scatterLambertian(rng_state, h, new_attenuation, new_dir);
 
         attenuation *= new_attenuation;
-        ro = h.p + h.normal * 0.0001; // offset to avoid self-hit
-        rd = new_dir;
+        ray.ro = h.p + h.normal * 0.0001; // offset to avoid self-hit
+        ray.rd = new_dir;
     }
     
     return result;
@@ -298,10 +309,10 @@ void main() {
         // Vector to a random point in the [-.5,-.5]-[+.5,+.5] unit square.
         vec2 offset = vec2(randUniform(rng_state) - 0.5, randUniform(rng_state) - 0.5);
 
-        vec3 ro, rd;
-        getRay(float(gid.x), float(gid.y), offset, ro, rd);
+        Ray ray;
+        getRay(float(gid.x), float(gid.y), offset, ray);
 
-        color += tracePath(ro, rd, rng_state);
+        color += tracePath(ray, rng_state);
     }
     color /= u_spp;
 
@@ -316,7 +327,6 @@ void main() {
     if (u_accumulate) {
         accum_sum = color; // start new sum
         count = 1u; // reset accumulated frame counter
-        //u_accumulate = false;
     }
     else {
         accum_sum += color;

@@ -348,7 +348,9 @@ void Camera::setPosition(point3 pos) { center_ = pos; }
 
 bool Camera::getCameraMoved() const { return camera_moved_; }
 
-void Camera::setCameraMoved(bool val) { camera_moved_ = val; }
+void Camera::setCameraMoved(bool val) {
+    camera_moved_ = val;
+}
 
 vec3 Camera::getDirection() { return camera_direction_; }
 

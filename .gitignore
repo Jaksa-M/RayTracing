@@ -1,5 +1,5 @@
 # RayTracingTutorial specific file
-RayTracingTutorial/imgui.ini
+Editor/imgui.ini
 
 .vs/
 x64/
