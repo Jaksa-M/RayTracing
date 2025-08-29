@@ -50,11 +50,9 @@ struct Hit {
     vec3 p;
     vec3 normal;
     Material mat;
-    bool hit;
 };
 void hit_struct_init(inout Hit h){ // acts as it's constructor
     h.t = FLOAT_MAX;
-    h.hit = false;
 }
 
 // Random number generator related functions
@@ -156,7 +154,6 @@ bool hitRectangle(in vec3 rect_p1, in vec3 rect_p2, in vec3 rect_p3, in vec3 rec
     h.normal = N;
     h.mat.albedo = mat.albedo;
     h.mat.emission = mat.emission;
-    h.hit = true;
     return true;
 }
 
@@ -193,7 +190,6 @@ bool hitTriangle(in vec3 tri_v0, in vec3 tri_v1, in vec3 tri_v2, in Material mat
     h.normal = N;
     h.mat.albedo = mat.albedo;
     h.mat.emission = mat.emission;
-    h.hit = true;
     return true;
 }
 
@@ -221,7 +217,6 @@ bool hitSphere(in vec3 sph_center, in float sph_radius, in Material mat, in Ray 
     h.normal = N;
     h.mat.albedo = mat.albedo;
     h.mat.emission = mat.emission;
-    h.hit = true;
     return true;
 }
 
@@ -255,7 +250,7 @@ bool hitScene(inout Ray ray, inout Hit closest_hit) {
 
     if (hitSphere(vec3(0.5, -0.8, -3.5), 0.2, red, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp; // smaller red sphere in front
 
-    return closest_hit.hit;
+    return closest_hit.t < FLOAT_MAX;
 }
 
 vec3 tracePath(inout Ray ray, inout uint rng_state) {
