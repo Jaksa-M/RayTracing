@@ -37,6 +37,7 @@ public:
     void setFocalLength(float val);
     point3 getPosition();
     void setPosition(point3 pos);
+    bool getCameraMoved() const;
     void setCameraMoved(bool val);
     vec3 getDirection();
     void setDirection(vec3 direction);

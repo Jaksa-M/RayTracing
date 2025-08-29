@@ -62,33 +62,22 @@ static void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
 
-
-
-//void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-//    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-//        double xpos, ypos;
-//        glfwGetCursorPos(window, &xpos, &ypos);
-//        std::cout << "Mouse pressed at: (" << xpos << ", " << ypos << ")" << std::endl;
-//    }
-//}
-
 // Called after you know width and height
-void resizeTexture(GLuint tex, int width, int height) {
+void resizeTexture(GLuint tex, int width, int height, bool float_type) {
     glBindTexture(GL_TEXTURE_2D, tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    glBindImageTexture(0, tex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+    if (float_type) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr);
+    }
+    else {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    }
 }
 
 // Main code
 int main(int, char**) {
     glfwSetErrorCallback(glfw_error_callback);
-    if (!glfwInit())
-        return 1;
+    if (!glfwInit()) return 1;
 
-    // GL 3.0 + GLSL 130
-    //const char* glsl_version = "#version 130";
-    //glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    //glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     const char* glsl_version = "#version 430";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -150,7 +139,7 @@ int main(int, char**) {
     std::vector<uint8> image_data;
     std::vector<vec3> image_data_float;
     float trace_percentage = 0.1f; // Decides how much pixels will be traced
-    int32 reflection_depth = 3;
+    int32 max_bounces = 3;
     float environment_light = 1.0f;
     bool reset_accumulated = false;
     bool freeze_camera = false;
@@ -178,7 +167,7 @@ int main(int, char**) {
     uint32 frame_index = 0;
 
     std::shared_ptr<Shader> comp_shader;
-    GLuint tex = 0, background_tex = 0;
+    GLuint tex = 0, background_tex = 0, accumulated_tex = 0;
     GLsizei tex_width = 512, tex_height = 512;
     GLsizei background_tex_width = 512, background_tex_height = 512;
     std::vector<unsigned char> pixels;
@@ -194,6 +183,14 @@ int main(int, char**) {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
         //glBindImageTexture(0, tex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+
+        // generating accumulated image that will be used on gpu
+        glGenTextures(1, &accumulated_tex);
+        glBindTexture(GL_TEXTURE_2D, accumulated_tex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, tex_width, tex_height, 0, GL_RGBA, GL_FLOAT, nullptr);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
     TextureLoader tex_loader("../Resources/textures/san_giuseppe_bridge.hdr");
     if (!tex_loader.load()) {
@@ -243,16 +240,16 @@ int main(int, char**) {
 
             // Slider for percentage of pixels that should be traced
             ImGui::SliderFloat("pixel traced", &trace_percentage, 0.0f, 1.0f);
-            ImGui::SliderInt("reflection bounces", &reflection_depth, 0, 15);
+            ImGui::SliderInt("reflection bounces", &max_bounces, 0, 15);
             ImGui::SliderFloat("environment light", &environment_light, 0.0f, 10.0f);
             ImGui::Checkbox("Reset accumulated", &reset_accumulated);
 
             if (ImGui::Button("Fast Mode")) {
-                switchToFastMode(trace_percentage, reflection_depth);
+                switchToFastMode(trace_percentage, max_bounces);
             }
             ImGui::SameLine();  // Places the next widget on the same line
             if (ImGui::Button("Quality Mode")) {
-                switchToQualityMode(trace_percentage, reflection_depth);
+                switchToQualityMode(trace_percentage, max_bounces);
             }
 
             ImGui::Separator();
@@ -272,7 +269,7 @@ int main(int, char**) {
                     capturing_high_qual_screenshot = true;
                     frames_captured = 0;
 
-                    switchToQualityMode(trace_percentage, reflection_depth);
+                    switchToQualityMode(trace_percentage, max_bounces);
                 }
             } else {
                 float screenshot_progress = static_cast<float>(frames_captured) / frames_to_accumulate;
@@ -485,7 +482,7 @@ int main(int, char**) {
         glViewport(0, 0, display_w, display_h);
         
         active_scene->context.settings->trace_percentage = trace_percentage;
-        active_scene->context.settings->reflection_depth = reflection_depth;
+        active_scene->context.settings->max_bounces = max_bounces;
         active_scene->context.settings->environment_light = environment_light;
         active_scene->context.settings->debug_rays = debug_rays;
         active_scene->context.settings->freeze_camera = freeze_camera;
@@ -515,7 +512,7 @@ int main(int, char**) {
                     convertAccumulatedToFloatImage(image_data_float, image_data_acc, display_w, display_h);
                     saveScreenshot(image_data_float, display_w, display_h, hdr);
 
-                    switchToFastMode(trace_percentage, reflection_depth);
+                    switchToFastMode(trace_percentage, max_bounces);
 
                     capturing_high_qual_screenshot = false; // Release button
                 }
@@ -530,37 +527,41 @@ int main(int, char**) {
             uint32_t num_groups_y = (display_h + WG_SIZE_Y - 1) / WG_SIZE_Y;
 
             comp_shader->bind();
-            comp_shader->setIVec2("resolution", display_w, display_h);
+            comp_shader->setIVec2("u_resolution", display_w, display_h);
             pixels.resize(display_w * display_h * 4);
 
             if (display_w != tex_width || display_h != tex_height) {
                 tex_width = display_w;
                 tex_height = display_h;
-                resizeTexture(tex, tex_width, tex_height);
+                resizeTexture(tex, tex_width, tex_height, false);
+                resizeTexture(accumulated_tex, tex_width, tex_height, true);
             }
+            glBindImageTexture(0, tex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+            glBindImageTexture(2, accumulated_tex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
             Camera& active_cam = active_scene->getActiveCamera();
             active_cam.initialize();
-            vec3 center = active_cam.getPosition(); // center
-            //std::cout << active_cam.getDirection() << std::endl;
-            //std::cout << center << std::endl;
+            vec3 center = active_cam.getPosition();
             vec3 pixel_00 = active_cam.getPixel00();
             vec3 delta_u = active_cam.getDeltaU();
             vec3 delta_v = active_cam.getDeltaV();
 
-            comp_shader->setVec3("cam_center", center.x(), center.y(), center.z());
-            comp_shader->setVec3("pixel00_loc", pixel_00.x(), pixel_00.y(), pixel_00.z());
-            comp_shader->setVec3("pixel_delta_u", delta_u.x(), delta_u.y(), delta_u.z());
-            comp_shader->setVec3("pixel_delta_v", delta_v.x(), delta_v.y(), delta_v.z());
-            comp_shader->setFloat("trace_percentage", gui_settings->trace_percentage);
-            comp_shader->setUint("frame_index", frame_index);
-            comp_shader->setInt("reflection_depth", gui_settings->reflection_depth);
-            comp_shader->setInt("spp", gui_settings->spp);
-            comp_shader->setFloat("environment_light", gui_settings->environment_light);
+            comp_shader->setVec3("u_cam_center", center.x(), center.y(), center.z());
+            comp_shader->setVec3("u_pixel00_loc", pixel_00.x(), pixel_00.y(), pixel_00.z());
+            comp_shader->setVec3("u_pixel_delta_u", delta_u.x(), delta_u.y(), delta_u.z());
+            comp_shader->setVec3("u_pixel_delta_v", delta_v.x(), delta_v.y(), delta_v.z());
+            comp_shader->setFloat("u_trace_percentage", gui_settings->trace_percentage);
+            comp_shader->setUint("u_frame_index", frame_index);
+            comp_shader->setInt("u_max_bounces", gui_settings->max_bounces);
+            comp_shader->setInt("u_spp", gui_settings->spp);
+            comp_shader->setFloat("u_environment_light", gui_settings->environment_light);
+            comp_shader->setBool("u_accumulate", active_cam.getCameraMoved());
+            /*if (active_cam.getCameraMoved()) std::cout << "moved" << std::endl;
+            else std::cout << "static" << std::endl;*/
             
             glActiveTexture(GL_TEXTURE0); // activate the texture unit first before binding texture
             glBindTexture(GL_TEXTURE_2D, background_tex);
-            comp_shader->setTexture("background_img", 0); // compute shader uniform background_img should sample from texture unit 0
+            comp_shader->setTexture("u_background_img", 0); // compute shader uniform background_img should sample from texture unit 0
 
             glDispatchCompute(num_groups_x, num_groups_y, 1);
             // Barrier that ensures that data writting is completely finished
@@ -572,7 +573,13 @@ int main(int, char**) {
             glBindTexture(GL_TEXTURE_2D, tex);
             glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
 
-            // todo renders tex to backbuffer
+            // unbinding the textures
+            glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+            glBindImageTexture(2, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            // todo issue #34 
+            // renders tex to backbuffer
             //renderQuad()
         }
         

@@ -91,7 +91,7 @@ void Camera::render(const HittableList& world, std::vector<vec4>& image_data_acc
                         rays_to_trace_intersection_.push_back(std::pair(ra, false));  // Save ray on every step size
                     }
 
-                    pixel_color = ray_color(ra, settings_.reflection_depth, world);
+                    pixel_color = ray_color(ra, settings_.max_bounces, world);
 
                     // Last channel represents number of samples
                     image_data_acc[index_acc] += vec4(pixel_color.x(), pixel_color.y(), pixel_color.z(), 1.0f);
@@ -345,6 +345,8 @@ void Camera::setFocalLength(float val) { focal_length_ = val; }
 point3 Camera::getPosition() { return center_; }
 
 void Camera::setPosition(point3 pos) { center_ = pos; }
+
+bool Camera::getCameraMoved() const { return camera_moved_; }
 
 void Camera::setCameraMoved(bool val) { camera_moved_ = val; }
 
