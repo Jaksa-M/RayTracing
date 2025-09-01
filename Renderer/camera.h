@@ -37,6 +37,7 @@ public:
     void setFocalLength(float val);
     point3 getPosition();
     void setPosition(point3 pos);
+    bool getCameraMoved() const;
     void setCameraMoved(bool val);
     vec3 getDirection();
     void setDirection(vec3 direction);
@@ -55,14 +56,21 @@ public:
 
     ray createRayFromMousePos(float mouse_x, float mouse_y);
 
+    // Getters used for shader file
+    vec3 getPixel00() const;
+    vec3 getDeltaU() const;
+    vec3 getDeltaV() const;
+
+    void initialize();
+
 private:
     std::string name_;
     GUISettings settings_;
-    point3 center_ = point3(0.0f, 0.0f, 1.0f);  // Camera center
+    point3 center_ = point3(0.0f, 0.0f, 1.0f); // Camera center
     float focal_length_;
-    point3 pixel00_loc_;    // Location of pixel 0, 0
-    vec3 pixel_delta_u_;  // Offset to pixel to the right
-    vec3 pixel_delta_v_;  // Offset to pixel below
+    point3 pixel00_loc_; // Location of pixel 0, 0
+    vec3 pixel_delta_u_; // Offset to pixel to the right
+    vec3 pixel_delta_v_; // Offset to pixel below
     bool camera_moved_ = false;
     vec3 camera_direction_;
     vec3 camera_up_;
@@ -75,7 +83,6 @@ private:
     std::shared_ptr<Shader> shader_prog_;
     std::shared_ptr<Texture> background_texture_;
 
-    void initialize();
 
     ray get_ray(uint32 i, uint32 j, vec3 offset) const;
 

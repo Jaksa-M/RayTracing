@@ -91,7 +91,7 @@ void Camera::render(const HittableList& world, std::vector<vec4>& image_data_acc
                         rays_to_trace_intersection_.push_back(std::pair(ra, false));  // Save ray on every step size
                     }
 
-                    pixel_color = ray_color(ra, settings_.reflection_depth, world);
+                    pixel_color = ray_color(ra, settings_.max_bounces, world);
 
                     // Last channel represents number of samples
                     image_data_acc[index_acc] += vec4(pixel_color.x(), pixel_color.y(), pixel_color.z(), 1.0f);
@@ -172,6 +172,7 @@ color Camera::ray_color(const ray& r, int32 depth, const HittableList& world) {
     // Variables can't be declared inside switch case
     vec3 unit_direction;
     float u, v;
+
     switch (settings_.mesh_color) {
         case MeshColor::MATERIAL:
         case MeshColor::SHADING_NORMAL:
@@ -194,6 +195,8 @@ color Camera::ray_color(const ray& r, int32 depth, const HittableList& world) {
                     
                     if (settings_.mesh_color == MeshColor::MATERIAL) {
                         return color_from_emission + attenuation * ray_color(scattered, depth - 1, world);
+                        // TODO: figure out why the formula below results in the same image, and the one below should be correct.
+                        //return color_from_emission * attenuation + attenuation * ray_color(scattered, depth - 1, world);
                     } else {
                         return attenuation; // used for uv/shading normal views
                     }
@@ -343,7 +346,11 @@ point3 Camera::getPosition() { return center_; }
 
 void Camera::setPosition(point3 pos) { center_ = pos; }
 
-void Camera::setCameraMoved(bool val) { camera_moved_ = val; }
+bool Camera::getCameraMoved() const { return camera_moved_; }
+
+void Camera::setCameraMoved(bool val) {
+    camera_moved_ = val;
+}
 
 vec3 Camera::getDirection() { return camera_direction_; }
 
@@ -392,4 +399,16 @@ ray Camera::createRayFromMousePos(float mouse_x, float mouse_y) {
     vec3 ray_direction = pixel_sample - ray_origin;
 
     return ray(ray_origin, unit_vector(ray_direction));
+}
+
+vec3 Camera::getPixel00() const {
+    return pixel00_loc_;
+}
+
+vec3 Camera::getDeltaU() const {
+    return pixel_delta_u_;
+}
+
+vec3 Camera::getDeltaV() const {
+    return pixel_delta_v_;
 }

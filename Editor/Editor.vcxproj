@@ -100,14 +100,6 @@
     <ClCompile Include="file_utility.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="ShaderFiles\shader.fs.txt" />
-    <Text Include="ShaderFiles\shader.vs.txt" />
-    <Text Include="ShaderFiles\shader_bounding_box.fs.txt" />
-    <Text Include="ShaderFiles\shader_bounding_box.vs.txt" />
-    <Text Include="ShaderFiles\shader_mesh.fs.txt" />
-    <Text Include="ShaderFiles\shader_mesh.vs.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\Renderer\Renderer.vcxproj">
       <Project>{942a800e-88d5-4d48-9f17-8d6ff88f1bf0}</Project>
     </ProjectReference>
@@ -115,6 +107,18 @@
   <ItemGroup>
     <ClInclude Include="camera_controller.h" />
     <ClInclude Include="file_utility.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\ShaderFiles\shader.fs.txt" />
+    <Text Include="..\ShaderFiles\shader.vs.txt" />
+    <Text Include="..\ShaderFiles\shader_bounding_box.fs.txt" />
+    <Text Include="..\ShaderFiles\shader_bounding_box.vs.txt" />
+    <Text Include="..\ShaderFiles\shader_mesh.fs.txt" />
+    <Text Include="..\ShaderFiles\shader_mesh.vs.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\ShaderFiles\compute_shader.comp" />
+    <None Include="..\ShaderFiles\compute_shader_image_generation.comp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

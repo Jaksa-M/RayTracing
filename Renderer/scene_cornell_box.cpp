@@ -26,7 +26,7 @@ void SceneCornellBox::initialize() {
 
 	prev_BVH_technique_ = context.settings->BVH_technique;
 
-	TextureLoader tex_loader("Resources/textures/san_giuseppe_bridge.hdr");
+	TextureLoader tex_loader("../Resources/textures/san_giuseppe_bridge.hdr");
     if (!tex_loader.load()) {
         std::cerr << "ERROR: Could not load background texture file.\n";
     }
@@ -40,6 +40,16 @@ void SceneCornellBox::initialize() {
     auto mat_green = std::make_shared<Lambertian>(color(0.0f, 1.0f, 0.0f));
     auto mat_red = std::make_shared<Lambertian>(color(1.0f, 0.0f, 0.0f));
     auto mat_white = std::make_shared<Lambertian>(color(0.8f, 0.8f, 0.8f));
+
+	// Add a diffuse white material with emission
+	
+    color diffuse_col(0.5f, 0.5f, 0.5f);
+    color emissive_col(15.0f, 15.0f, 15.0f);
+    std::shared_ptr<Texture> emissive_tex = std::make_shared<Texture>(emissive_col);
+    std::shared_ptr<Texture> diffuse_tex = std::make_shared<Texture>(diffuse_col);
+    
+    auto mat_light = std::make_shared<Lambertian>(diffuse_tex, nullptr, emissive_tex);
+
 
 	// Creating meshes and their transformation matrices
 	rect_prism_mesh_ = MeshUtils::GenerateTriangleCube(context, mat_yellow, 2);
@@ -83,13 +93,36 @@ void SceneCornellBox::initialize() {
 		transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
 	rect_mesh_right_->setTransformationMatrix(m);
 
-	world_->add(rect_prism_mesh_);
-    world_->add(cube_mesh_);
-    world_->add(rect_mesh_top_);
-    world_->add(rect_mesh_bottom_);
-    world_->add(rect_mesh_left_);
-    world_->add(rect_mesh_right_);
-    world_->add(rect_mesh_back_);
+	// Ceiling light panel (diffuse + emissive)
+    rect_mesh_light_ = MeshUtils::GenerateTriangleRectangle(context, mat_light, 2, 2);
+    m = transformation::create_translation_matrix(vec3(0.0f, 1.98f, -0.25f)) * // position just below ceiling
+        transformation::create_rotation_matrix(-180.0f * (3.14159f / 180.0f), 0.0f, 0.0f) *
+        transformation::create_scaling_matrix(0.5f, 0.5f, 0.5f); // size of light source
+    rect_mesh_light_->setTransformationMatrix(m);
+
+	std::vector<MeshHandle> meshes;
+    meshes.push_back(rect_prism_mesh_->getMeshHandle());
+    meshes.push_back(cube_mesh_->getMeshHandle());
+    meshes.push_back(rect_mesh_back_->getMeshHandle());
+    meshes.push_back(rect_mesh_top_->getMeshHandle());
+    meshes.push_back(rect_mesh_bottom_->getMeshHandle());
+    meshes.push_back(rect_mesh_left_->getMeshHandle());
+    meshes.push_back(rect_mesh_right_->getMeshHandle());
+    meshes.push_back(rect_mesh_light_->getMeshHandle());
+
+	rt_meshes_.push_back(std::move(rect_prism_mesh_));
+    rt_meshes_.push_back(std::move(cube_mesh_));
+    rt_meshes_.push_back(std::move(rect_mesh_back_));
+    rt_meshes_.push_back(std::move(rect_mesh_top_));
+    rt_meshes_.push_back(std::move(rect_mesh_bottom_));
+    rt_meshes_.push_back(std::move(rect_mesh_left_));
+    rt_meshes_.push_back(std::move(rect_mesh_right_));
+    rt_meshes_.push_back(std::move(rect_mesh_light_));
+    for (uint32 i = 0; i < rt_meshes_.size(); i++) {
+        world_->add(rt_meshes_[i]);
+    }
+
+	static_cast<HittableListCustomBVH*>(world_.get())->buildTLAS(context.bvh_manager, meshes, rt_meshes_);
 
 	initShader();
 }
@@ -106,7 +139,7 @@ void SceneCornellBox::update(uint32 display_w, uint32 display_h) {
 }
 
 void SceneCornellBox::initShader() {
-	shader_prog_ = std::make_unique<Shader>("ShaderFiles/shader_bounding_box.vs.txt", "ShaderFiles/shader_bounding_box.fs.txt");
+	shader_prog_ = std::make_unique<Shader>("../ShaderFiles/shader_bounding_box.vs.txt", "../ShaderFiles/shader_bounding_box.fs.txt");
 }
 
 void SceneCornellBox::drawBVH() {

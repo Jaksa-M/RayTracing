@@ -29,6 +29,8 @@ private:
     std::shared_ptr<RTMesh> rect_mesh_left_;
     std::shared_ptr<RTMesh> rect_mesh_right_;
     std::shared_ptr<RTMesh> rect_mesh_back_;
+    std::shared_ptr<RTMesh> rect_mesh_light_;
+    std::vector<std::shared_ptr<Hittable>> rt_meshes_;
 
     std::unique_ptr<Mesh> mesh_;
     std::unique_ptr<Shader> shader_prog_;

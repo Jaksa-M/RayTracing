@@ -20,7 +20,7 @@ void initializeContext(Context& context) {
     context.settings->multithreading = true;
     context.settings->freeze_camera = false;
     context.settings->debug_rays = false;
-    context.settings->reflection_depth = 3;
+    context.settings->max_bounces = 3;
     context.settings->mesh_color = MeshColor::MATERIAL;
     context.settings->use_tiny_bvh = false;
     context.settings->trace_percentage = 1.0f;

@@ -50,31 +50,39 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="ShaderFiles\shader.fs.txt">
-      <Filter>Shader Files</Filter>
-    </Text>
-    <Text Include="ShaderFiles\shader.vs.txt">
-      <Filter>Shader Files</Filter>
-    </Text>
-    <Text Include="ShaderFiles\shader_mesh.fs.txt">
-      <Filter>Shader Files</Filter>
-    </Text>
-    <Text Include="ShaderFiles\shader_mesh.vs.txt">
-      <Filter>Shader Files</Filter>
-    </Text>
-    <Text Include="ShaderFiles\shader_bounding_box.fs.txt">
-      <Filter>Shader Files</Filter>
-    </Text>
-    <Text Include="ShaderFiles\shader_bounding_box.vs.txt">
-      <Filter>Shader Files</Filter>
-    </Text>
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="camera_controller.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="file_utility.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\ShaderFiles\shader.fs.txt">
+      <Filter>Shader Files</Filter>
+    </Text>
+    <Text Include="..\ShaderFiles\shader.vs.txt">
+      <Filter>Shader Files</Filter>
+    </Text>
+    <Text Include="..\ShaderFiles\shader_bounding_box.fs.txt">
+      <Filter>Shader Files</Filter>
+    </Text>
+    <Text Include="..\ShaderFiles\shader_bounding_box.vs.txt">
+      <Filter>Shader Files</Filter>
+    </Text>
+    <Text Include="..\ShaderFiles\shader_mesh.fs.txt">
+      <Filter>Shader Files</Filter>
+    </Text>
+    <Text Include="..\ShaderFiles\shader_mesh.vs.txt">
+      <Filter>Shader Files</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\ShaderFiles\compute_shader.comp">
+      <Filter>Shader Files</Filter>
+    </None>
+    <None Include="..\ShaderFiles\compute_shader_image_generation.comp">
+      <Filter>Shader Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

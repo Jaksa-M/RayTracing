@@ -1,0 +1,336 @@
+#version 430 core
+ // inout is same as reference in cpp
+ // in is same as read only
+ // out means we can't read value that is inside, only write to it
+
+layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+layout (rgba8, binding = 0) uniform image2D u_display_img;
+layout (binding = 1) uniform sampler2D u_background_img;
+layout (rgba32f, binding = 2) uniform image2D u_accumulated_img;
+
+uniform ivec2 u_resolution; // (width, height)
+
+uniform vec3 u_cam_center;
+uniform vec3 u_pixel00_loc;
+uniform vec3 u_pixel_delta_u;
+uniform vec3 u_pixel_delta_v;
+
+uniform uint u_frame_index; // count of how many frames have passed since start of program
+uniform float u_environment_light;
+uniform int u_max_bounces;
+uniform int u_spp;
+uniform bool u_accumulate; // on CPU this is called camera_moved
+
+// Global constants
+const float FLOAT_MAX = 3.402823466e+38;
+const float EPSILON = 1e-8;
+const float PI = 3.14;
+
+// Struct types
+struct Material {
+    vec3 albedo;
+    float roughness; // for metal (currently unused)
+    vec3 emission;
+};
+
+struct Ray {
+    vec3 ro;
+    float tMin;
+    vec3 rd;
+    float tMax;
+};
+void ray_struct_init(inout Ray ray){ // acts as it's constructor
+    ray.tMin = 0;
+    ray.tMax = FLOAT_MAX;
+}
+
+struct Hit {
+    float t;
+    vec3 p;
+    vec3 normal;
+    Material mat;
+};
+void hit_struct_init(inout Hit h){ // acts as it's constructor
+    h.t = FLOAT_MAX;
+}
+
+// Random number generator related functions
+uint randPcg(inout uint rng_state) {
+    uint state = rng_state;
+    rng_state = rng_state * 747796405u + 2891336453u;
+    uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+    return (word >> 22u) ^ word;
+}
+float randUniform(inout uint rng_state) {
+    // lower 8 bits are just noice (coming from precision loss).
+    // So we shift those lower 8 bits, and than divide by rest 2^24 (since we are left with 24 bits).
+    return float(randPcg(rng_state) >> 8u) * (1.0 / 16777216.0);
+}
+vec3 randomVec3(inout uint rng_state) { // always return in range [0,1].
+    // If we need in a different range, we can convert on the place where it is needed.
+    return vec3(
+        randUniform(rng_state),
+        randUniform(rng_state),
+        randUniform(rng_state)
+    );
+}
+vec3 randomUnitVector(inout uint rng_state) {
+    while (true) {
+        vec3 p = randomVec3(rng_state) * 2.0 - 1.0;
+        float lensq = dot(p, p);
+        if (lensq > 1e-160 && lensq <= 1.0) {
+            return p / sqrt(lensq);
+        }
+    }
+}
+
+// Utility functions
+float atan2(float y, float x) {
+    float s = abs(x) > abs(y) ? 1.0 : 0.0;
+    return mix(PI / 2.0 - atan(x, y), atan(y, x), s);
+}
+
+// The name comes from the equirectangular projection (also called lat-long mapping), which is a very common way of mapping
+// a 3D direction vector onto a 2D texture.
+vec2 directionToEquirecangularUV(in vec3 rd){
+    float u = (atan2(-rd.z, rd.x) + PI) / (2 * PI);
+    float v = acos(-rd.y) / PI;
+    return vec2(u, v);
+}
+
+void getRay(float i, float j, vec2 offset, out Ray ray) {
+    // Construct a camera ray originating from the origin and directed at randomly sampled point around the pixel location i, j.
+    // Jitter is the process of selecting random offsets inside the pixel. 
+    vec3 pixel_sample = u_pixel00_loc
+        + ((i + offset.x) * u_pixel_delta_u)
+        + ((j + offset.y) * u_pixel_delta_v);
+
+    ray.ro = u_cam_center;
+    ray.rd = normalize(pixel_sample - ray.ro);
+}
+
+
+// Material utility functions
+vec3 emitted(in Hit h) {
+    return h.mat.emission;
+}
+
+bool scatterLambertian(inout uint rng_state, Hit rec, out vec3 attenuation, out vec3 new_dir) {
+    vec3 scatter_direction = normalize(rec.normal + randomUnitVector(rng_state));
+
+    if (length(scatter_direction) < EPSILON) scatter_direction = rec.normal;
+    new_dir = scatter_direction;
+    attenuation = rec.mat.albedo;
+    return true;
+}
+
+// Hit Object functions
+bool hitRectangle(in vec3 rect_p1, in vec3 rect_p2, in vec3 rect_p3, in vec3 rect_p4, in Material mat, in Ray ray, out Hit h) {
+    //rect_p1 - bottom-left, rect_p2 - bottom-right, rect_p3 - top-right, rect_p4 - top-left
+
+    vec3 rectangle_normal = normalize(cross(rect_p2 - rect_p1, rect_p3 - rect_p1));
+
+    float c = dot(rectangle_normal, rect_p1);
+    float denominator = dot(rectangle_normal, ray.rd);
+    if (abs(denominator) < EPSILON) return false;
+
+    float t = (c - dot(rectangle_normal, ray.ro)) / denominator;
+    if (t < 0.001) return false;
+
+    vec3 Q = ray.ro + t * ray.rd;
+    if (dot(cross((rect_p2 - rect_p1), (Q - rect_p1)), rectangle_normal) < 0 ||
+        dot(cross((rect_p3 - rect_p2), (Q - rect_p2)), rectangle_normal) < 0 ||
+        dot(cross((rect_p4 - rect_p3), (Q - rect_p3)), rectangle_normal) < 0 ||
+        dot(cross((rect_p1 - rect_p4), (Q - rect_p4)), rectangle_normal) < 0) {
+        return false;
+    }
+
+    h.t = t;
+    h.p = Q; // hit point
+
+    vec3 N = normalize(rectangle_normal);
+    if (dot(N, ray.rd) > 0.0) N = -N;
+    h.normal = N;
+    h.mat.albedo = mat.albedo;
+    h.mat.emission = mat.emission;
+    return true;
+}
+
+bool hitTriangle(in vec3 tri_v0, in vec3 tri_v1, in vec3 tri_v2, in Material mat, in Ray ray, out Hit h) {
+    // Moeller Trumbore
+
+    vec3 edge1 = tri_v1 - tri_v0;
+    vec3 edge2 = tri_v2 - tri_v0;
+
+    vec3 p  = cross(ray.rd, edge2);
+    float det = dot(edge1, p);
+
+    if (abs(det) < EPSILON) return false;
+
+    float inv_det = 1.0 / det;
+    vec3 s = ray.ro - tri_v0;
+    float u = inv_det * dot(s, p);
+
+    if (u < 0.0 || u > 1.0) return false;
+
+    vec3 q = cross(s, edge1);
+    float v = inv_det * dot(ray.rd, q);
+
+    if (v < 0.0 || u + v > 1.0) return false;
+
+    float t = inv_det * dot(edge2, q);
+    if (t < 0.001) return false;
+
+    h.t = t;
+    h.p = ray.ro + t * ray.rd; // hit point
+
+    vec3 N = normalize(cross(edge1, edge2));
+    if (dot(N, ray.rd) > 0.0) N = -N;
+    h.normal = N;
+    h.mat.albedo = mat.albedo;
+    h.mat.emission = mat.emission;
+    return true;
+}
+
+bool hitSphere(in vec3 sph_center, in float sph_radius, in Material mat, in Ray ray, out Hit h) {
+    vec3 oc = sph_center - ray.ro;
+    float a = dot(ray.rd, ray.rd);
+    float b = dot(ray.rd, oc);
+    float c = dot(oc, oc) - sph_radius * sph_radius;
+    float discriminant = b*b - a*c;
+    if (discriminant < 0.0) return false;
+
+    float sqrtd = sqrt(discriminant);
+    float t = (b - sqrtd) / a;
+    if (t < 0.001) { 
+        t = (b + sqrtd) / a;
+        if (t < 0.001) return false;
+    }
+
+    vec3 P = ray.ro + t * ray.rd;
+    vec3 N = normalize((P - sph_center) / sph_radius);
+    if (dot(N, ray.rd) > 0.0) N = -N;
+
+    h.t = t;
+    h.p = P; // hit point
+    h.normal = N;
+    h.mat.albedo = mat.albedo;
+    h.mat.emission = mat.emission;
+    return true;
+}
+
+bool hitScene(inout Ray ray, inout Hit closest_hit) {
+    // Materials
+    Material red;   red.albedo = vec3(0.65, 0.05, 0.05); red.emission = vec3(0.0);
+    Material green; green.albedo = vec3(0.12, 0.45, 0.15); green.emission = vec3(0.0);
+    Material white; white.albedo = vec3(0.73); white.emission = vec3(0.0);
+    Material light; light.albedo = vec3(0.0); light.emission = vec3(15.0); // strong emission
+
+    Hit tmp;
+    hit_struct_init(tmp);
+    // Left wall (red)
+    if (hitRectangle(vec3(-1,-1,-5), vec3(-1,-1,-3), vec3(-1,1,-3), vec3(-1,1,-5), red, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp;
+    // Right wall (green)
+    if (hitRectangle(vec3(1,-1,-3), vec3(1,-1,-5), vec3(1,1,-5), vec3(1,1,-3), green, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp;
+    // Floor (white)
+    if (hitRectangle(vec3(-1,-1,-5), vec3(1,-1,-5), vec3(1,-1,-3), vec3(-1,-1,-3), white, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp;
+    // Ceiling (white)
+    if (hitRectangle(vec3(-1,1,-5), vec3(-1,1,-3), vec3(1,1,-3), vec3(1,1,-5), white, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp;
+    // Back wall (white)
+    if (hitRectangle(vec3(-1,-1,-5), vec3(-1,1,-5), vec3(1,1,-5), vec3(1,-1,-5), white, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp;
+
+    // Light on ceiling
+    if (hitRectangle(vec3(-0.25,0.999,-4.25), vec3(0.25,0.999,-4.25), vec3(0.25,0.999,-3.75), vec3(-0.25,0.999,-3.75), light,ray, tmp) && tmp.t < closest_hit.t) {
+        closest_hit = tmp;
+    }
+
+    // Spheres
+    if (hitSphere(vec3(-0.5, -0.6, -4.0), 0.4, white, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp; // big white sphere near back
+
+    if (hitSphere(vec3(0.5, -0.8, -3.5), 0.2, red, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp; // smaller red sphere in front
+
+    return closest_hit.t < FLOAT_MAX;
+}
+
+vec3 tracePath(inout Ray ray, inout uint rng_state) {
+    vec3 result = vec3(0.0, 0.0, 0.0);
+    vec3 attenuation = vec3(1.0);
+
+    for (uint depth = 0; depth <= u_max_bounces; depth++) { // max bounces
+        Hit h;
+        hit_struct_init(h);
+
+        if(!hitScene(ray, h)){
+            // background
+            vec2 uv = directionToEquirecangularUV(ray.rd);
+            vec3 bg = texture(u_background_img, vec2(uv.x, 1-uv.y)).rgb;
+            result += attenuation * bg;
+            break;
+        }
+
+        vec3 new_dir;
+        vec3 new_attenuation;
+
+        vec3 color_from_emission = emitted(h);
+        result += attenuation * color_from_emission;
+
+        scatterLambertian(rng_state, h, new_attenuation, new_dir);
+
+        attenuation *= new_attenuation;
+        ray.ro = h.p + h.normal * 0.0001; // offset to avoid self-hit
+        ray.rd = new_dir;
+    }
+    
+    return result;
+}
+
+
+void main() {
+    ivec2 gid = ivec2(gl_GlobalInvocationID.xy);
+    if (gid.x >= u_resolution.x || gid.y >= u_resolution.y) return;
+
+    uint rng_state = uint(gid.x) + uint(gid.y) * uint(u_resolution.x) + u_frame_index * uint(u_resolution.x) * uint(u_resolution.y);
+
+    float i = float(gid.x) + 0.5;
+    float j = float(gid.y) + 0.5;
+    vec3 pixel_pos = u_pixel00_loc + i * u_pixel_delta_u + j * u_pixel_delta_v;
+
+    vec3 color = vec3(0.0);
+    for(uint samp = 0; samp < u_spp; samp++){
+        // Vector to a random point in the [-.5,-.5]-[+.5,+.5] unit square.
+        vec2 offset = vec2(randUniform(rng_state) - 0.5, randUniform(rng_state) - 0.5);
+
+        Ray ray;
+        getRay(float(gid.x), float(gid.y), offset, ray);
+
+        color += tracePath(ray, rng_state);
+    }
+    color /= u_spp;
+
+    // Load previous accumulation
+    vec4 prev_accum = imageLoad(u_accumulated_img, gid);
+
+    // Extract sum and count
+    vec3 accum_sum = prev_accum.rgb;
+    uint count = floatBitsToUint(prev_accum.a);
+
+    // If camera moved, reset accumulation
+    if (u_accumulate) {
+        accum_sum = color; // start new sum
+        count = 1u; // reset accumulated frame counter
+    }
+    else {
+        accum_sum += color;
+        count += 1u; // increment accumulated frame counter
+    }
+
+    // Compute average
+    vec3 avg_color = accum_sum / float(count);
+
+    // Store back into accumulation buffer
+    imageStore(u_accumulated_img, gid, vec4(accum_sum, uintBitsToFloat(count)));
+
+    // Display final averaged color
+    imageStore(u_display_img, gid, vec4(avg_color, 1.0));
+}

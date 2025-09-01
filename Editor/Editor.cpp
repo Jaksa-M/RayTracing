@@ -62,26 +62,26 @@ static void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
 }
 
-//void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-//    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-//        double xpos, ypos;
-//        glfwGetCursorPos(window, &xpos, &ypos);
-//        std::cout << "Mouse pressed at: (" << xpos << ", " << ypos << ")" << std::endl;
-//    }
-//}
+// Called after you know width and height
+void resizeTexture(GLuint tex, int width, int height, bool float_type) {
+    glBindTexture(GL_TEXTURE_2D, tex);
+    if (float_type) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr);
+    }
+    else {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    }
+}
 
 // Main code
 int main(int, char**) {
     glfwSetErrorCallback(glfw_error_callback);
-    if (!glfwInit())
-        return 1;
+    if (!glfwInit()) return 1;
 
-    // GL 3.0 + GLSL 130
-    const char* glsl_version = "#version 130";
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
-    //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
+    const char* glsl_version = "#version 430";
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+
 
     // Create window with graphics context
     GLFWwindow* window = glfwCreateWindow(1280, 720, "Dear ImGui GLFW+OpenGL3 example", nullptr, nullptr);
@@ -121,7 +121,7 @@ int main(int, char**) {
     std::unique_ptr<Statistics> statistics = std::make_unique<Statistics>();
     std::unique_ptr<TimeMeasurement> time_measurement = std::make_unique<TimeMeasurement>();
 
-    SceneType selected_scene_index = SceneType::OBJ_LOADER;
+    SceneType selected_scene_index = SceneType::CORNELL_BOX;
     BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
     MeshColor chosen_mesh_color = MeshColor::MATERIAL;
 
@@ -139,7 +139,7 @@ int main(int, char**) {
     std::vector<uint8> image_data;
     std::vector<vec3> image_data_float;
     float trace_percentage = 0.1f; // Decides how much pixels will be traced
-    int32 reflection_depth = 3;
+    int32 max_bounces = 3;
     float environment_light = 1.0f;
     bool reset_accumulated = false;
     bool freeze_camera = false;
@@ -163,6 +163,51 @@ int main(int, char**) {
     std::vector<CameraPreset> camera_presets;
 
     loadPresetsFromFile(camera_file, camera_presets);
+
+    uint32 frame_index = 0;
+
+    std::shared_ptr<Shader> comp_shader;
+    GLuint tex = 0, background_tex = 0, accumulated_tex = 0;
+    GLsizei tex_width = 512, tex_height = 512;
+    GLsizei background_tex_width = 512, background_tex_height = 512;
+    std::vector<unsigned char> pixels;
+
+    if (gui_settings->use_gpu) { // using compute shader
+        comp_shader = std::make_shared<Shader>("../ShaderFiles/compute_shader.comp");
+
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, tex_width, tex_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+        //glBindImageTexture(0, tex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+
+        // generating accumulated image that will be used on gpu
+        glGenTextures(1, &accumulated_tex);
+        glBindTexture(GL_TEXTURE_2D, accumulated_tex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, tex_width, tex_height, 0, GL_RGBA, GL_FLOAT, nullptr);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    }
+    TextureLoader tex_loader("../Resources/textures/san_giuseppe_bridge.hdr");
+    if (!tex_loader.load()) {
+        std::cerr << "ERROR: Could not load background texture file.\n";
+    }
+
+    if (gui_settings->use_gpu) {
+
+        glGenTextures(1, &background_tex);
+        glBindTexture(GL_TEXTURE_2D, background_tex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, tex_loader.getImageWidth(), tex_loader.getImageHeight(), 0, GL_RGB, GL_FLOAT,
+                     tex_loader.getData().data());
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    }
+
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -195,16 +240,16 @@ int main(int, char**) {
 
             // Slider for percentage of pixels that should be traced
             ImGui::SliderFloat("pixel traced", &trace_percentage, 0.0f, 1.0f);
-            ImGui::SliderInt("reflection bounces", &reflection_depth, 0, 15);
+            ImGui::SliderInt("reflection bounces", &max_bounces, 0, 15);
             ImGui::SliderFloat("environment light", &environment_light, 0.0f, 10.0f);
             ImGui::Checkbox("Reset accumulated", &reset_accumulated);
 
             if (ImGui::Button("Fast Mode")) {
-                switchToFastMode(trace_percentage, reflection_depth);
+                switchToFastMode(trace_percentage, max_bounces);
             }
             ImGui::SameLine();  // Places the next widget on the same line
             if (ImGui::Button("Quality Mode")) {
-                switchToQualityMode(trace_percentage, reflection_depth);
+                switchToQualityMode(trace_percentage, max_bounces);
             }
 
             ImGui::Separator();
@@ -224,7 +269,7 @@ int main(int, char**) {
                     capturing_high_qual_screenshot = true;
                     frames_captured = 0;
 
-                    switchToQualityMode(trace_percentage, reflection_depth);
+                    switchToQualityMode(trace_percentage, max_bounces);
                 }
             } else {
                 float screenshot_progress = static_cast<float>(frames_captured) / frames_to_accumulate;
@@ -403,6 +448,17 @@ int main(int, char**) {
             ImGui::Checkbox("Multithreading", &active_scene->context.settings->multithreading);
 
             ImGui::Separator();
+            // Option to hot reload shader during program execution
+            if (!gui_settings->use_gpu) ImGui::BeginDisabled();
+            if (ImGui::Button("Reload shader")) {
+                comp_shader = std::make_shared<Shader>("../ShaderFiles/compute_shader.comp");
+            }
+
+            ImGui::SetNextItemWidth(100);
+            ImGui::InputInt("samples per pixel", &gui_settings->spp);
+            if (!gui_settings->use_gpu) ImGui::EndDisabled();
+
+            ImGui::Separator();
             ImGui::Text("------------------Statistics------------------");
             ImGui::Text("FPS: %.1f", io.Framerate);
             ImGui::Text("Triangle count: %d", statistics->triangle_cnt);
@@ -426,44 +482,117 @@ int main(int, char**) {
         glViewport(0, 0, display_w, display_h);
         
         active_scene->context.settings->trace_percentage = trace_percentage;
-        active_scene->context.settings->reflection_depth = reflection_depth;
+        active_scene->context.settings->max_bounces = max_bounces;
         active_scene->context.settings->environment_light = environment_light;
         active_scene->context.settings->debug_rays = debug_rays;
         active_scene->context.settings->freeze_camera = freeze_camera;
         active_scene->context.settings->block_size = block_size;
         active_scene->update(display_w, display_h);
 
-        Camera& cam = active_scene->getActiveCamera();
-        cam.render(active_scene->getWorld(), image_data_acc, *(context.settings));
+        /*if (active_scene->getActiveCamera().getCameraMoved()) {
+            std::fill(image_data_acc.begin(), image_data_acc.end(), vec4());
+            active_scene->getActiveCamera().setCameraMoved(false);
+        }*/
 
+        if (!gui_settings->use_gpu) {
+            Camera& cam = active_scene->getActiveCamera();
+            cam.render(active_scene->getWorld(), image_data_acc, *(context.settings));
 
-        // Filling image_data
-        image_data.resize(display_w * display_h * 3);
-        convertAccumulatedToImageData(image_data, image_data_acc, display_w, display_h);
+            // Filling image_data
+            image_data.resize(display_w * display_h * 3);
+            convertAccumulatedToImageData(image_data, image_data_acc, display_w, display_h);
 
-        // Screenshots processing
-        if (screenshot_button_pressed) {
-            image_data_float.resize(display_w * display_h);
-            convertAccumulatedToFloatImage(image_data_float, image_data_acc, display_w, display_h);
-            saveScreenshot(image_data_float, display_w, display_h, hdr);
-        }
-
-        if (capturing_high_qual_screenshot) {
-            frames_captured++;
-            if (frames_captured >= frames_to_accumulate) {
-                // Done accumulating
+            // Screenshots processing
+            if (screenshot_button_pressed) {
                 image_data_float.resize(display_w * display_h);
                 convertAccumulatedToFloatImage(image_data_float, image_data_acc, display_w, display_h);
                 saveScreenshot(image_data_float, display_w, display_h, hdr);
+            }
 
-                switchToFastMode(trace_percentage, reflection_depth);
+            if (capturing_high_qual_screenshot) {
+                frames_captured++;
+                if (frames_captured >= frames_to_accumulate) {
+                    // Done accumulating
+                    image_data_float.resize(display_w * display_h);
+                    convertAccumulatedToFloatImage(image_data_float, image_data_acc, display_w, display_h);
+                    saveScreenshot(image_data_float, display_w, display_h, hdr);
 
-                capturing_high_qual_screenshot = false; // Release button
+                    switchToFastMode(trace_percentage, max_bounces);
+
+                    capturing_high_qual_screenshot = false; // Release button
+                }
             }
         }
-      
+
+        if (gui_settings->use_gpu) { // Use compute shader
+            const uint32 WG_SIZE_X = 16;
+            const uint32 WG_SIZE_Y = 16;
+
+            uint32_t num_groups_x = (display_w + WG_SIZE_X - 1) / WG_SIZE_X;
+            uint32_t num_groups_y = (display_h + WG_SIZE_Y - 1) / WG_SIZE_Y;
+
+            comp_shader->bind();
+            comp_shader->setIVec2("u_resolution", display_w, display_h);
+            pixels.resize(display_w * display_h * 4);
+
+            if (display_w != tex_width || display_h != tex_height) {
+                tex_width = display_w;
+                tex_height = display_h;
+                resizeTexture(tex, tex_width, tex_height, false);
+                resizeTexture(accumulated_tex, tex_width, tex_height, true);
+            }
+            glBindImageTexture(0, tex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+            glBindImageTexture(2, accumulated_tex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+
+            Camera& active_cam = active_scene->getActiveCamera();
+            active_cam.initialize();
+            vec3 center = active_cam.getPosition();
+            vec3 pixel_00 = active_cam.getPixel00();
+            vec3 delta_u = active_cam.getDeltaU();
+            vec3 delta_v = active_cam.getDeltaV();
+
+            comp_shader->setVec3("u_cam_center", center.x(), center.y(), center.z());
+            comp_shader->setVec3("u_pixel00_loc", pixel_00.x(), pixel_00.y(), pixel_00.z());
+            comp_shader->setVec3("u_pixel_delta_u", delta_u.x(), delta_u.y(), delta_u.z());
+            comp_shader->setVec3("u_pixel_delta_v", delta_v.x(), delta_v.y(), delta_v.z());
+            comp_shader->setUint("u_frame_index", frame_index);
+            comp_shader->setInt("u_max_bounces", gui_settings->max_bounces);
+            comp_shader->setInt("u_spp", gui_settings->spp);
+            comp_shader->setFloat("u_environment_light", gui_settings->environment_light);
+
+            comp_shader->setBool("u_accumulate", active_cam.getCameraMoved());
+            if (active_cam.getCameraMoved()) {
+                active_cam.setCameraMoved(false);
+            }
+            
+            glActiveTexture(GL_TEXTURE0); // activate the texture unit first before binding texture
+            glBindTexture(GL_TEXTURE_2D, background_tex);
+            comp_shader->setTexture("u_background_img", 0); // compute shader uniform background_img should sample from texture unit 0
+
+            glDispatchCompute(num_groups_x, num_groups_y, 1);
+            // Barrier that ensures that data writting is completely finished
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            if (GLenum err = glGetError(); err != GL_NO_ERROR) {
+                std::cout << "GLerror: " << err;
+            }
+
+            glBindTexture(GL_TEXTURE_2D, tex);
+            glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+
+            // unbinding the textures
+            glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
+            glBindImageTexture(2, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            // todo issue #34 
+            // renders tex to backbuffer
+            //renderQuad()
+        }
+        
+        // TODO: remove later, too slow. It should be all done on GPU.
         glEnable(GL_FRAMEBUFFER_SRGB);
-        glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
+        if (gui_settings->use_gpu) glDrawPixels(display_w, display_h, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data()); // EXTREMELY SLOW
+        else glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
         glDisable(GL_FRAMEBUFFER_SRGB);
 
         active_scene->drawBVH(); // Drawing of BVH tree/leaves
@@ -475,6 +604,8 @@ int main(int, char**) {
 
         // Reseting accumulating buffer every frame to better view rotation... etc
         if (reset_accumulated == true) active_scene->getActiveCamera().setCameraMoved(true);
+
+        frame_index++;
     }
     printMeasuredTime(context.time_measurement->total_bvh_time, context.time_measurement->total_bvh_calls, context.time_measurement->min_bvh_time,
                       context.time_measurement->max_bvh_time);
