@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include "gpu_types.h"
 // Removing warnings caused by this file
 #pragma warning(push)
 #pragma warning(disable : 4551)
@@ -143,6 +144,86 @@ void Shader::setMat4(const std::string& name, const float* value) const {
 void Shader::setTexture(const std::string& name, uint32 tex) {
     glUniform1i(glGetUniformLocation(ID, name.c_str()), tex); // set it manually
 }
+
+void Shader::setSSBO(uint32 binding, uint32 bufferID) const {
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, bufferID);
+}
+
+uint32 Shader::createSSBO(uint32 binding, std::size_t size, const void* data, uint32 usage) const {
+    uint32 ssbo;
+    glGenBuffers(1, &ssbo);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, usage);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, ssbo);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    return ssbo;
+}
+bool Shader::checkSSBOFloat(uint32 ssbo, const std::vector<float>& cpu_data) {
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+    void* ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+    if (!ptr) {
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+        return false;
+    }
+
+    const float* gpu_ptr = reinterpret_cast<const float*>(ptr);
+    bool match = true;
+    for (size_t i = 0; i < cpu_data.size(); ++i) {
+        if (cpu_data[i] != gpu_ptr[i]) {
+            match = false;
+            break;
+        }
+    }
+
+    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    return match;
+}
+
+bool Shader::checkSSBOMeshDesc(uint32 ssbo, const std::vector<MeshDesc>& cpu_data) {
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+    void* ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+    if (!ptr) {
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+        return false;
+    }
+
+    const MeshDesc* gpu_ptr = reinterpret_cast<const MeshDesc*>(ptr);
+    bool match = true;
+    for (size_t i = 0; i < cpu_data.size(); ++i) {
+        if (memcmp(&cpu_data[i], &gpu_ptr[i], sizeof(MeshDesc)) != 0) {
+            match = false;
+            break;
+        }
+    }
+
+    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    return match;
+}
+bool Shader::checkSSBOUint(uint32 ssbo, const std::vector<uint32>& cpu_data) {
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
+    void* ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+    if (!ptr) {
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+        return false;
+    }
+
+    const uint32* gpu_ptr = reinterpret_cast<const uint32*>(ptr);
+    bool match = true;
+    for (size_t i = 0; i < cpu_data.size(); ++i) {
+        if (cpu_data[i] != gpu_ptr[i]) {
+            match = false;
+            break;
+        }
+    }
+
+    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    return match;
+}
+
+
 
 void Shader::checkCompileErrors(uint32 shader, std::string type) {
     int success;

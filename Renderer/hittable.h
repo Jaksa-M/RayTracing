@@ -51,6 +51,8 @@ public:
         return local_to_world_mat_;
     }
 
+    virtual const matrix4x4& getWorldToLocalMatrix() const { return world_to_local_mat_; }
+
     virtual void setTransformationMatrix(const matrix4x4& mat) {
         local_to_world_mat_ = mat;
         world_to_local_mat_ = mat.invert();

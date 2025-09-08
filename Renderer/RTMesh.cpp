@@ -179,7 +179,7 @@ bool RTMesh::hit(const ray& r, interval ray_t, HitRecord& rec) const {
                        res_mesh_info_.vertices[res_mesh_info_.indices[i + 2] * 3 + 2]);
 
             IntersectResult intersect_res = intersectTriangle(changed_ray, ray_t, p1, p2, p3);
-            if (intersect_res.t < closest_intersection.t) {  // Update only if this hit is closer
+            if (intersect_res.t < closest_intersection.t) { // Update only if this hit is closer
                 intersect_res.closest_tri_index = i;
                 closest_intersection = intersect_res;
             }

@@ -72,6 +72,8 @@ void SceneObjLoader::initialize() {
         }
     }
 
+    sendMeshDataToGPU();
+
     if (context.settings->use_tiny_bvh) {
         static_cast<HittableListTinybvh*>(world_.get())->buildTLAS();
     }
@@ -157,4 +159,75 @@ void SceneObjLoader::addMesh(MeshHandle mesh_handle, std::shared_ptr<Material> m
         HittableList* world = static_cast<HittableList*>(world_.get());
         world->add(std::move(mesh));
     }
+}
+
+//void SceneObjLoader::sendMeshDataToGPU() {
+//    std::vector<float>& gpu_mesh_data_buffer = context.mesh_buf_manager->getBuffer();
+//    std::vector<MeshDesc> descs;
+//    descs.reserve(rt_meshes_.size());
+//
+//    for (uint32 i = 0; i < rt_meshes_.size(); i++) {
+//        MeshHandle mesh_handle = dynamic_cast<RTMesh*>(rt_meshes_[i].get())->getMeshHandle();
+//
+//        MeshDesc desc = context.mesh_buf_manager->getMeshDesc(mesh_handle);
+//        descs.push_back(desc);
+//    }
+//
+//    comp_shader_->bind();
+//    uint32 mesh_data_ssbo = comp_shader_->createSSBO(3, gpu_mesh_data_buffer.size() * sizeof(float), gpu_mesh_data_buffer.data(), 0x88E4); // GL_STATIC_DRAW
+//    uint32 mesh_desc_ssbo = comp_shader_->createSSBO(4, descs.size() * sizeof(MeshDesc), descs.data(), 0x88E8); // GL_DYNAMIC_DRAW
+//
+//    comp_shader_->setUint("u_mesh_count", static_cast<uint32>(rt_meshes_.size()));
+//
+//    //bool mesh_data_matches = comp_shader_->checkSSBOFloat(mesh_data_ssbo, gpu_mesh_data_buffer);
+//    //bool mesh_descs_match = comp_shader_->checkSSBOMeshDesc(mesh_desc_ssbo, descs);
+//
+//    //std::string val = mesh_data_matches == true ? "yes" : "no";
+//    //std::cout << "Mesh data buffer match: " << val << "\n";
+//    //val = mesh_descs_match == true ? "yes" : "no";
+//    //std::cout << "Mesh desc buffer match: " << val << "\n";
+//
+//
+//    comp_shader_->unbind();
+//}
+
+void SceneObjLoader::sendMeshDataToGPU() {
+    std::vector<float>& gpu_mesh_data_buffer = context.mesh_buf_manager->getBuffer();
+    
+    // global buffers for all meshes
+    std::vector<uint32> all_indices;
+    std::vector<float> all_vertices;
+
+    std::vector<MeshDesc> descs;
+    descs.reserve(rt_meshes_.size());
+
+    for (uint32 i = 0; i < rt_meshes_.size(); i++) {
+        MeshHandle mesh_handle = dynamic_cast<RTMesh*>(rt_meshes_[i].get())->getMeshHandle();
+        MeshDesc desc = context.mesh_buf_manager->getMeshDesc(mesh_handle);
+
+        // gather indices
+        std::span<uint32> indices = context.mesh_buf_manager->getIndices(mesh_handle);
+        desc.offset_i = static_cast<uint32>(all_indices.size());
+        desc.count_i = static_cast<uint32>(indices.size());
+        all_indices.insert(all_indices.end(), indices.begin(), indices.end());
+
+        // gather vertices
+        std::span<const float> vertices = context.mesh_buf_manager->getAttribute(mesh_handle, AttributeType::Position);
+        desc.offset_v = static_cast<uint32>(all_vertices.size() / 3);
+        desc.count_v = static_cast<uint32>(vertices.size() / 3); // 3 floats per vertex
+        all_vertices.insert(all_vertices.end(), vertices.begin(), vertices.end());
+
+        descs.push_back(desc);
+    }
+
+    comp_shader_->bind();
+    //uint32 mesh_data_ssbo = comp_shader_->createSSBO(3, gpu_mesh_data_buffer.size() * sizeof(float), gpu_mesh_data_buffer.data(), 0x88E4); // GL_STATIC_DRAW
+    uint32 mesh_desc_ssbo = comp_shader_->createSSBO(4, descs.size() * sizeof(MeshDesc), descs.data(), 0x88E8);                            // GL_DYNAMIC_DRAW
+
+    uint32 index_ssbo = comp_shader_->createSSBO(5, all_indices.size() * sizeof(uint32), all_indices.data(), 0x88E4);
+    uint32 vertex_ssbo = comp_shader_->createSSBO(6, all_vertices.size() * sizeof(float), all_vertices.data(), 0x88E4);
+
+    comp_shader_->setUint("u_mesh_count", static_cast<uint32>(rt_meshes_.size()));
+
+    comp_shader_->unbind();
 }

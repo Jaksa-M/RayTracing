@@ -121,7 +121,7 @@ int main(int, char**) {
     std::unique_ptr<Statistics> statistics = std::make_unique<Statistics>();
     std::unique_ptr<TimeMeasurement> time_measurement = std::make_unique<TimeMeasurement>();
 
-    SceneType selected_scene_index = SceneType::CORNELL_BOX;
+    SceneType selected_scene_index = SceneType::OBJ_LOADER;
     BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
     MeshColor chosen_mesh_color = MeshColor::MATERIAL;
 
@@ -419,6 +419,7 @@ int main(int, char**) {
                         break;
                 }
                 active_scene->context = context;
+                active_scene->setComputeShader(comp_shader);
                 active_scene->initialize();
 
                 const std::vector<std::unique_ptr<Camera>>& cameras = active_scene->getCameras();
@@ -488,11 +489,6 @@ int main(int, char**) {
         active_scene->context.settings->freeze_camera = freeze_camera;
         active_scene->context.settings->block_size = block_size;
         active_scene->update(display_w, display_h);
-
-        /*if (active_scene->getActiveCamera().getCameraMoved()) {
-            std::fill(image_data_acc.begin(), image_data_acc.end(), vec4());
-            active_scene->getActiveCamera().setCameraMoved(false);
-        }*/
 
         if (!gui_settings->use_gpu) {
             Camera& cam = active_scene->getActiveCamera();
@@ -569,9 +565,10 @@ int main(int, char**) {
             glBindTexture(GL_TEXTURE_2D, background_tex);
             comp_shader->setTexture("u_background_img", 0); // compute shader uniform background_img should sample from texture unit 0
 
+            //glMemoryBarrier(GL_ALL_BARRIER_BITS); // before dispatch
             glDispatchCompute(num_groups_x, num_groups_y, 1);
             // Barrier that ensures that data writting is completely finished
-            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT);
             if (GLenum err = glGetError(); err != GL_NO_ERROR) {
                 std::cout << "GLerror: " << err;
             }

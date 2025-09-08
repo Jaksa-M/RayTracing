@@ -21,6 +21,8 @@ class SceneObjLoader : public Scene {
 
     Camera& getActiveCamera() override;
 
+    void sendMeshDataToGPU() override;
+
     ~SceneObjLoader();
 
    private:

@@ -51,76 +51,87 @@ void SceneCornellBox::initialize() {
     auto mat_light = std::make_shared<Lambertian>(diffuse_tex, nullptr, emissive_tex);
 
 
-	// Creating meshes and their transformation matrices
+	//// Creating meshes and their transformation matrices
+	//rect_prism_mesh_ = MeshUtils::GenerateTriangleCube(context, mat_yellow, 2);
+	//matrix4x4 m = transformation::create_rotation_matrix(0.0f, 30.0f * (3.14159f / 180.0f), 0.0f) *
+	//	transformation::create_translation_matrix(vec3(-0.1f, 1.0f, -0.2f)) *
+	//	transformation::create_scaling_matrix(0.7f, 1.2f, 0.7f);
+	//rect_prism_mesh_->setTransformationMatrix(m);
+
+	//cube_mesh_ = std::make_shared<RTMesh>(context, rect_prism_mesh_->getMeshHandle(), mat_yellow);
+	//m = transformation::create_rotation_matrix(0.0f, 40.0f * (3.14159f / 180.0f), 0.0f) *
+	//	transformation::create_translation_matrix(vec3(-0.05f, 0.6f, 0.4f)) *
+	//	transformation::create_scaling_matrix(0.5f, 0.5f, 0.5f);
+	//cube_mesh_->setTransformationMatrix(m);
+
+	//rect_mesh_back_ = MeshUtils::GenerateTriangleRectangle(context, mat_white, 2, 2);
+	//m = transformation::create_translation_matrix(vec3(0.0f, 1.0f, -0.99f)) *
+	//	transformation::create_rotation_matrix(90.0f * (3.14159f / 180.0f), 0.0f, 0.0f) *
+	//	transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
+	//rect_mesh_back_->setTransformationMatrix(m);
+
+	//rect_mesh_top_ = std::make_shared<RTMesh>(context, rect_mesh_back_->getMeshHandle(), mat_white);
+	//m = transformation::create_translation_matrix(vec3(0.0f, 1.99f, 0.0f)) *
+	//	transformation::create_rotation_matrix(-180.0f * (3.14159f / 180.0f), 0.0f, 0.0f) *
+	//	transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
+	//rect_mesh_top_->setTransformationMatrix(m);
+
+	//rect_mesh_bottom_ = std::make_shared<RTMesh>(context, rect_mesh_back_->getMeshHandle(), mat_white);
+	//m = transformation::create_translation_matrix(vec3(0.0f, 0.01f, 0.0f)) *
+	//	transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
+	//rect_mesh_bottom_->setTransformationMatrix(m);
+
+	//rect_mesh_left_ = std::make_shared<RTMesh>(context, rect_mesh_back_->getMeshHandle(), mat_red);
+	//m = transformation::create_translation_matrix(vec3(-0.99f, 1.0f, 0.0f)) *
+	//	transformation::create_rotation_matrix(0.0f, 0.0f, 90.0f * (3.14159f / 180.0f)) *
+	//	transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
+	//rect_mesh_left_->setTransformationMatrix(m);
+
+	//rect_mesh_right_ = std::make_shared<RTMesh>(context, rect_mesh_back_->getMeshHandle(), mat_green);
+	//m = transformation::create_translation_matrix(vec3(0.99f, 1.0f, 0.0f)) *
+	//	transformation::create_rotation_matrix(0.0f, 0.0f, -90.0f * (3.14159f / 180.0f)) *
+	//	transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
+	//rect_mesh_right_->setTransformationMatrix(m);
+
+	//// Ceiling light panel (diffuse + emissive)
+ //   rect_mesh_light_ = MeshUtils::GenerateTriangleRectangle(context, mat_light, 2, 2);
+ //   m = transformation::create_translation_matrix(vec3(0.0f, 1.98f, -0.25f)) * // position just below ceiling
+ //       transformation::create_rotation_matrix(-180.0f * (3.14159f / 180.0f), 0.0f, 0.0f) *
+ //       transformation::create_scaling_matrix(0.5f, 0.5f, 0.5f); // size of light source
+ //   rect_mesh_light_->setTransformationMatrix(m);
+
+	//std::vector<MeshHandle> meshes;
+ //   meshes.push_back(rect_prism_mesh_->getMeshHandle());
+ //   meshes.push_back(cube_mesh_->getMeshHandle());
+ //   meshes.push_back(rect_mesh_back_->getMeshHandle());
+ //   meshes.push_back(rect_mesh_top_->getMeshHandle());
+ //   meshes.push_back(rect_mesh_bottom_->getMeshHandle());
+ //   meshes.push_back(rect_mesh_left_->getMeshHandle());
+ //   meshes.push_back(rect_mesh_right_->getMeshHandle());
+ //   meshes.push_back(rect_mesh_light_->getMeshHandle());
+
+	//rt_meshes_.push_back(std::move(rect_prism_mesh_));
+ //   rt_meshes_.push_back(std::move(cube_mesh_));
+ //   rt_meshes_.push_back(std::move(rect_mesh_back_));
+ //   rt_meshes_.push_back(std::move(rect_mesh_top_));
+ //   rt_meshes_.push_back(std::move(rect_mesh_bottom_));
+ //   rt_meshes_.push_back(std::move(rect_mesh_left_));
+ //   rt_meshes_.push_back(std::move(rect_mesh_right_));
+ //   rt_meshes_.push_back(std::move(rect_mesh_light_));
+ //   for (uint32 i = 0; i < rt_meshes_.size(); i++) {
+ //       world_->add(rt_meshes_[i]);
+ //   }
+
 	rect_prism_mesh_ = MeshUtils::GenerateTriangleCube(context, mat_yellow, 2);
-	matrix4x4 m = transformation::create_rotation_matrix(0.0f, 30.0f * (3.14159f / 180.0f), 0.0f) *
-		transformation::create_translation_matrix(vec3(-0.1f, 1.0f, -0.2f)) *
-		transformation::create_scaling_matrix(0.7f, 1.2f, 0.7f);
-	rect_prism_mesh_->setTransformationMatrix(m);
+    matrix4x4 m = matrix4x4::identity();
+    rect_prism_mesh_->setTransformationMatrix(m);
 
-	cube_mesh_ = std::make_shared<RTMesh>(context, rect_prism_mesh_->getMeshHandle(), mat_yellow);
-	m = transformation::create_rotation_matrix(0.0f, 40.0f * (3.14159f / 180.0f), 0.0f) *
-		transformation::create_translation_matrix(vec3(-0.05f, 0.6f, 0.4f)) *
-		transformation::create_scaling_matrix(0.5f, 0.5f, 0.5f);
-	cube_mesh_->setTransformationMatrix(m);
-
-	rect_mesh_back_ = MeshUtils::GenerateTriangleRectangle(context, mat_white, 2, 2);
-	m = transformation::create_translation_matrix(vec3(0.0f, 1.0f, -0.99f)) *
-		transformation::create_rotation_matrix(90.0f * (3.14159f / 180.0f), 0.0f, 0.0f) *
-		transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
-	rect_mesh_back_->setTransformationMatrix(m);
-
-	rect_mesh_top_ = std::make_shared<RTMesh>(context, rect_mesh_back_->getMeshHandle(), mat_white);
-	m = transformation::create_translation_matrix(vec3(0.0f, 1.99f, 0.0f)) *
-		transformation::create_rotation_matrix(-180.0f * (3.14159f / 180.0f), 0.0f, 0.0f) *
-		transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
-	rect_mesh_top_->setTransformationMatrix(m);
-
-	rect_mesh_bottom_ = std::make_shared<RTMesh>(context, rect_mesh_back_->getMeshHandle(), mat_white);
-	m = transformation::create_translation_matrix(vec3(0.0f, 0.01f, 0.0f)) *
-		transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
-	rect_mesh_bottom_->setTransformationMatrix(m);
-
-	rect_mesh_left_ = std::make_shared<RTMesh>(context, rect_mesh_back_->getMeshHandle(), mat_red);
-	m = transformation::create_translation_matrix(vec3(-0.99f, 1.0f, 0.0f)) *
-		transformation::create_rotation_matrix(0.0f, 0.0f, 90.0f * (3.14159f / 180.0f)) *
-		transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
-	rect_mesh_left_->setTransformationMatrix(m);
-
-	rect_mesh_right_ = std::make_shared<RTMesh>(context, rect_mesh_back_->getMeshHandle(), mat_green);
-	m = transformation::create_translation_matrix(vec3(0.99f, 1.0f, 0.0f)) *
-		transformation::create_rotation_matrix(0.0f, 0.0f, -90.0f * (3.14159f / 180.0f)) *
-		transformation::create_scaling_matrix(2.0f, 2.0f, 2.0f);
-	rect_mesh_right_->setTransformationMatrix(m);
-
-	// Ceiling light panel (diffuse + emissive)
-    rect_mesh_light_ = MeshUtils::GenerateTriangleRectangle(context, mat_light, 2, 2);
-    m = transformation::create_translation_matrix(vec3(0.0f, 1.98f, -0.25f)) * // position just below ceiling
-        transformation::create_rotation_matrix(-180.0f * (3.14159f / 180.0f), 0.0f, 0.0f) *
-        transformation::create_scaling_matrix(0.5f, 0.5f, 0.5f); // size of light source
-    rect_mesh_light_->setTransformationMatrix(m);
-
-	std::vector<MeshHandle> meshes;
+    std::vector<MeshHandle> meshes;
     meshes.push_back(rect_prism_mesh_->getMeshHandle());
-    meshes.push_back(cube_mesh_->getMeshHandle());
-    meshes.push_back(rect_mesh_back_->getMeshHandle());
-    meshes.push_back(rect_mesh_top_->getMeshHandle());
-    meshes.push_back(rect_mesh_bottom_->getMeshHandle());
-    meshes.push_back(rect_mesh_left_->getMeshHandle());
-    meshes.push_back(rect_mesh_right_->getMeshHandle());
-    meshes.push_back(rect_mesh_light_->getMeshHandle());
+    rt_meshes_.push_back(std::move(rect_prism_mesh_));
+    world_->add(rt_meshes_[0]);
 
-	rt_meshes_.push_back(std::move(rect_prism_mesh_));
-    rt_meshes_.push_back(std::move(cube_mesh_));
-    rt_meshes_.push_back(std::move(rect_mesh_back_));
-    rt_meshes_.push_back(std::move(rect_mesh_top_));
-    rt_meshes_.push_back(std::move(rect_mesh_bottom_));
-    rt_meshes_.push_back(std::move(rect_mesh_left_));
-    rt_meshes_.push_back(std::move(rect_mesh_right_));
-    rt_meshes_.push_back(std::move(rect_mesh_light_));
-    for (uint32 i = 0; i < rt_meshes_.size(); i++) {
-        world_->add(rt_meshes_[i]);
-    }
+	sendMeshDataToGPU();
 
 	static_cast<HittableListCustomBVH*>(world_.get())->buildTLAS(context.bvh_manager, meshes, rt_meshes_);
 
@@ -160,4 +171,45 @@ void SceneCornellBox::drawBVH() {
 			}
 		}
 	}
+}
+
+void SceneCornellBox::sendMeshDataToGPU() {
+    std::vector<float>& gpu_mesh_data_buffer = context.mesh_buf_manager->getBuffer();
+
+    // global buffers for all meshes
+    std::vector<uint32> all_indices;
+    std::vector<float> all_vertices;
+
+    std::vector<MeshDesc> descs;
+    descs.reserve(rt_meshes_.size());
+
+    for (uint32 i = 0; i < rt_meshes_.size(); i++) {
+        MeshHandle mesh_handle = dynamic_cast<RTMesh*>(rt_meshes_[i].get())->getMeshHandle();
+        MeshDesc desc = context.mesh_buf_manager->getMeshDesc(mesh_handle);
+
+        // gather indices
+        std::span<uint32> indices = context.mesh_buf_manager->getIndices(mesh_handle);
+        desc.offset_i = static_cast<uint32>(all_indices.size());
+        desc.count_i = static_cast<uint32>(indices.size());
+        all_indices.insert(all_indices.end(), indices.begin(), indices.end());
+
+        // gather vertices
+        std::span<const float> vertices = context.mesh_buf_manager->getAttribute(mesh_handle, AttributeType::Position);
+        desc.offset_v = static_cast<uint32>(all_vertices.size());
+        desc.count_v = static_cast<uint32>(vertices.size() / 3); // 3 floats per vertex
+        all_vertices.insert(all_vertices.end(), vertices.begin(), vertices.end());
+
+        descs.push_back(desc);
+    }
+
+    comp_shader_->bind();
+    //uint32 mesh_data_ssbo = comp_shader_->createSSBO(3, gpu_mesh_data_buffer.size() * sizeof(float), gpu_mesh_data_buffer.data(), 0x88E4); // GL_STATIC_DRAW
+    uint32 mesh_desc_ssbo = comp_shader_->createSSBO(4, descs.size() * sizeof(MeshDesc), descs.data(), 0x88E8); // GL_DYNAMIC_DRAW
+
+    uint32 index_ssbo = comp_shader_->createSSBO(5, all_indices.size() * sizeof(uint32), all_indices.data(), 0x88E4);
+    uint32 vertex_ssbo = comp_shader_->createSSBO(6, all_vertices.size() * sizeof(float), all_vertices.data(), 0x88E4);
+
+    comp_shader_->setUint("u_mesh_count", static_cast<uint32>(rt_meshes_.size()));
+
+    comp_shader_->unbind();
 }

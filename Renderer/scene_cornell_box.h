@@ -2,7 +2,6 @@
 #define SCENE_CORNELL_BOX_H
 
 #include "scene.h"
-#include "shader.h"
 #include "mesh.h"
 #include "RTMesh.h"
 #include <memory.h>
@@ -17,6 +16,8 @@ public:
 
     void initShader();
     void drawBVH() override;
+
+    void sendMeshDataToGPU() override;
 
 private:
     std::unique_ptr<MeshBufferManager> mesh_buf_manager_;

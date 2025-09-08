@@ -12,6 +12,8 @@
 #include "statistics.h"
 #include "texture.h"
 #include "types.h"
+#include "shader.h"
+#include "gpu_types.h"
 
 class Scene {
 public:
@@ -38,6 +40,10 @@ public:
 
     virtual void setBackgroundTexture(std::shared_ptr<Texture> tex) { background_texture_ = tex; }
 
+    virtual void setComputeShader(std::shared_ptr<Shader> comp_shader) { comp_shader_ = comp_shader; }
+
+    virtual void sendMeshDataToGPU(){}
+
     virtual std::size_t rayCast(ray& r) {
         // Fire the ray in that direction and intersect with BVH
         std::cout << "Firing ray from: " << r.origin() << " in direction: " << r.direction() << std::endl;
@@ -55,6 +61,7 @@ protected:
     std::vector<std::unique_ptr<Camera>> cameras_;
     int active_camera_;
     std::shared_ptr<Texture> background_texture_;
+    std::shared_ptr<Shader> comp_shader_;
 };
 
 #endif

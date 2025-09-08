@@ -7,6 +7,7 @@
 #include <span>
 #include "vec3.h"
 #include "types.h"
+#include "gpu_types.h"
 
 enum class AttributeType {
     Position,
@@ -41,6 +42,7 @@ public:
 	std::span<uint32> getIndices(MeshHandle mesh);
 	std::span<const float> getAttribute(MeshHandle mesh, AttributeType attribute) const;
 	ResolvedMeshInfo getResolvedMesh(MeshHandle mesh) const;
+    MeshDesc getMeshDesc(MeshHandle mesh) const;
 
 private:
 	struct MeshInfo {

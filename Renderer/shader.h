@@ -3,6 +3,8 @@
 #include <string>
 #include "types.h"
 
+struct MeshDesc;
+
 class Shader {
 public:
     unsigned int ID;
@@ -29,6 +31,12 @@ public:
     void setMat4(const std::string& name, const float* value) const;
 
     void setTexture(const std::string& name, uint32 tex);
+
+    void setSSBO(uint32 binding, uint32 bufferID) const;
+    uint32 createSSBO(uint32 binding, std::size_t size, const void* data, uint32 usage) const;
+    bool checkSSBOFloat(uint32 ssbo, const std::vector<float>& cpu_data);
+    bool checkSSBOMeshDesc(uint32 ssbo, const std::vector<MeshDesc>& cpu_data);
+    bool checkSSBOUint(uint32 ssbo, const std::vector<uint32>& cpu_data);
 
 private:
     void checkCompileErrors(uint32 shader, std::string type); // Checking shader compilation/linking errors

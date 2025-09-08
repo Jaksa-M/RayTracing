@@ -164,6 +164,7 @@
     <ClInclude Include="bvh_types.h" />
     <ClInclude Include="camera.h" />
     <ClInclude Include="context.h" />
+    <ClInclude Include="gpu_types.h" />
     <ClInclude Include="gui_settings.h" />
     <ClInclude Include="hittable.h" />
     <ClInclude Include="hittable_list.h" />
