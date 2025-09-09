@@ -51,7 +51,6 @@ void intersectResultInit(out IntersectResult res) {
 }
 
 struct MeshDesc {
-    uint64_t mesh_handle;
     uint offset_v; // position where vertices array is placed
     uint offset_n; // position where normals array is placed
     uint offset_uv; // position where uv's array is placed
@@ -68,7 +67,7 @@ layout (rgba8, binding = 0) uniform image2D u_display_img;
 layout (binding = 1) uniform sampler2D u_background_img;
 layout (rgba32f, binding = 2) uniform image2D u_accumulated_img;
 
-layout(std430, binding = 3) buffer MeshData { uint u_mesh_data[]; };
+layout(std430, binding = 3) buffer MeshHandles { uint64_t u_mesh_handles[]; };
 layout(std430, binding = 4) buffer MeshDescs { MeshDesc mesh_descs[]; };
 
 layout(std430, binding = 5) buffer IndexBuffer { uint u_index_data[]; };
@@ -458,7 +457,8 @@ bool hitScene(inout Ray ray, inout Hit closest_hit) {
     for (uint m = 0u; m < u_mesh_count; m++) {
         Hit mh;
         hit_struct_init(mh);
-        if (hitMesh(ray, mesh_descs[m], debug_mat, mh, m) && mh.t < closest_hit.t) closest_hit = mh;
+        uint handle = uint(u_mesh_handles[m]); // casted to uint32
+        if (hitMesh(ray, mesh_descs[handle], debug_mat, mh, m) && mh.t < closest_hit.t) closest_hit = mh;
     }
 
     return closest_hit.t < FLOAT_MAX;

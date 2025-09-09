@@ -158,6 +158,7 @@ uint32 Shader::createSSBO(uint32 binding, std::size_t size, const void* data, ui
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     return ssbo;
 }
+
 bool Shader::checkSSBOFloat(uint32 ssbo, const std::vector<float>& cpu_data) {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
     void* ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
@@ -201,6 +202,7 @@ bool Shader::checkSSBOMeshDesc(uint32 ssbo, const std::vector<MeshDesc>& cpu_dat
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     return match;
 }
+
 bool Shader::checkSSBOUint(uint32 ssbo, const std::vector<uint32>& cpu_data) {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
     void* ptr = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
@@ -222,8 +224,6 @@ bool Shader::checkSSBOUint(uint32 ssbo, const std::vector<uint32>& cpu_data) {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
     return match;
 }
-
-
 
 void Shader::checkCompileErrors(uint32 shader, std::string type) {
     int success;

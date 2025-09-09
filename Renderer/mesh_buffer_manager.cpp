@@ -108,7 +108,6 @@ MeshDesc MeshBufferManager::getMeshDesc(MeshHandle mesh) const {
     const MeshInfo& info = mesh_info_[mesh];
 
     MeshDesc desc{};
-    desc.mesh_handle = mesh;
 
     desc.offset_v = info.offsets_v[static_cast<uint32>(AttributeType::Position)];
     desc.offset_n = info.offsets_v[static_cast<uint32>(AttributeType::Normal)];

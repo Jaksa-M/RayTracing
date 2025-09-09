@@ -5,7 +5,6 @@
 #include "matrix.h"
 
 struct MeshDesc {
-    MeshHandle mesh_handle;
     uint32 offset_v;
     uint32 offset_n;
     uint32 offset_uv;
