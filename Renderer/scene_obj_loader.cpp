@@ -193,16 +193,22 @@ void SceneObjLoader::addMesh(MeshHandle mesh_handle, std::shared_ptr<Material> m
 
 void SceneObjLoader::sendMeshDataToGPU() {
     std::vector<float>& gpu_mesh_data_buffer = context.mesh_buf_manager->getBuffer();
-    
+
     // global buffers for all meshes
     std::vector<uint32> all_indices;
     std::vector<float> all_vertices;
+    std::vector<float> all_normals;
+    std::vector<float> all_uvs;
+    std::vector<float> all_colors;
+    std::vector<float> all_transforms;
+    std::vector<float> all_inv_transforms;
 
     std::vector<MeshDesc> descs;
     descs.reserve(rt_meshes_.size());
 
     for (uint32 i = 0; i < rt_meshes_.size(); i++) {
-        MeshHandle mesh_handle = dynamic_cast<RTMesh*>(rt_meshes_[i].get())->getMeshHandle();
+        RTMesh* rt_mesh = dynamic_cast<RTMesh*>(rt_meshes_[i].get());
+        MeshHandle mesh_handle = rt_mesh->getMeshHandle();
         MeshDesc desc = context.mesh_buf_manager->getMeshDesc(mesh_handle);
 
         // gather indices
@@ -213,19 +219,47 @@ void SceneObjLoader::sendMeshDataToGPU() {
 
         // gather vertices
         std::span<const float> vertices = context.mesh_buf_manager->getAttribute(mesh_handle, AttributeType::Position);
-        desc.offset_v = static_cast<uint32>(all_vertices.size() / 3);
+        desc.offset_v = static_cast<uint32>(all_vertices.size());
         desc.count_v = static_cast<uint32>(vertices.size() / 3); // 3 floats per vertex
         all_vertices.insert(all_vertices.end(), vertices.begin(), vertices.end());
+
+        // gather normals
+        std::span<const float> normals = context.mesh_buf_manager->getAttribute(mesh_handle, AttributeType::Normal);
+        desc.offset_n = static_cast<uint32>(all_normals.size());
+        all_normals.insert(all_normals.end(), normals.begin(), normals.end());
+
+        // gather uv's
+        std::span<const float> uvs = context.mesh_buf_manager->getAttribute(mesh_handle, AttributeType::UV);
+        desc.offset_uv = static_cast<uint32>(all_uvs.size());
+        all_uvs.insert(all_uvs.end(), uvs.begin(), uvs.end());
+
+        const matrix4x4& m1 = rt_mesh->getLocalToWorldMatrix();
+        for (int col = 0; col < 4; col++) {
+            for (int row = 0; row < 4; row++) {
+                all_transforms.push_back(m1(row, col));
+            }
+        }
+        const matrix4x4& m2 = rt_mesh->getWorldToLocalMatrix();
+        for (int col = 0; col < 4; col++) {
+            for (int row = 0; row < 4; row++) {
+                all_inv_transforms.push_back(m2(row, col));
+            }
+        }
 
         descs.push_back(desc);
     }
 
     comp_shader_->bind();
     //uint32 mesh_data_ssbo = comp_shader_->createSSBO(3, gpu_mesh_data_buffer.size() * sizeof(float), gpu_mesh_data_buffer.data(), 0x88E4); // GL_STATIC_DRAW
-    uint32 mesh_desc_ssbo = comp_shader_->createSSBO(4, descs.size() * sizeof(MeshDesc), descs.data(), 0x88E8);                            // GL_DYNAMIC_DRAW
+    uint32 mesh_desc_ssbo = comp_shader_->createSSBO(4, descs.size() * sizeof(MeshDesc), descs.data(), 0x88E8); // GL_DYNAMIC_DRAW
 
     uint32 index_ssbo = comp_shader_->createSSBO(5, all_indices.size() * sizeof(uint32), all_indices.data(), 0x88E4);
     uint32 vertex_ssbo = comp_shader_->createSSBO(6, all_vertices.size() * sizeof(float), all_vertices.data(), 0x88E4);
+    uint32 normal_ssbo = comp_shader_->createSSBO(7, all_normals.size() * sizeof(float), all_normals.data(), 0x88E4);
+    uint32 uv_ssbo = comp_shader_->createSSBO(8, all_uvs.size() * sizeof(float), all_uvs.data(), 0x88E4);
+
+    uint32 transform_ssbo = comp_shader_->createSSBO(9, all_transforms.size() * sizeof(float), all_transforms.data(), 0x88E4);
+    uint32 inv_transform_ssbo = comp_shader_->createSSBO(10, all_inv_transforms.size() * sizeof(float), all_inv_transforms.data(), 0x88E4);
 
     comp_shader_->setUint("u_mesh_count", static_cast<uint32>(rt_meshes_.size()));
 
