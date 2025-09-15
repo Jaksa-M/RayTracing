@@ -61,22 +61,23 @@ struct MeshDesc {
     uint count_i; // how many indices there are
 };
 
+struct GPUMeshInstance {
+    mat4 local_to_world;
+    mat4 world_to_local;
+    uint mesh_index; // index into MeshDesc array. 4 bytes
+    uint pad1, pad2, pad3; // padding of 12 bytes, because alignment is vec4 (16 bytes)
+};
+
 layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 layout (rgba8, binding = 0) uniform image2D u_display_img;
 layout (binding = 1) uniform sampler2D u_background_img;
 layout (rgba32f, binding = 2) uniform image2D u_accumulated_img;
 
-layout(std430, binding = 3) buffer MeshHandles { uint64_t u_mesh_handles[]; };
+layout(std430, binding = 3) buffer MeshData { float u_mesh_data[]; };
 layout(std430, binding = 4) buffer MeshDescs { MeshDesc mesh_descs[]; };
-
-layout(std430, binding = 5) buffer IndexBuffer { uint u_index_data[]; };
-layout(std430, binding = 6) buffer VertexBuffer { float u_vertex_data[]; };
-layout(std430, binding = 7) readonly buffer NormalBuffer { float u_normal_data[]; };
-layout(std430, binding = 8) readonly buffer UVBuffer { float u_uv_data[]; };
-layout(std430, binding = 9) buffer TransformBuffer { mat4 u_transforms[]; }; // local to world transforms
-layout(std430, binding = 10) buffer InvTransformBuffer { mat4 u_inv_transforms[]; }; // world to local transforms
-
+layout(std430, binding = 5) buffer MeshInstances { GPUMeshInstance u_instances[]; };
+layout(std430, binding = 6) buffer MeshHandles { uint64_t u_mesh_handles[]; };
 
 uniform ivec2 u_resolution; // (width, height)
 
@@ -160,55 +161,34 @@ vec3 transformDirection(vec3 dir, mat3 m) {
 }
 
 // Utility functions for meshes
-uvec3 getIndices(MeshDesc desc, uint tri_idx) {
-    uint base = desc.offset_i + tri_idx;
-    return uvec3(
-        u_index_data[base + 0u],
-        u_index_data[base + 1u],
-        u_index_data[base + 2u]
-    );
+uvec3 getIndices(MeshDesc desc, uint tri_index) {
+    uint base = desc.offset_i + tri_index;
+
+    uint i0 = floatBitsToUint(u_mesh_data[base + 0u]);
+    uint i1 = floatBitsToUint(u_mesh_data[base + 1u]);
+    uint i2 = floatBitsToUint(u_mesh_data[base + 2u]);
+
+    return uvec3(i0, i1, i2);
 }
+
 void getVertices(MeshDesc desc, uvec3 idx, out vec3 v0, out vec3 v1, out vec3 v2) {
     uint base0 = desc.offset_v + idx.x * 3u;
     uint base1 = desc.offset_v + idx.y * 3u;
     uint base2 = desc.offset_v + idx.z * 3u;
 
-    v0 = vec3(
-        u_vertex_data[base0 + 0u],
-        u_vertex_data[base0 + 1u],
-        u_vertex_data[base0 + 2u]
-    );
-    v1 = vec3(
-        u_vertex_data[base1 + 0u],
-        u_vertex_data[base1 + 1u],
-        u_vertex_data[base1 + 2u]
-    );
-    v2 = vec3(
-        u_vertex_data[base2 + 0u],
-        u_vertex_data[base2 + 1u],
-        u_vertex_data[base2 + 2u]
-    );
+    v0 = vec3(u_mesh_data[base0 + 0u], u_mesh_data[base0 + 1u], u_mesh_data[base0 + 2u]);
+    v1 = vec3(u_mesh_data[base1 + 0u], u_mesh_data[base1 + 1u], u_mesh_data[base1 + 2u]);
+    v2 = vec3(u_mesh_data[base2 + 0u], u_mesh_data[base2 + 1u], u_mesh_data[base2 + 2u]);
 }
+
 void getNormals(MeshDesc desc, uvec3 idx, out vec3 n0, out vec3 n1, out vec3 n2) {
     uint base0 = desc.offset_n + idx.x * 3u;
     uint base1 = desc.offset_n + idx.y * 3u;
     uint base2 = desc.offset_n + idx.z * 3u;
 
-    n0 = vec3(
-        u_normal_data[base0 + 0u],
-        u_normal_data[base0 + 1u],
-        u_normal_data[base0 + 2u]
-    );
-    n1 = vec3(
-        u_normal_data[base1 + 0u],
-        u_normal_data[base1 + 1u],
-        u_normal_data[base1 + 2u]
-    );
-    n2 = vec3(
-        u_normal_data[base2 + 0u],
-        u_normal_data[base2 + 1u],
-        u_normal_data[base2 + 2u]
-    );
+    n0 = vec3(u_mesh_data[base0 + 0u], u_mesh_data[base0 + 1u], u_mesh_data[base0 + 2u]);
+    n1 = vec3(u_mesh_data[base1 + 0u], u_mesh_data[base1 + 1u], u_mesh_data[base1 + 2u]);
+    n2 = vec3(u_mesh_data[base2 + 0u], u_mesh_data[base2 + 1u], u_mesh_data[base2 + 2u]);
 }
 
 void getUVs(MeshDesc desc, uvec3 idx, out vec2 uv0, out vec2 uv1, out vec2 uv2) {
@@ -216,18 +196,9 @@ void getUVs(MeshDesc desc, uvec3 idx, out vec2 uv0, out vec2 uv1, out vec2 uv2) 
     uint base1 = desc.offset_uv + idx.y * 2u;
     uint base2 = desc.offset_uv + idx.z * 2u;
 
-    uv0 = vec2(
-        u_uv_data[base0 + 0u],
-        u_uv_data[base0 + 1u]
-    );
-    uv1 = vec2(
-        u_uv_data[base1 + 0u],
-        u_uv_data[base1 + 1u]
-    );
-    uv2 = vec2(
-        u_uv_data[base2 + 0u],
-        u_uv_data[base2 + 1u]
-    );
+    uv0 = vec2(u_mesh_data[base0 + 0u], u_mesh_data[base0 + 1u]);
+    uv1 = vec2(u_mesh_data[base1 + 0u], u_mesh_data[base1 + 1u]);
+    uv2 = vec2(u_mesh_data[base2 + 0u], u_mesh_data[base2 + 1u]);
 }
 
 // Material utility functions
@@ -363,12 +334,12 @@ bool hitSphere(in vec3 sph_center, in float sph_radius, in Material mat, in Ray 
     return true;
 }
 
-bool hitMesh(in Ray world_ray, in MeshDesc desc, in Material mat, out Hit out_hit, in uint mesh_index) {
+bool hitMesh(in Ray world_ray, in MeshDesc desc, in Material mat, out Hit out_hit, in GPUMeshInstance instance) {
     if (desc.count_i < 3u || desc.count_v == 0u) return false;
 
-    // Get per mesh transforms
-    mat4 local_to_world = u_transforms[mesh_index];
-    mat4 world_to_local = u_inv_transforms[mesh_index];
+    // Get per instance transforms
+    mat4 local_to_world = instance.local_to_world;
+    mat4 world_to_local = instance.world_to_local;
 
     // Transforming ray that is in world space into local space
     Ray local_ray;
@@ -386,9 +357,8 @@ bool hitMesh(in Ray world_ray, in MeshDesc desc, in Material mat, out Hit out_hi
     local_ray.tMin = min(local_min, local_max);
     local_ray.tMax = max(local_min, local_max);
 
-    // Best hit info
     float best_t = FLOAT_MAX;
-    uint best_i = uint(-1); // closest triangle index
+    uint best_index_offset = uint(-1);
     float best_u = 0.0;
     float best_v = 0.0;
 
@@ -397,20 +367,20 @@ bool hitMesh(in Ray world_ray, in MeshDesc desc, in Material mat, out Hit out_hi
         uvec3 idxs = getIndices(desc, i);
 
         vec3 v0, v1, v2;
-        getVertices(desc, idxs, v0, v1, v2);
+        getVertices(desc, idxs, v0, v1, v2); // these are local-space vertices
 
         float t, u, v;
         if (intersectTriangleMT(local_ray, v0, v1, v2, t, u, v)) {
             if (t >= local_ray.tMin && t <= local_ray.tMax && t > 0.0 && t < best_t) {
                 best_t = t;
-                best_i = i;
+                best_index_offset = i;
                 best_u = u;
                 best_v = v;
             }
         }
     }
 
-    if (best_i == uint(-1) || best_t == FLOAT_MAX) return false;
+    if (best_index_offset == uint(-1) || best_t == FLOAT_MAX) return false;
 
     // Build local hit
     Hit local_hit;
@@ -418,7 +388,7 @@ bool hitMesh(in Ray world_ray, in MeshDesc desc, in Material mat, out Hit out_hi
     local_hit.t = best_t;
     local_hit.p = local_ray.ro + best_t * local_ray.rd;
 
-    uvec3 best_idxs = getIndices(desc, best_i);
+    uvec3 best_idxs = getIndices(desc, best_index_offset);
     vec3 lv0, lv1, lv2;
     getVertices(desc, best_idxs, lv0, lv1, lv2);
 
@@ -428,7 +398,7 @@ bool hitMesh(in Ray world_ray, in MeshDesc desc, in Material mat, out Hit out_hi
     local_hit.mat = mat;
     local_hit.uv = vec2(best_u, best_v);
 
-    // Convert local hit back to world space
+    // Transform local hit to world space
     vec3 p_world = transformPoint(local_hit.p, local_to_world);
     mat3 normalMat = transpose(inverse(mat3(local_to_world)));
     vec3 n_world = normalize(normalMat * local_hit.normal);
@@ -445,20 +415,20 @@ bool hitMesh(in Ray world_ray, in MeshDesc desc, in Material mat, out Hit out_hi
     return true;
 }
 
-bool hitScene(inout Ray ray, inout Hit closest_hit) {
-    // Materials
-    Material red;   red.albedo = vec3(0.65, 0.05, 0.05); red.emission = vec3(0.0);
-    Material green; green.albedo = vec3(0.12, 0.45, 0.15); green.emission = vec3(0.0);
-    Material white; white.albedo = vec3(0.73); white.emission = vec3(0.0);
-    Material light; light.albedo = vec3(0.0); light.emission = vec3(15.0); // strong emission
 
-    Material debug_mat; debug_mat.albedo = vec3(1.0,0.0,0.0); debug_mat.emission = vec3(0.0);
-    // Meshes
-    for (uint m = 0u; m < u_mesh_count; m++) {
+bool hitScene(inout Ray ray, inout Hit closest_hit) {
+    Material debug_mat; debug_mat.albedo = vec3(1.0, 0.0, 0.0); debug_mat.emission = vec3(0.0);
+
+    for (uint m = 0u; m < u_mesh_count; ++m) {
         Hit mh;
         hit_struct_init(mh);
-        uint handle = uint(u_mesh_handles[m]); // casted to uint32
-        if (hitMesh(ray, mesh_descs[handle], debug_mat, mh, m) && mh.t < closest_hit.t) closest_hit = mh;
+
+        GPUMeshInstance inst = u_instances[m];
+        MeshDesc desc = mesh_descs[inst.mesh_index];
+
+        if (hitMesh(ray, desc, debug_mat, mh, inst) && mh.t < closest_hit.t) {
+            closest_hit = mh;
+        }
     }
 
     return closest_hit.t < FLOAT_MAX;

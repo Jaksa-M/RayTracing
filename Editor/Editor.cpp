@@ -121,7 +121,7 @@ int main(int, char**) {
     std::unique_ptr<Statistics> statistics = std::make_unique<Statistics>();
     std::unique_ptr<TimeMeasurement> time_measurement = std::make_unique<TimeMeasurement>();
 
-    SceneType selected_scene_index = SceneType::CORNELL_BOX;
+    SceneType selected_scene_index = SceneType::OBJ_LOADER;
     BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
     MeshColor chosen_mesh_color = MeshColor::MATERIAL;
 
@@ -419,7 +419,6 @@ int main(int, char**) {
                         break;
                 }
                 active_scene->context = context;
-                active_scene->setComputeShader(comp_shader);
                 active_scene->initialize();
 
                 const std::vector<std::unique_ptr<Camera>>& cameras = active_scene->getCameras();
@@ -555,6 +554,9 @@ int main(int, char**) {
             comp_shader->setInt("u_max_bounces", gui_settings->max_bounces);
             comp_shader->setInt("u_spp", gui_settings->spp);
             comp_shader->setFloat("u_environment_light", gui_settings->environment_light);
+
+            active_scene->bindResources(comp_shader.get());
+            comp_shader->setUint("u_mesh_count", active_scene->getRtMeshesSize());
 
             comp_shader->setBool("u_accumulate", active_cam.getCameraMoved());
             if (active_cam.getCameraMoved()) {

@@ -15,4 +15,11 @@ struct MeshDesc {
     uint32 count_i;
 };
 
+struct GPUMeshInstance {
+    matrix4x4 local_to_world;
+    matrix4x4 world_to_local;
+    uint32 mesh_index;
+    uint32 pad1, pad2, pad3;
+};
+
 #endif

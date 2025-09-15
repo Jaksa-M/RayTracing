@@ -8,12 +8,14 @@
 #include "context.h"
 #include "gui_settings.h"
 #include "hittable_list.h"
+#include "hittable.h"
 #include "mesh_buffer_manager.h"
 #include "statistics.h"
 #include "texture.h"
 #include "types.h"
 #include "shader.h"
 #include "gpu_types.h"
+#include "gpu_buffer.h"
 
 class Scene {
 public:
@@ -40,9 +42,15 @@ public:
 
     virtual void setBackgroundTexture(std::shared_ptr<Texture> tex) { background_texture_ = tex; }
 
-    virtual void setComputeShader(std::shared_ptr<Shader> comp_shader) { comp_shader_ = comp_shader; }
-
     virtual void sendMeshDataToGPU(){}
+
+    virtual void bindResources(Shader* shader) {
+        shader->bindBuffer(mesh_data_buffer_.get(), 3);
+        shader->bindBuffer(mesh_desc_buffer_.get(), 4);
+        shader->bindBuffer(mesh_instance_buffer_.get(), 5);
+    }
+
+    virtual uint32 getRtMeshesSize() { return static_cast<uint32>(rt_meshes_.size()); }
 
     virtual std::size_t rayCast(ray& r) {
         // Fire the ray in that direction and intersect with BVH
@@ -61,7 +69,11 @@ protected:
     std::vector<std::unique_ptr<Camera>> cameras_;
     int active_camera_;
     std::shared_ptr<Texture> background_texture_;
-    std::shared_ptr<Shader> comp_shader_;
+    std::vector<std::shared_ptr<Hittable>> rt_meshes_;
+
+    std::unique_ptr<GpuBuffer> mesh_data_buffer_;
+    std::unique_ptr<GpuBuffer> mesh_desc_buffer_;
+    std::unique_ptr<GpuBuffer> mesh_instance_buffer_;
 };
 
 #endif

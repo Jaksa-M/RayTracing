@@ -145,18 +145,8 @@ void Shader::setTexture(const std::string& name, uint32 tex) {
     glUniform1i(glGetUniformLocation(ID, name.c_str()), tex); // set it manually
 }
 
-void Shader::setSSBO(uint32 binding, uint32 bufferID) const {
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, bufferID);
-}
-
-uint32 Shader::createSSBO(uint32 binding, std::size_t size, const void* data, uint32 usage) const {
-    uint32 ssbo;
-    glGenBuffers(1, &ssbo);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, usage);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, ssbo);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-    return ssbo;
+void Shader::bindBuffer(const GpuBuffer* buffer, uint32 binding) const {
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, buffer->id());
 }
 
 bool Shader::checkSSBOFloat(uint32 ssbo, const std::vector<float>& cpu_data) {

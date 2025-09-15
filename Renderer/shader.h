@@ -2,6 +2,7 @@
 #define SHADER_H
 #include <string>
 #include "types.h"
+#include "gpu_buffer.h"
 
 struct MeshDesc;
 
@@ -33,7 +34,7 @@ public:
     void setTexture(const std::string& name, uint32 tex);
 
     void setSSBO(uint32 binding, uint32 bufferID) const;
-    uint32 createSSBO(uint32 binding, std::size_t size, const void* data, uint32 usage) const;
+    void bindBuffer(const GpuBuffer* buffer, uint32 binding) const;
     bool checkSSBOFloat(uint32 ssbo, const std::vector<float>& cpu_data);
     bool checkSSBOMeshDesc(uint32 ssbo, const std::vector<MeshDesc>& cpu_data);
     bool checkSSBOUint(uint32 ssbo, const std::vector<uint32>& cpu_data);

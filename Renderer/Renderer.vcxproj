@@ -164,6 +164,7 @@
     <ClInclude Include="bvh_types.h" />
     <ClInclude Include="camera.h" />
     <ClInclude Include="context.h" />
+    <ClInclude Include="gpu_buffer.h" />
     <ClInclude Include="gpu_types.h" />
     <ClInclude Include="gui_settings.h" />
     <ClInclude Include="hittable.h" />
@@ -204,6 +205,7 @@
     <ClCompile Include="bvh_builder.cpp" />
     <ClCompile Include="bvh_manager.cpp" />
     <ClCompile Include="camera.cpp" />
+    <ClCompile Include="gpu_buffer.cpp" />
     <ClCompile Include="hittable_list.cpp" />
     <ClCompile Include="hittable_list_custom_bvh.cpp" />
     <ClCompile Include="hittable_list_tinybvh.cpp" />
