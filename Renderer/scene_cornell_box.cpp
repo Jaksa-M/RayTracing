@@ -124,6 +124,7 @@ void SceneCornellBox::initialize() {
 
 	//rect_prism_mesh_ = MeshUtils::GenerateTriangleCube(context, mat_yellow, 2);
  //   matrix4x4 m = matrix4x4::identity();
+ //   m = transformation::create_translation_matrix(vec3(0.0f, 1.98f, -10.0f));
  //   rect_prism_mesh_->setTransformationMatrix(m);
 
  //   std::vector<MeshHandle> meshes;
@@ -196,8 +197,11 @@ void SceneCornellBox::sendMeshDataToGPU() {
         RTMesh* rt_mesh = dynamic_cast<RTMesh*>(rt_meshes_[i].get());
 
         GPUMeshInstance instance;
-        instance.local_to_world = rt_mesh->getLocalToWorldMatrix().transpose();
-        instance.world_to_local = rt_mesh->getWorldToLocalMatrix().transpose();
+        matrix4x4 local_to_world = rt_mesh->getLocalToWorldMatrix();
+        instance.local_to_world_row_0 = vec4(local_to_world(0, 0), local_to_world(0, 1), local_to_world(0, 2), local_to_world(0, 3));
+        instance.local_to_world_row_1 = vec4(local_to_world(1, 0), local_to_world(1, 1), local_to_world(1, 2), local_to_world(1, 3));
+        instance.local_to_world_row_2 = vec4(local_to_world(2, 0), local_to_world(2, 1), local_to_world(2, 2), local_to_world(2, 3));
+
         instance.mesh_index = mesh_handle_to_gpu_index[rt_mesh->getMeshHandle()];
         instances.push_back(instance);
     }

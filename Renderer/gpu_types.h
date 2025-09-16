@@ -15,11 +15,22 @@ struct MeshDesc {
     uint32 count_i;
 };
 
+//struct GPUMeshInstance {
+//    matrix4x4 local_to_world;
+//    matrix4x4 world_to_local;
+//    uint32 mesh_index;
+//    uint32 pad1, pad2, pad3;
+//};
+
 struct GPUMeshInstance {
-    matrix4x4 local_to_world;
-    matrix4x4 world_to_local;
-    uint32 mesh_index;
-    uint32 pad1, pad2, pad3;
+    vec4 local_to_world_row_0;
+    vec4 local_to_world_row_1;
+    vec4 local_to_world_row_2;
+    uint32_t mesh_index; // index into MeshDesc array
+    uint32_t unused1; // keep padding so instance size is multiple of 16 bytes
+    uint32_t unused2;
+    uint32_t unused3;
 };
+
 
 #endif
