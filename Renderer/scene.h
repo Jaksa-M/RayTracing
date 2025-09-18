@@ -16,6 +16,7 @@
 #include "shader.h"
 #include "gpu_types.h"
 #include "gpu_buffer.h"
+#include "scene_utility.h"
 
 class Scene {
 public:
@@ -48,6 +49,7 @@ public:
         shader->bindBuffer(mesh_data_buffer_.get(), 3);
         shader->bindBuffer(mesh_desc_buffer_.get(), 4);
         shader->bindBuffer(mesh_instance_buffer_.get(), 5);
+        shader->bindBuffer(material_buffer_.get(), 6);
     }
 
     virtual uint32 getRtMeshesSize() { return static_cast<uint32>(rt_meshes_.size()); }
@@ -74,6 +76,7 @@ protected:
     std::unique_ptr<GpuBuffer> mesh_data_buffer_;
     std::unique_ptr<GpuBuffer> mesh_desc_buffer_;
     std::unique_ptr<GpuBuffer> mesh_instance_buffer_;
+    std::unique_ptr<GpuBuffer> material_buffer_;
 };
 
 #endif

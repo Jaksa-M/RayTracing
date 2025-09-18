@@ -124,7 +124,7 @@ void SceneCornellBox::initialize() {
 
 	//rect_prism_mesh_ = MeshUtils::GenerateTriangleCube(context, mat_yellow, 2);
  //   matrix4x4 m = matrix4x4::identity();
- //   m = transformation::create_translation_matrix(vec3(0.0f, 1.98f, -10.0f));
+ //   //m = transformation::create_translation_matrix(vec3(0.0f, 1.98f, -10.0f));
  //   rect_prism_mesh_->setTransformationMatrix(m);
 
  //   std::vector<MeshHandle> meshes;
@@ -180,6 +180,9 @@ void SceneCornellBox::sendMeshDataToGPU() {
     std::vector<float>& gpu_mesh_data_buffer = context.mesh_buf_manager->getBuffer();
     std::vector<MeshDesc> descs;
 
+    std::vector<GPUMaterial> gpu_materials;
+    std::unordered_map<std::shared_ptr<Material>, uint32> material_to_index;
+
     for (uint32 i = 0; i < rt_meshes_.size(); i++) {
         MeshHandle mesh_handle = dynamic_cast<RTMesh*>(rt_meshes_[i].get())->getMeshHandle();
         all_mesh_handles.push_back(mesh_handle);
@@ -203,6 +206,7 @@ void SceneCornellBox::sendMeshDataToGPU() {
         instance.local_to_world_row_2 = vec4(local_to_world(2, 0), local_to_world(2, 1), local_to_world(2, 2), local_to_world(2, 3));
 
         instance.mesh_index = mesh_handle_to_gpu_index[rt_mesh->getMeshHandle()];
+        instance.material_index = addMaterial(rt_mesh->getMaterial(), material_to_index, gpu_materials);
         instances.push_back(instance);
     }
 
@@ -210,4 +214,5 @@ void SceneCornellBox::sendMeshDataToGPU() {
     mesh_data_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(gpu_mesh_data_buffer)), BufferUsage::StaticDraw);
     mesh_desc_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(descs)), BufferUsage::DynamicDraw);
     mesh_instance_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(instances)), BufferUsage::StaticDraw);
+    material_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(gpu_materials)), BufferUsage::StaticDraw);
 }

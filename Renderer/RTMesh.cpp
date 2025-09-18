@@ -88,7 +88,8 @@ void templatedIntersectBLAS(const ray& r, interval ray_t, IntersectResult& inter
 }
 
 RTMesh::RTMesh(Context& context, MeshHandle mesh_handle, std::shared_ptr<Material> mat)
-    : context_(context), mesh_handle_(mesh_handle), mat_(mat) {
+    : context_(context), mesh_handle_(mesh_handle) {
+    mat_ = mat;
     update();
 }
 

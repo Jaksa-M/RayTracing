@@ -19,6 +19,8 @@ public:
 
     void draw_mesh_gizmos() override;
 
+    void sendMeshDataToGPU() override;
+
 private:
     std::unique_ptr<MeshBufferManager> mesh_buf_manager_;
     std::unique_ptr<BVHManager> bvh_manager_;

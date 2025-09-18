@@ -15,6 +15,7 @@ struct Material {
     vec3 albedo;
     float roughness; // for metal (currently unused)
     vec3 emission;
+    uint unused;
 };
 
 struct Ray {
@@ -67,9 +68,9 @@ struct GPUMeshInstance {
     vec4 local_to_world_row_1;
     vec4 local_to_world_row_2;
     uint mesh_index; // index into MeshDesc array
+    uint material_index; // index into Materials array
     uint unused1; // keep padding so instance size is multiple of 16 bytes
     uint unused2;
-    uint unused3;
 };
 
 layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
@@ -79,9 +80,9 @@ layout (binding = 1) uniform sampler2D u_background_img;
 layout (rgba32f, binding = 2) uniform image2D u_accumulated_img;
 
 layout(std430, binding = 3) buffer MeshData { float u_mesh_data[]; };
-layout(std430, binding = 4) buffer MeshDescs { MeshDesc mesh_descs[]; };
+layout(std430, binding = 4) buffer MeshDescs { MeshDesc u_mesh_descs[]; };
 layout(std430, binding = 5) buffer MeshInstances { GPUMeshInstance u_instances[]; };
-layout(std430, binding = 6) buffer MeshHandles { uint64_t u_mesh_handles[]; };
+layout(std430, binding = 6) buffer Materials { Material u_materials[]; };
 
 uniform ivec2 u_resolution; // (width, height)
 
@@ -219,74 +220,6 @@ bool scatterLambertian(inout uint rng_state, Hit rec, out vec3 attenuation, out 
     return true;
 }
 
-// Hit Object functions
-bool hitRectangle(in vec3 rect_p1, in vec3 rect_p2, in vec3 rect_p3, in vec3 rect_p4, in Material mat, in Ray ray, out Hit h) {
-    //rect_p1 - bottom-left, rect_p2 - bottom-right, rect_p3 - top-right, rect_p4 - top-left
-
-    vec3 rectangle_normal = normalize(cross(rect_p2 - rect_p1, rect_p3 - rect_p1));
-
-    float c = dot(rectangle_normal, rect_p1);
-    float denominator = dot(rectangle_normal, ray.rd);
-    if (abs(denominator) < EPSILON) return false;
-
-    float t = (c - dot(rectangle_normal, ray.ro)) / denominator;
-    if (t < 0.001) return false;
-
-    vec3 Q = ray.ro + t * ray.rd;
-    if (dot(cross((rect_p2 - rect_p1), (Q - rect_p1)), rectangle_normal) < 0 ||
-        dot(cross((rect_p3 - rect_p2), (Q - rect_p2)), rectangle_normal) < 0 ||
-        dot(cross((rect_p4 - rect_p3), (Q - rect_p3)), rectangle_normal) < 0 ||
-        dot(cross((rect_p1 - rect_p4), (Q - rect_p4)), rectangle_normal) < 0) {
-        return false;
-    }
-
-    h.t = t;
-    h.p = Q; // hit point
-
-    vec3 N = normalize(rectangle_normal);
-    if (dot(N, ray.rd) > 0.0) N = -N;
-    h.normal = N;
-    h.mat.albedo = mat.albedo;
-    h.mat.emission = mat.emission;
-    return true;
-}
-
-bool hitTriangle(in vec3 tri_v0, in vec3 tri_v1, in vec3 tri_v2, in Material mat, in Ray ray, out Hit h) {
-    // Moeller Trumbore
-
-    vec3 edge1 = tri_v1 - tri_v0;
-    vec3 edge2 = tri_v2 - tri_v0;
-
-    vec3 p  = cross(ray.rd, edge2);
-    float det = dot(edge1, p);
-
-    if (abs(det) < EPSILON) return false;
-
-    float inv_det = 1.0 / det;
-    vec3 s = ray.ro - tri_v0;
-    float u = inv_det * dot(s, p);
-
-    if (u < 0.0 || u > 1.0) return false;
-
-    vec3 q = cross(s, edge1);
-    float v = inv_det * dot(ray.rd, q);
-
-    if (v < 0.0 || u + v > 1.0) return false;
-
-    float t = inv_det * dot(edge2, q);
-    if (t < 0.001) return false;
-
-    h.t = t;
-    h.p = ray.ro + t * ray.rd; // hit point
-
-    vec3 N = normalize(cross(edge1, edge2));
-    if (dot(N, ray.rd) > 0.0) N = -N;
-    h.normal = N;
-    h.mat.albedo = mat.albedo;
-    h.mat.emission = mat.emission;
-    return true;
-}
-
 bool intersectTriangleMT(Ray ray, vec3 v0, vec3 v1, vec3 v2, out float t, out float u, out float v) {
     vec3 e1 = v1 - v0;
     vec3 e2 = v2 - v0;
@@ -308,33 +241,6 @@ bool intersectTriangleMT(Ray ray, vec3 v0, vec3 v1, vec3 v2, out float t, out fl
     if (tt < 0.001 || tt < ray.tMin || tt > ray.tMax) return false;
 
     t = tt;
-    return true;
-}
-
-bool hitSphere(in vec3 sph_center, in float sph_radius, in Material mat, in Ray ray, out Hit h) {
-    vec3 oc = sph_center - ray.ro;
-    float a = dot(ray.rd, ray.rd);
-    float b = dot(ray.rd, oc);
-    float c = dot(oc, oc) - sph_radius * sph_radius;
-    float discriminant = b*b - a*c;
-    if (discriminant < 0.0) return false;
-
-    float sqrtd = sqrt(discriminant);
-    float t = (b - sqrtd) / a;
-    if (t < 0.001) { 
-        t = (b + sqrtd) / a;
-        if (t < 0.001) return false;
-    }
-
-    vec3 P = ray.ro + t * ray.rd;
-    vec3 N = normalize((P - sph_center) / sph_radius);
-    if (dot(N, ray.rd) > 0.0) N = -N;
-
-    h.t = t;
-    h.p = P; // hit point
-    h.normal = N;
-    h.mat.albedo = mat.albedo;
-    h.mat.emission = mat.emission;
     return true;
 }
 
@@ -404,14 +310,12 @@ bool hitMesh(in Ray world_ray, in MeshDesc desc, in Material mat, out Hit out_hi
     if (dot(geomN_local, local_ray.rd) > 0.0) geomN_local = -geomN_local;
     local_hit.normal = geomN_local;
     local_hit.mat = mat;
-    // Material debug_mat; debug_mat.albedo = vec3(0.0, 0.0, 1.0); debug_mat.emission = vec3(0.0);
-    // if (local_to_world[0][]) local_hit.mat = debug_mat;
     local_hit.uv = vec2(best_u, best_v);
 
     // Transform local hit to world space
     vec3 p_world = transformPoint(local_hit.p, local_to_world);
-    mat3 normalMat = transpose(inverse(mat3(local_to_world)));
-    vec3 n_world = normalize(normalMat * local_hit.normal);
+    mat3 normal_mat = transpose(inverse(mat3(local_to_world)));
+    vec3 n_world = normalize(normal_mat * local_hit.normal);
 
     float t_world = length(world_ray.ro - p_world);
 
@@ -427,16 +331,15 @@ bool hitMesh(in Ray world_ray, in MeshDesc desc, in Material mat, out Hit out_hi
 
 
 bool hitScene(inout Ray ray, inout Hit closest_hit) {
-    Material debug_mat; debug_mat.albedo = vec3(1.0, 0.0, 0.0); debug_mat.emission = vec3(0.0);
-
     for (uint m = 0u; m < u_mesh_count; ++m) {
+        GPUMeshInstance inst = u_instances[m];
+        MeshDesc desc = u_mesh_descs[inst.mesh_index];
+        Material mat = u_materials[inst.material_index];
+
         Hit mh;
         hit_struct_init(mh);
 
-        GPUMeshInstance inst = u_instances[m];
-        MeshDesc desc = mesh_descs[inst.mesh_index];
-
-        if (hitMesh(ray, desc, debug_mat, mh, inst) && mh.t < closest_hit.t) {
+        if (hitMesh(ray, desc, mat, mh, inst) && mh.t < closest_hit.t) {
             closest_hit = mh;
         }
     }

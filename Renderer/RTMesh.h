@@ -40,7 +40,6 @@ private:
     Context& context_;
 
     MeshHandle mesh_handle_;
-    std::shared_ptr<Material> mat_;
     
     ResolvedMeshInfo res_mesh_info_;
     std::span<const BLASNode> bvh_nodes_;

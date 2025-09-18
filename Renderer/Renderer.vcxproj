@@ -190,6 +190,7 @@
     <ClInclude Include="scene_meshes.h" />
     <ClInclude Include="scene_obj_loader.h" />
     <ClInclude Include="scene_rt_meshes.h" />
+    <ClInclude Include="scene_utility.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="statistics.h" />
     <ClInclude Include="texture.h" />
