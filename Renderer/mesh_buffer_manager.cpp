@@ -22,8 +22,8 @@ MeshBufferManager::MeshBufferManager() {
     // spans now point to the memory where buffer is not stored, and have some random values.
 }
 
-std::vector<float>& MeshBufferManager::getBuffer() {
-    return buffer;
+std::span<const float> MeshBufferManager::getBuffer() const {
+    return std::span<const float>(buffer);
 }
 
 MeshHandle MeshBufferManager::addToBuffer(std::span<Attribute> attributes, std::span<uint32> indices) {

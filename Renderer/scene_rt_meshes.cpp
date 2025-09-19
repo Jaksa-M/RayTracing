@@ -67,6 +67,8 @@ void SceneRtMeshes::initialize() {
         world_->add(rt_meshes_[i]);
     }
 
+    sendMeshDataToGPU();
+
     static_cast<HittableListCustomBVH*>(world_.get())->buildTLAS(context.bvh_manager, meshes, rt_meshes_);
 
     initShader();
@@ -123,47 +125,4 @@ void SceneRtMeshes::draw_mesh_gizmos() {
     shader_prog_->setMat4("projection", cameras_[active_camera_]->getProjectionMatrix().asPointer());
     line_cube_->draw(GL_LINES);
     shader_prog_->unbind();
-}
-
-void SceneRtMeshes::sendMeshDataToGPU() {
-    std::unordered_map<MeshHandle, uint32> mesh_handle_to_gpu_index;
-    std::vector<MeshHandle> all_mesh_handles;
-    std::vector<float>& gpu_mesh_data_buffer = context.mesh_buf_manager->getBuffer();
-    std::vector<MeshDesc> descs;
-
-    std::vector<GPUMaterial> gpu_materials;
-    std::unordered_map<std::shared_ptr<Material>, uint32> material_to_index;
-
-    for (uint32 i = 0; i < rt_meshes_.size(); i++) {
-        MeshHandle mesh_handle = dynamic_cast<RTMesh*>(rt_meshes_[i].get())->getMeshHandle();
-        all_mesh_handles.push_back(mesh_handle);
-    }
-
-    for (MeshHandle mesh_handle : all_mesh_handles) {
-        mesh_handle_to_gpu_index[mesh_handle] = uint32(descs.size());
-        MeshDesc desc = context.mesh_buf_manager->getMeshDesc(mesh_handle);
-        descs.push_back(desc);
-    }
-
-    // now create the instances
-    std::vector<GPUMeshInstance> instances;
-    for (uint32 i = 0; i < rt_meshes_.size(); i++) {
-        RTMesh* rt_mesh = dynamic_cast<RTMesh*>(rt_meshes_[i].get());
-
-        GPUMeshInstance instance;
-        matrix4x4 local_to_world = rt_mesh->getLocalToWorldMatrix();
-        instance.local_to_world_row_0 = vec4(local_to_world(0, 0), local_to_world(0, 1), local_to_world(0, 2), local_to_world(0, 3));
-        instance.local_to_world_row_1 = vec4(local_to_world(1, 0), local_to_world(1, 1), local_to_world(1, 2), local_to_world(1, 3));
-        instance.local_to_world_row_2 = vec4(local_to_world(2, 0), local_to_world(2, 1), local_to_world(2, 2), local_to_world(2, 3));
-
-        instance.mesh_index = mesh_handle_to_gpu_index[rt_mesh->getMeshHandle()];
-        instance.material_index = addMaterial(rt_mesh->getMaterial(), material_to_index, gpu_materials);
-        instances.push_back(instance);
-    }
-
-    // Upload to GPU
-    mesh_data_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(gpu_mesh_data_buffer)), BufferUsage::StaticDraw);
-    mesh_desc_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(descs)), BufferUsage::DynamicDraw);
-    mesh_instance_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(instances)), BufferUsage::StaticDraw);
-    material_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(gpu_materials)), BufferUsage::StaticDraw);
 }

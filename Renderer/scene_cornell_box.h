@@ -17,8 +17,6 @@ public:
     void initShader();
     void drawBVH() override;
 
-    void sendMeshDataToGPU() override;
-
 private:
     std::unique_ptr<MeshBufferManager> mesh_buf_manager_;
     std::unique_ptr<BVHManager> bvh_manager_;

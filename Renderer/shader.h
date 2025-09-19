@@ -33,11 +33,7 @@ public:
 
     void setTexture(const std::string& name, uint32 tex);
 
-    void setSSBO(uint32 binding, uint32 bufferID) const;
     void bindBuffer(const GpuBuffer* buffer, uint32 binding) const;
-    bool checkSSBOFloat(uint32 ssbo, const std::vector<float>& cpu_data);
-    bool checkSSBOMeshDesc(uint32 ssbo, const std::vector<MeshDesc>& cpu_data);
-    bool checkSSBOUint(uint32 ssbo, const std::vector<uint32>& cpu_data);
 
 private:
     void checkCompileErrors(uint32 shader, std::string type); // Checking shader compilation/linking errors

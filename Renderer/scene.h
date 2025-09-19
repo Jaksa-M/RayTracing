@@ -1,7 +1,7 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include <memory.h>
+#include <memory>
 #include <vector>
 #include "bvh_manager.h"
 #include "camera.h"
@@ -16,7 +16,8 @@
 #include "shader.h"
 #include "gpu_types.h"
 #include "gpu_buffer.h"
-#include "scene_utility.h"
+#include "RTMesh.h"
+#include "RTMeshTinyBVH.h"
 
 class Scene {
 public:
@@ -28,43 +29,28 @@ public:
 
     virtual ~Scene() = default;
 
-    virtual void draw_mesh_gizmos() {}
+    virtual void draw_mesh_gizmos();
 
-    virtual void drawBVH() {}
+    virtual void drawBVH();
 
-    virtual HittableList& getWorld() { return *world_.get(); };
-    virtual void setWorld(std::unique_ptr<HittableList> world) { world_ = std::move(world); }  // Transfers ownership
+    virtual HittableList& getWorld();
+    virtual void setWorld(std::unique_ptr<HittableList> world); // Transfers ownership
 
-    virtual void setCameras(std::vector<std::unique_ptr<Camera>> cameras) { cameras_ = std::move(cameras); }
+    virtual void setCameras(std::vector<std::unique_ptr<Camera>> cameras);
 
-    virtual void setActiveCamera(uint32 index) { active_camera_ = index; }
-    virtual Camera& getActiveCamera() { return *cameras_[active_camera_]; };
-    virtual const std::vector<std::unique_ptr<Camera>>& getCameras() const { return cameras_; };
+    virtual void setActiveCamera(uint32 index);
+    virtual Camera& getActiveCamera();
+    virtual const std::vector<std::unique_ptr<Camera>>& getCameras() const;
 
-    virtual void setBackgroundTexture(std::shared_ptr<Texture> tex) { background_texture_ = tex; }
+    virtual void setBackgroundTexture(std::shared_ptr<Texture> tex);
 
-    virtual void sendMeshDataToGPU(){}
+    virtual void sendMeshDataToGPU();
 
-    virtual void bindResources(Shader* shader) {
-        shader->bindBuffer(mesh_data_buffer_.get(), 3);
-        shader->bindBuffer(mesh_desc_buffer_.get(), 4);
-        shader->bindBuffer(mesh_instance_buffer_.get(), 5);
-        shader->bindBuffer(material_buffer_.get(), 6);
-    }
+    virtual void bindResources(Shader* shader);
 
-    virtual uint32 getRtMeshesSize() { return static_cast<uint32>(rt_meshes_.size()); }
+    virtual uint32 getRtMeshesSize();
 
-    virtual std::size_t rayCast(ray& r) {
-        // Fire the ray in that direction and intersect with BVH
-        std::cout << "Firing ray from: " << r.origin() << " in direction: " << r.direction() << std::endl;
-
-        HitRecord rec;
-        if (world_->hit(r, interval(0.001f, float_max), rec)) {
-            std::cout << "Succesfully hit at: " << rec.t << std::endl;
-            return rec.mesh_handle;  // returns the mesh handle of the object hit, from that we can get which object it is
-        }
-        return 0;
-    }
+    virtual std::size_t rayCast(ray& r);
 
 protected:
     std::unique_ptr<HittableList> world_;

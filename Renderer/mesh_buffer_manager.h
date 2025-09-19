@@ -33,7 +33,7 @@ class MeshBufferManager {
 public:
 	MeshBufferManager();
 	
-	std::vector<float>& getBuffer();
+	std::span<const float> getBuffer() const;
 
 	MeshHandle addToBuffer(std::span<Attribute> attributes, std::span<uint32> indices);
     void removeMesh(MeshHandle mesh);

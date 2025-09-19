@@ -190,7 +190,6 @@
     <ClInclude Include="scene_meshes.h" />
     <ClInclude Include="scene_obj_loader.h" />
     <ClInclude Include="scene_rt_meshes.h" />
-    <ClInclude Include="scene_utility.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="statistics.h" />
     <ClInclude Include="texture.h" />
@@ -218,6 +217,7 @@
     <ClCompile Include="obj_loader.cpp" />
     <ClCompile Include="RTMesh.cpp" />
     <ClCompile Include="RTMeshTinyBVH.cpp" />
+    <ClCompile Include="scene.cpp" />
     <ClCompile Include="scene_cornell_box.cpp" />
     <ClCompile Include="scene_material_testing.cpp" />
     <ClCompile Include="scene_meshes.cpp" />

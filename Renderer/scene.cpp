@@ -1,0 +1,131 @@
+#include "scene.h"
+
+inline uint32 addMaterial(const std::shared_ptr<Material>& mat, std::unordered_map<std::shared_ptr<Material>, uint32>& material_to_index,
+                          std::vector<GPUMaterial>& gpu_materials) {
+    auto it = material_to_index.find(mat);
+    if (it != material_to_index.end()) {
+        return it->second; // already exists
+    }
+
+    GPUMaterial gpu_mat{};
+
+    if (std::shared_ptr<Lambertian> lambert = std::dynamic_pointer_cast<Lambertian>(mat)) {
+        gpu_mat.albedo = lambert->getAlbedo();
+        gpu_mat.roughness = lambert->getRoughness();
+        gpu_mat.emission = lambert->getEmission();
+    }
+    else if (std::shared_ptr<Metal> metal = std::dynamic_pointer_cast<Metal>(mat)) {
+        gpu_mat.albedo = metal->getAlbedo();
+        gpu_mat.roughness = metal->getRoughness();
+        gpu_mat.emission = metal->getEmission();
+    }
+    else if (std::shared_ptr<Emissive> emissive = std::dynamic_pointer_cast<Emissive>(mat)) {
+        gpu_mat.albedo = emissive->getAlbedo();
+        gpu_mat.roughness = emissive->getRoughness();
+        gpu_mat.emission = emissive->getEmission();
+    }
+
+    uint32 index = static_cast<uint32>(gpu_materials.size());
+    material_to_index[mat] = index;
+    gpu_materials.push_back(gpu_mat);
+
+    return index;
+}
+
+void Scene::draw_mesh_gizmos() {}
+
+void Scene::drawBVH() {}
+
+HittableList& Scene::getWorld() {
+    return *world_.get();
+};
+
+void Scene::setWorld(std::unique_ptr<HittableList> world) {
+    world_ = std::move(world);
+}
+
+void Scene::setCameras(std::vector<std::unique_ptr<Camera>> cameras) {
+    cameras_ = std::move(cameras);
+}
+
+void Scene::setActiveCamera(uint32 index) {
+    active_camera_ = index;
+}
+
+Camera& Scene::getActiveCamera() {
+    return *cameras_[active_camera_];
+};
+
+const std::vector<std::unique_ptr<Camera>>& Scene::getCameras() const {
+    return cameras_;
+};
+
+void Scene::setBackgroundTexture(std::shared_ptr<Texture> tex) {
+    background_texture_ = tex;
+}
+
+void Scene::sendMeshDataToGPU() {
+    std::unordered_map<MeshHandle, uint32> mesh_handle_to_gpu_index;
+    std::vector<MeshHandle> all_mesh_handles;
+    std::span<const float> gpu_mesh_data_buffer = context.mesh_buf_manager->getBuffer();
+    std::vector<MeshDesc> descs;
+
+    std::vector<GPUMaterial> gpu_materials;
+    std::unordered_map<std::shared_ptr<Material>, uint32> material_to_index;
+
+    for (uint32 i = 0; i < rt_meshes_.size(); i++) {
+        MeshHandle mesh_handle = dynamic_cast<RTMesh*>(rt_meshes_[i].get())->getMeshHandle();
+        all_mesh_handles.push_back(mesh_handle);
+    }
+
+    for (MeshHandle mesh_handle : all_mesh_handles) {
+        mesh_handle_to_gpu_index[mesh_handle] = uint32(descs.size());
+        MeshDesc desc = context.mesh_buf_manager->getMeshDesc(mesh_handle);
+        descs.push_back(desc);
+    }
+
+    // now create the instances
+    std::vector<GPUMeshInstance> instances;
+    for (uint32 i = 0; i < rt_meshes_.size(); i++) {
+        RTMesh* rt_mesh = dynamic_cast<RTMesh*>(rt_meshes_[i].get());
+
+        GPUMeshInstance instance;
+        matrix4x4 local_to_world = rt_mesh->getLocalToWorldMatrix();
+        instance.local_to_world_row_0 = vec4(local_to_world(0, 0), local_to_world(0, 1), local_to_world(0, 2), local_to_world(0, 3));
+        instance.local_to_world_row_1 = vec4(local_to_world(1, 0), local_to_world(1, 1), local_to_world(1, 2), local_to_world(1, 3));
+        instance.local_to_world_row_2 = vec4(local_to_world(2, 0), local_to_world(2, 1), local_to_world(2, 2), local_to_world(2, 3));
+
+        instance.mesh_index = mesh_handle_to_gpu_index[rt_mesh->getMeshHandle()];
+        instance.material_index = addMaterial(rt_mesh->getMaterial(), material_to_index, gpu_materials);
+        instances.push_back(instance);
+    }
+
+    // Upload to GPU
+    mesh_data_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(gpu_mesh_data_buffer), BufferUsage::StaticDraw);
+    mesh_desc_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(descs)), BufferUsage::DynamicDraw);
+    mesh_instance_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(instances)), BufferUsage::StaticDraw);
+    material_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(gpu_materials)), BufferUsage::StaticDraw);
+}
+
+void Scene::bindResources(Shader* shader) {
+    shader->bindBuffer(mesh_data_buffer_.get(), 3);
+    shader->bindBuffer(mesh_desc_buffer_.get(), 4);
+    shader->bindBuffer(mesh_instance_buffer_.get(), 5);
+    shader->bindBuffer(material_buffer_.get(), 6);
+}
+
+uint32 Scene::getRtMeshesSize() {
+    return static_cast<uint32>(rt_meshes_.size());
+}
+
+std::size_t Scene::rayCast(ray& r) {
+    // Fire the ray in that direction and intersect with BVH
+    std::cout << "Firing ray from: " << r.origin() << " in direction: " << r.direction() << std::endl;
+
+    HitRecord rec;
+    if (world_->hit(r, interval(0.001f, float_max), rec)) {
+        std::cout << "Succesfully hit at: " << rec.t << std::endl;
+        return rec.mesh_handle; // returns the mesh handle of the object hit, from that we can get which object it is
+    }
+    return 0;
+}

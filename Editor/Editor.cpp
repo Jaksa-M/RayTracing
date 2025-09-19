@@ -556,7 +556,7 @@ int main(int, char**) {
             comp_shader->setFloat("u_environment_light", gui_settings->environment_light);
 
             active_scene->bindResources(comp_shader.get());
-            comp_shader->setUint("u_mesh_count", active_scene->getRtMeshesSize());
+            comp_shader->setUint("u_instance_count", active_scene->getRtMeshesSize());
 
             comp_shader->setBool("u_accumulate", active_cam.getCameraMoved());
             if (active_cam.getCameraMoved()) {
