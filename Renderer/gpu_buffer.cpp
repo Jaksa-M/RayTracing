@@ -20,6 +20,7 @@ inline GLenum convertBufferUsage(BufferUsage usage) {
 }
 
 GpuBuffer::GpuBuffer(std::span<const std::byte> data, BufferUsage usage) {
+    usage_ = usage;
     glGenBuffers(1, &ssbo_);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_);
     glBufferData(GL_SHADER_STORAGE_BUFFER, data.size(), data.data(), convertBufferUsage(usage));
@@ -32,8 +33,8 @@ GpuBuffer::~GpuBuffer() {
     }
 }
 
-void GpuBuffer::updateData(std::span<const std::byte> data, BufferUsage usage) {
+void GpuBuffer::updateData(std::span<const std::byte> data) {
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, data.size(), data.data(), convertBufferUsage(usage));
+    glBufferData(GL_SHADER_STORAGE_BUFFER, data.size(), data.data(), convertBufferUsage(usage_));
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
