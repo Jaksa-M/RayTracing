@@ -1,30 +1,12 @@
 #version 430 core
- // inout is same as reference in cpp
- // in is same as read only
- // out means we can't read value that is inside, only write to it
-
-layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
-
-layout (rgba8, binding = 0) uniform image2D u_display_img;
-layout (binding = 1) uniform sampler2D u_background_img;
-layout (rgba32f, binding = 2) uniform image2D u_accumulated_img;
-
-uniform ivec2 u_resolution; // (width, height)
-
-uniform vec3 u_cam_center;
-uniform vec3 u_pixel00_loc;
-uniform vec3 u_pixel_delta_u;
-uniform vec3 u_pixel_delta_v;
-
-uniform uint u_frame_index; // count of how many frames have passed since start of program
-uniform float u_environment_light;
-uniform int u_max_bounces;
-uniform int u_spp;
-uniform bool u_accumulate; // on CPU this is called camera_moved
+// inout is same as reference in cpp
+// in is same as read only
+// out means we can't read value that is inside, only write to it
+// Matrices on GPU is stored as column-major, meaning when we are writing to mat[0] we are actually filling first column.
 
 // Global constants
 const float FLOAT_MAX = 3.402823466e+38;
-const float EPSILON = 1e-8;
+const float EPSILON = 1e-6;
 const float PI = 3.14;
 
 // Struct types
@@ -32,6 +14,7 @@ struct Material {
     vec3 albedo;
     float roughness; // for metal (currently unused)
     vec3 emission;
+    uint unused;
 };
 
 struct Ray {
@@ -45,15 +28,74 @@ void ray_struct_init(inout Ray ray){ // acts as it's constructor
     ray.tMax = FLOAT_MAX;
 }
 
-struct Hit {
+struct HitRecord {
     float t;
     vec3 p;
     vec3 normal;
     Material mat;
+    vec2 uv;
 };
-void hit_struct_init(inout Hit h){ // acts as it's constructor
+void hit_struct_init(inout HitRecord h){ // acts as it's constructor
     h.t = FLOAT_MAX;
 }
+
+struct IntersectResult {
+    float t;
+    vec2 buv; // barycentric uv (beta, gamma)
+    uint closest_tri_index; // index into index buffer
+};
+
+void intersectResultInit(out IntersectResult res) {
+    res.t = FLOAT_MAX;
+    res.buv = vec2(0.0);
+    res.closest_tri_index = uint(-1);
+}
+
+struct MeshDesc {
+    uint vertex_offset; // position where vertices array is placed
+    uint normal_offset; // position where normals array is placed
+    uint uv_offset; // position where uv's array is placed
+    uint col_offset; // position where color array is placed
+    uint index_offset; // position where indices array is placed
+
+    uint vertices_count; // how many vertices there are
+    uint indices_count; // how many indices there are
+};
+
+struct GPUMeshInstance {
+    vec4 local_to_world_row_0;
+    vec4 local_to_world_row_1;
+    vec4 local_to_world_row_2;
+    uint mesh_index; // index into MeshDesc array
+    uint material_index; // index into Materials array
+    uint unused1; // keep padding so instance size is multiple of 16 bytes
+    uint unused2;
+};
+
+layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
+
+layout (rgba8, binding = 0) uniform image2D u_display_img;
+layout (binding = 1) uniform sampler2D u_background_img;
+layout (rgba32f, binding = 2) uniform image2D u_accumulated_img;
+
+layout(std430, binding = 3) buffer MeshData { float u_mesh_data[]; };
+layout(std430, binding = 4) buffer MeshDescs { MeshDesc u_mesh_descs[]; };
+layout(std430, binding = 5) buffer MeshInstances { GPUMeshInstance u_instances[]; };
+layout(std430, binding = 6) buffer Materials { Material u_materials[]; };
+
+uniform ivec2 u_resolution; // (width, height)
+
+uniform vec3 u_cam_center;
+uniform vec3 u_pixel00_loc;
+uniform vec3 u_pixel_delta_u;
+uniform vec3 u_pixel_delta_v;
+
+uniform uint u_frame_index; // count of how many frames have passed since start of program
+uniform float u_environment_light;
+uniform int u_max_bounces;
+uniform int u_spp;
+uniform bool u_accumulate; // on CPU this is called camera_moved
+uniform uint u_instance_count; // number of mesh descriptors
 
 // Random number generator related functions
 uint randPcg(inout uint rng_state) {
@@ -110,13 +152,62 @@ void getRay(float i, float j, vec2 offset, out Ray ray) {
     ray.rd = normalize(pixel_sample - ray.ro);
 }
 
+vec3 transformPointAffine(vec3 pos, mat4 m) {
+    return (m * vec4(pos, 1.0)).xyz;
+}
+
+vec3 transformDirection(vec3 dir, mat3 m) {
+    vec3 transformed_dir = m * dir;
+    return normalize(transformed_dir);
+}
+
+// Utility functions for meshes
+uvec3 getIndices(MeshDesc desc, uint tri_index) {
+    uint base = desc.index_offset + tri_index;
+
+    uint i0 = floatBitsToUint(u_mesh_data[base + 0u]);
+    uint i1 = floatBitsToUint(u_mesh_data[base + 1u]);
+    uint i2 = floatBitsToUint(u_mesh_data[base + 2u]);
+
+    return uvec3(i0, i1, i2);
+}
+
+void getVertices(MeshDesc desc, uvec3 idx, out vec3 v0, out vec3 v1, out vec3 v2) {
+    uint base0 = desc.vertex_offset + idx.x * 3u;
+    uint base1 = desc.vertex_offset + idx.y * 3u;
+    uint base2 = desc.vertex_offset + idx.z * 3u;
+
+    v0 = vec3(u_mesh_data[base0 + 0u], u_mesh_data[base0 + 1u], u_mesh_data[base0 + 2u]);
+    v1 = vec3(u_mesh_data[base1 + 0u], u_mesh_data[base1 + 1u], u_mesh_data[base1 + 2u]);
+    v2 = vec3(u_mesh_data[base2 + 0u], u_mesh_data[base2 + 1u], u_mesh_data[base2 + 2u]);
+}
+
+void getNormals(MeshDesc desc, uvec3 idx, out vec3 n0, out vec3 n1, out vec3 n2) {
+    uint base0 = desc.normal_offset + idx.x * 3u;
+    uint base1 = desc.normal_offset + idx.y * 3u;
+    uint base2 = desc.normal_offset + idx.z * 3u;
+
+    n0 = vec3(u_mesh_data[base0 + 0u], u_mesh_data[base0 + 1u], u_mesh_data[base0 + 2u]);
+    n1 = vec3(u_mesh_data[base1 + 0u], u_mesh_data[base1 + 1u], u_mesh_data[base1 + 2u]);
+    n2 = vec3(u_mesh_data[base2 + 0u], u_mesh_data[base2 + 1u], u_mesh_data[base2 + 2u]);
+}
+
+void getUVs(MeshDesc desc, uvec3 idx, out vec2 uv0, out vec2 uv1, out vec2 uv2) {
+    uint base0 = desc.uv_offset + idx.x * 2u;
+    uint base1 = desc.uv_offset + idx.y * 2u;
+    uint base2 = desc.uv_offset + idx.z * 2u;
+
+    uv0 = vec2(u_mesh_data[base0 + 0u], u_mesh_data[base0 + 1u]);
+    uv1 = vec2(u_mesh_data[base1 + 0u], u_mesh_data[base1 + 1u]);
+    uv2 = vec2(u_mesh_data[base2 + 0u], u_mesh_data[base2 + 1u]);
+}
 
 // Material utility functions
-vec3 emitted(in Hit h) {
+vec3 emitted(in HitRecord h) {
     return h.mat.emission;
 }
 
-bool scatterLambertian(inout uint rng_state, Hit rec, out vec3 attenuation, out vec3 new_dir) {
+bool scatterLambertian(inout uint rng_state, HitRecord rec, out vec3 attenuation, out vec3 new_dir) {
     vec3 scatter_direction = normalize(rec.normal + randomUnitVector(rng_state));
 
     if (length(scatter_direction) < EPSILON) scatter_direction = rec.normal;
@@ -125,130 +216,129 @@ bool scatterLambertian(inout uint rng_state, Hit rec, out vec3 attenuation, out 
     return true;
 }
 
-// Hit Object functions
-bool hitRectangle(in vec3 rect_p1, in vec3 rect_p2, in vec3 rect_p3, in vec3 rect_p4, in Material mat, in Ray ray, out Hit h) {
-    //rect_p1 - bottom-left, rect_p2 - bottom-right, rect_p3 - top-right, rect_p4 - top-left
-
-    vec3 rectangle_normal = normalize(cross(rect_p2 - rect_p1, rect_p3 - rect_p1));
-
-    float c = dot(rectangle_normal, rect_p1);
-    float denominator = dot(rectangle_normal, ray.rd);
-    if (abs(denominator) < EPSILON) return false;
-
-    float t = (c - dot(rectangle_normal, ray.ro)) / denominator;
-    if (t < 0.001) return false;
-
-    vec3 Q = ray.ro + t * ray.rd;
-    if (dot(cross((rect_p2 - rect_p1), (Q - rect_p1)), rectangle_normal) < 0 ||
-        dot(cross((rect_p3 - rect_p2), (Q - rect_p2)), rectangle_normal) < 0 ||
-        dot(cross((rect_p4 - rect_p3), (Q - rect_p3)), rectangle_normal) < 0 ||
-        dot(cross((rect_p1 - rect_p4), (Q - rect_p4)), rectangle_normal) < 0) {
-        return false;
-    }
-
-    h.t = t;
-    h.p = Q; // hit point
-
-    vec3 N = normalize(rectangle_normal);
-    if (dot(N, ray.rd) > 0.0) N = -N;
-    h.normal = N;
-    h.mat.albedo = mat.albedo;
-    h.mat.emission = mat.emission;
-    return true;
-}
-
-bool hitTriangle(in vec3 tri_v0, in vec3 tri_v1, in vec3 tri_v2, in Material mat, in Ray ray, out Hit h) {
-    // Moeller Trumbore
-
-    vec3 edge1 = tri_v1 - tri_v0;
-    vec3 edge2 = tri_v2 - tri_v0;
-
-    vec3 p  = cross(ray.rd, edge2);
-    float det = dot(edge1, p);
-
+bool intersectTriangleMT(Ray ray, vec3 v0, vec3 v1, vec3 v2, out float t, out float u, out float v) {
+    vec3 e1 = v1 - v0;
+    vec3 e2 = v2 - v0;
+    vec3 p  = cross(ray.rd, e2);
+    float det = dot(e1, p);
     if (abs(det) < EPSILON) return false;
-
-    float inv_det = 1.0 / det;
-    vec3 s = ray.ro - tri_v0;
-    float u = inv_det * dot(s, p);
-
+    float invDet = 1.0 / det;
+    vec3 s = ray.ro - v0;
+    u = invDet * dot(s, p);
+    
     if (u < 0.0 || u > 1.0) return false;
 
-    vec3 q = cross(s, edge1);
-    float v = inv_det * dot(ray.rd, q);
-
+    vec3 q = cross(s, e1);
+    v = invDet * dot(ray.rd, q);
+    
     if (v < 0.0 || u + v > 1.0) return false;
 
-    float t = inv_det * dot(edge2, q);
-    if (t < 0.001) return false;
+    float tt = invDet * dot(e2, q);
+    if (tt < 0.001 || tt < ray.tMin || tt > ray.tMax) return false;
 
-    h.t = t;
-    h.p = ray.ro + t * ray.rd; // hit point
-
-    vec3 N = normalize(cross(edge1, edge2));
-    if (dot(N, ray.rd) > 0.0) N = -N;
-    h.normal = N;
-    h.mat.albedo = mat.albedo;
-    h.mat.emission = mat.emission;
+    t = tt;
     return true;
 }
 
-bool hitSphere(in vec3 sph_center, in float sph_radius, in Material mat, in Ray ray, out Hit h) {
-    vec3 oc = sph_center - ray.ro;
-    float a = dot(ray.rd, ray.rd);
-    float b = dot(ray.rd, oc);
-    float c = dot(oc, oc) - sph_radius * sph_radius;
-    float discriminant = b*b - a*c;
-    if (discriminant < 0.0) return false;
+bool hitMesh(in Ray world_ray, in MeshDesc desc, out HitRecord out_hit, in GPUMeshInstance instance) {
+    if (desc.indices_count < 3u || desc.vertices_count == 0u) return false;
 
-    float sqrtd = sqrt(discriminant);
-    float t = (b - sqrtd) / a;
-    if (t < 0.001) { 
-        t = (b + sqrtd) / a;
-        if (t < 0.001) return false;
+    mat4 local_to_world;
+    local_to_world[0] = vec4(instance.local_to_world_row_0.x, instance.local_to_world_row_1.x, instance.local_to_world_row_2.x, 0.0);
+    local_to_world[1] = vec4(instance.local_to_world_row_0.y, instance.local_to_world_row_1.y, instance.local_to_world_row_2.y, 0.0);
+    local_to_world[2] = vec4(instance.local_to_world_row_0.z, instance.local_to_world_row_1.z, instance.local_to_world_row_2.z, 0.0);
+    local_to_world[3] = vec4(instance.local_to_world_row_0.w, instance.local_to_world_row_1.w, instance.local_to_world_row_2.w, 1.0);
+
+    mat4 world_to_local = inverse(local_to_world);
+
+    // Transforming ray that is in world space into local space
+    Ray local_ray;
+    local_ray.ro = transformPointAffine(world_ray.ro, world_to_local);
+    local_ray.rd = transformDirection(world_ray.rd, mat3(world_to_local));
+
+    // Convert boundaries of the ray (tMin/tMax) to local space
+    vec3 pmin_world = world_ray.ro + world_ray.rd * world_ray.tMin;
+    vec3 pmax_world = world_ray.ro + world_ray.rd * world_ray.tMax;
+    vec3 pmin_local = transformPointAffine(pmin_world, world_to_local);
+    vec3 pmax_local = transformPointAffine(pmax_world, world_to_local);
+
+    float local_min = length(local_ray.ro - pmin_local);
+    float local_max = length(local_ray.ro - pmax_local);
+    local_ray.tMin = min(local_min, local_max);
+    local_ray.tMax = max(local_min, local_max);
+
+    float best_t = FLOAT_MAX;
+    uint best_index_offset = uint(-1);
+    float best_u = 0.0;
+    float best_v = 0.0;
+
+    // Iterate over triangles
+    for (uint i = 0u; i < desc.indices_count; i += 3u) {
+        uvec3 idxs = getIndices(desc, i);
+
+        vec3 v0, v1, v2;
+        getVertices(desc, idxs, v0, v1, v2); // these are local-space vertices
+
+        float t, u, v;
+        if (intersectTriangleMT(local_ray, v0, v1, v2, t, u, v)) {
+            if (t >= local_ray.tMin && t <= local_ray.tMax && t > 0.0 && t < best_t) {
+                best_t = t;
+                best_index_offset = i;
+                best_u = u;
+                best_v = v;
+            }
+        }
     }
 
-    vec3 P = ray.ro + t * ray.rd;
-    vec3 N = normalize((P - sph_center) / sph_radius);
-    if (dot(N, ray.rd) > 0.0) N = -N;
+    if (best_index_offset == uint(-1) || best_t == FLOAT_MAX) return false;
 
-    h.t = t;
-    h.p = P; // hit point
-    h.normal = N;
-    h.mat.albedo = mat.albedo;
-    h.mat.emission = mat.emission;
+    // Build local hit
+    HitRecord local_hit;
+    hit_struct_init(local_hit);
+    local_hit.t = best_t;
+    local_hit.p = local_ray.ro + best_t * local_ray.rd;
+
+    uvec3 best_idxs = getIndices(desc, best_index_offset);
+    vec3 lv0, lv1, lv2;
+    getVertices(desc, best_idxs, lv0, lv1, lv2);
+
+    vec3 geomN_local = normalize(cross(lv1 - lv0, lv2 - lv0));
+    if (dot(geomN_local, local_ray.rd) > 0.0) geomN_local = -geomN_local;
+    local_hit.normal = geomN_local;
+    local_hit.uv = vec2(best_u, best_v);
+
+    // Transform local hit to world space
+    vec3 p_world = transformPointAffine(local_hit.p, local_to_world);
+    mat3 normal_mat = transpose(inverse(mat3(local_to_world)));
+    vec3 n_world = normalize(normal_mat * local_hit.normal);
+
+    float t_world = length(world_ray.ro - p_world);
+
+    out_hit = local_hit;
+    out_hit.p = p_world;
+    out_hit.normal = n_world;
+    out_hit.t = t_world;
+
+    if (any(isnan(out_hit.normal)) || any(isnan(out_hit.p)) || !(out_hit.t > 0.0)) return false;
+
     return true;
 }
 
-bool hitScene(inout Ray ray, inout Hit closest_hit) {
-    // Materials
-    Material red;   red.albedo = vec3(0.65, 0.05, 0.05); red.emission = vec3(0.0);
-    Material green; green.albedo = vec3(0.12, 0.45, 0.15); green.emission = vec3(0.0);
-    Material white; white.albedo = vec3(0.73); white.emission = vec3(0.0);
-    Material light; light.albedo = vec3(0.0); light.emission = vec3(15.0); // strong emission
 
-    Hit tmp;
-    hit_struct_init(tmp);
-    // Left wall (red)
-    if (hitRectangle(vec3(-1,-1,-5), vec3(-1,-1,-3), vec3(-1,1,-3), vec3(-1,1,-5), red, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp;
-    // Right wall (green)
-    if (hitRectangle(vec3(1,-1,-3), vec3(1,-1,-5), vec3(1,1,-5), vec3(1,1,-3), green, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp;
-    // Floor (white)
-    if (hitRectangle(vec3(-1,-1,-5), vec3(1,-1,-5), vec3(1,-1,-3), vec3(-1,-1,-3), white, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp;
-    // Ceiling (white)
-    if (hitRectangle(vec3(-1,1,-5), vec3(-1,1,-3), vec3(1,1,-3), vec3(1,1,-5), white, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp;
-    // Back wall (white)
-    if (hitRectangle(vec3(-1,-1,-5), vec3(-1,1,-5), vec3(1,1,-5), vec3(1,-1,-5), white, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp;
+bool hitScene(inout Ray ray, inout HitRecord closest_hit) {
+    for (uint m = 0u; m < u_instance_count; ++m) {
+        GPUMeshInstance inst = u_instances[m];
+        MeshDesc desc = u_mesh_descs[inst.mesh_index];
+        Material mat = u_materials[inst.material_index];
 
-    // Light on ceiling
-    if (hitRectangle(vec3(-0.25,0.999,-4.25), vec3(0.25,0.999,-4.25), vec3(0.25,0.999,-3.75), vec3(-0.25,0.999,-3.75), light,ray, tmp) && tmp.t < closest_hit.t) {
-        closest_hit = tmp;
+        HitRecord mh;
+        hit_struct_init(mh);
+
+        if (hitMesh(ray, desc, mh, inst) && mh.t < closest_hit.t) {
+            closest_hit = mh;
+            closest_hit.mat = mat;
+        }
     }
-
-    // Spheres
-    if (hitSphere(vec3(-0.5, -0.6, -4.0), 0.4, white, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp; // big white sphere near back
-
-    if (hitSphere(vec3(0.5, -0.8, -3.5), 0.2, red, ray, tmp) && tmp.t < closest_hit.t) closest_hit = tmp; // smaller red sphere in front
 
     return closest_hit.t < FLOAT_MAX;
 }
@@ -258,7 +348,7 @@ vec3 tracePath(inout Ray ray, inout uint rng_state) {
     vec3 attenuation = vec3(1.0);
 
     for (uint depth = 0; depth <= u_max_bounces; depth++) { // max bounces
-        Hit h;
+        HitRecord h;
         hit_struct_init(h);
 
         if(!hitScene(ray, h)){
@@ -302,6 +392,7 @@ void main() {
         vec2 offset = vec2(randUniform(rng_state) - 0.5, randUniform(rng_state) - 0.5);
 
         Ray ray;
+        ray_struct_init(ray);
         getRay(float(gid.x), float(gid.y), offset, ray);
 
         color += tracePath(ray, rng_state);

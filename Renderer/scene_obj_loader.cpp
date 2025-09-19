@@ -1,7 +1,6 @@
 #include "scene_obj_loader.h"
 #include <vector>
 #include <cmath>
-#include <memory>
 #include "hittable.h"
 #include "hittable_list_custom_bvh.h"
 #include "hittable_list_tinybvh.h"
@@ -15,8 +14,6 @@
 #include "context.h"
 #include <chrono> // Time
 #include "texture_loader.h"
-#include "RTMesh.h"
-#include "RTMeshTinyBVH.h"
 
 SceneObjLoader::SceneObjLoader() {}
 
@@ -71,6 +68,8 @@ void SceneObjLoader::initialize() {
             addMesh(meshes[i], mat_green, m);
         }
     }
+
+    sendMeshDataToGPU();
 
     if (context.settings->use_tiny_bvh) {
         static_cast<HittableListTinybvh*>(world_.get())->buildTLAS();

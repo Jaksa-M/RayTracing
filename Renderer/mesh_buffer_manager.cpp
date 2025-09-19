@@ -17,13 +17,13 @@ MeshBufferManager::MeshBufferManager() {
     buffer = std::vector<float>();
     buffer.reserve(1000000);
     // Reserving just in case I use it somewhere where I don't update regularly (will ignore the resize if there is enough space)
-    // Each time buffer resizes, if there is not enough contigous memory available, buffer has to move to another location.
+    // Each time buffer resizes, if there is not enough contiguous memory available, buffer has to move to another location.
     // That being said, field res_mesh_info in RTMesh class, since it contain spans, have to be updated because those
     // spans now point to the memory where buffer is not stored, and have some random values.
 }
 
-std::vector<float>& MeshBufferManager::getBuffer() {
-    return buffer;
+std::span<const float> MeshBufferManager::getBuffer() const {
+    return std::span<const float>(buffer);
 }
 
 MeshHandle MeshBufferManager::addToBuffer(std::span<Attribute> attributes, std::span<uint32> indices) {
@@ -99,4 +99,24 @@ ResolvedMeshInfo MeshBufferManager::getResolvedMesh(MeshHandle mesh) const {
             std::span(&buffer[info.offsets_v[static_cast<uint32>(AttributeType::Normal)]], info.count_v * 3),
             std::span(&buffer[info.offsets_v[static_cast<uint32>(AttributeType::UV)]], info.count_v * 2),
             std::span(reinterpret_cast<const uint32*>(buffer.data() + info.offset_i), info.count_i)};
+}
+
+MeshDesc MeshBufferManager::getMeshDesc(MeshHandle mesh) const {
+    if (mesh >= mesh_info_.size() || !mesh_info_[mesh].active) {
+        throw std::out_of_range("Invalid mesh handle in getMeshDesc");
+    }
+    const MeshInfo& info = mesh_info_[mesh];
+
+    MeshDesc desc{};
+
+    desc.offset_v = info.offsets_v[static_cast<uint32>(AttributeType::Position)];
+    desc.offset_n = info.offsets_v[static_cast<uint32>(AttributeType::Normal)];
+    desc.offset_uv = info.offsets_v[static_cast<uint32>(AttributeType::UV)];
+    desc.offset_c = info.offsets_v[static_cast<uint32>(AttributeType::Color)];
+
+    desc.offset_i = static_cast<uint32>(info.offset_i);
+    desc.count_v = static_cast<uint32>(info.count_v);
+    desc.count_i = info.count_i;
+
+    return desc;
 }

@@ -1,7 +1,6 @@
 #include "scene_cornell_box.h"
 #include <vector>
 #include <cmath>
-#include <memory>
 #include "hittable.h"
 #include "hittable_list_custom_bvh.h"
 #include "camera.h"
@@ -121,6 +120,18 @@ void SceneCornellBox::initialize() {
     for (uint32 i = 0; i < rt_meshes_.size(); i++) {
         world_->add(rt_meshes_[i]);
     }
+
+	//rect_prism_mesh_ = MeshUtils::GenerateTriangleCube(context, mat_yellow, 2);
+ //   matrix4x4 m = matrix4x4::identity();
+ //   //m = transformation::create_translation_matrix(vec3(0.0f, 1.98f, -10.0f));
+ //   rect_prism_mesh_->setTransformationMatrix(m);
+
+ //   std::vector<MeshHandle> meshes;
+ //   meshes.push_back(rect_prism_mesh_->getMeshHandle());
+ //   rt_meshes_.push_back(std::move(rect_prism_mesh_));
+ //   world_->add(rt_meshes_[0]);
+
+	sendMeshDataToGPU();
 
 	static_cast<HittableListCustomBVH*>(world_.get())->buildTLAS(context.bvh_manager, meshes, rt_meshes_);
 

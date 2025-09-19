@@ -7,6 +7,7 @@
 #include <span>
 #include "vec3.h"
 #include "types.h"
+#include "gpu_types.h"
 
 enum class AttributeType {
     Position,
@@ -32,7 +33,7 @@ class MeshBufferManager {
 public:
 	MeshBufferManager();
 	
-	std::vector<float>& getBuffer();
+	std::span<const float> getBuffer() const;
 
 	MeshHandle addToBuffer(std::span<Attribute> attributes, std::span<uint32> indices);
     void removeMesh(MeshHandle mesh);
@@ -41,6 +42,7 @@ public:
 	std::span<uint32> getIndices(MeshHandle mesh);
 	std::span<const float> getAttribute(MeshHandle mesh, AttributeType attribute) const;
 	ResolvedMeshInfo getResolvedMesh(MeshHandle mesh) const;
+    MeshDesc getMeshDesc(MeshHandle mesh) const;
 
 private:
 	struct MeshInfo {

@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include "gpu_types.h"
 // Removing warnings caused by this file
 #pragma warning(push)
 #pragma warning(disable : 4551)
@@ -142,6 +143,10 @@ void Shader::setMat4(const std::string& name, const float* value) const {
 
 void Shader::setTexture(const std::string& name, uint32 tex) {
     glUniform1i(glGetUniformLocation(ID, name.c_str()), tex); // set it manually
+}
+
+void Shader::bindBuffer(const GpuBuffer* buffer, uint32 binding) const {
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, buffer->id());
 }
 
 void Shader::checkCompileErrors(uint32 shader, std::string type) {

@@ -38,7 +38,6 @@ class RTMeshTinyBVH : public Hittable {
     Context& context_;
 
     MeshHandle mesh_handle_;
-    std::shared_ptr<Material> mat_;
 
     // AABB bounds in world space
     vec3 aabb_min_ws_; // ws = world space

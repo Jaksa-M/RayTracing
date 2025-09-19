@@ -2,6 +2,9 @@
 #define SHADER_H
 #include <string>
 #include "types.h"
+#include "gpu_buffer.h"
+
+struct MeshDesc;
 
 class Shader {
 public:
@@ -29,6 +32,8 @@ public:
     void setMat4(const std::string& name, const float* value) const;
 
     void setTexture(const std::string& name, uint32 tex);
+
+    void bindBuffer(const GpuBuffer* buffer, uint32 binding) const;
 
 private:
     void checkCompileErrors(uint32 shader, std::string type); // Checking shader compilation/linking errors

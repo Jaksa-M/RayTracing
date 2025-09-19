@@ -47,9 +47,15 @@ public:
 
     virtual uint32 getTriangleCount() const { return 0; };
 
+    virtual std::shared_ptr<Material> getMaterial() {
+        return mat_;
+    }
+
     virtual const matrix4x4& getLocalToWorldMatrix() const { 
         return local_to_world_mat_;
     }
+
+    virtual const matrix4x4& getWorldToLocalMatrix() const { return world_to_local_mat_; }
 
     virtual void setTransformationMatrix(const matrix4x4& mat) {
         local_to_world_mat_ = mat;
@@ -59,6 +65,8 @@ public:
     virtual void getWorldBoundingBox(vec3& aabb_min, vec3& aabb_max){};
 
 protected:
+    std::shared_ptr<Material> mat_;
+
     matrix4x4 local_to_world_mat_; // transformation from local coord system to world coord system
     matrix4x4 world_to_local_mat_; // transformation from world coord system to local coord system (inverted previous one)
 };

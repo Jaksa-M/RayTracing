@@ -27,7 +27,6 @@ class SceneObjLoader : public Scene {
     std::unique_ptr<MeshBufferManager> mesh_buf_manager_;
     std::unique_ptr<BVHManager> bvh_manager_;
 
-    std::vector<std::shared_ptr<Hittable>> rt_meshes_;
     std::unique_ptr<ObjLoader> obj_loader_;
     std::shared_ptr<Texture> erato_texture_;
 

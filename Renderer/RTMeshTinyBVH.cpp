@@ -21,8 +21,9 @@ public:
 };
 
 RTMeshTinyBVH::RTMeshTinyBVH(Context& context, MeshHandle mesh_handle, std::shared_ptr<Material> mat)
-    : context_(context), mesh_handle_(mesh_handle), mat_(mat)
+    : context_(context), mesh_handle_(mesh_handle)
 {
+    mat_ = mat;
     impl_ = std::make_unique<Impl>();
     update();
 

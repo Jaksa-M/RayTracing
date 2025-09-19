@@ -18,6 +18,10 @@ public:
     }
 
     virtual vec3 emitted(const HitRecord& rec) const { return vec3(0, 0, 0); }
+
+    virtual vec3 getAlbedo() const { return vec3(0.0f); }
+    virtual float getRoughness() const { return 0.0f; }
+    virtual vec3 getEmission() const { return vec3(0.0f); }
 };
 
 
@@ -112,6 +116,10 @@ public:
 
         return emissive_tex_->value(uv[0], uv[1]);
     }
+
+    vec3 getAlbedo() const override { return tex_->value(0.0f, 0.0f); }
+    float getRoughness() const override { return 1.0f; }
+    vec3 getEmission() const override { return emissive_tex_ ? emissive_tex_->value(0.0f, 0.0f) : vec3(0.0f); }
 
 private:
     std::shared_ptr<Texture> tex_;
@@ -216,6 +224,10 @@ public:
         return emissive_tex_->value(uv[0], uv[1]);
     }
 
+    vec3 getAlbedo() const override { return albedo_tex_->value(0.0f, 0.0f); }
+    float getRoughness() const override { return roughness_tex_->value(0.0f, 0.0f).x(); }
+    vec3 getEmission() const override { return emissive_tex_ ? emissive_tex_->value(0.0f, 0.0f) : vec3(0.0f); }
+
 private:
     std::shared_ptr<Texture> albedo_tex_;
     std::shared_ptr<Texture> roughness_tex_;
@@ -245,6 +257,10 @@ public:
 
         return tex_->value(uv[0], uv[1]);
     }
+
+    vec3 getAlbedo() const override { return vec3(0.0f); }
+    float getRoughness() const override { return 0.0f; }
+    vec3 getEmission() const override { return tex_->value(0.0f, 0.0f); }
 
 private:
     std::shared_ptr<Texture> tex_;
