@@ -32,7 +32,10 @@ inline uint32 addMaterial(const std::shared_ptr<Material>& mat, std::unordered_m
     }
 
     GPUMaterial gpu_mat{};
-    gpu_mat.texture_index = UINT32_MAX; // default: no texture
+    gpu_mat.albedo_tex_index = UINT32_MAX; // default: no texture
+    gpu_mat.roughness_tex_index = UINT32_MAX;
+    gpu_mat.emission_tex_index = UINT32_MAX;
+    gpu_mat.normal_map_tex_index = UINT32_MAX;
 
     if (std::shared_ptr<Lambertian> lambert = std::dynamic_pointer_cast<Lambertian>(mat)) {
         gpu_mat.albedo = lambert->getAlbedo();
@@ -40,7 +43,13 @@ inline uint32 addMaterial(const std::shared_ptr<Material>& mat, std::unordered_m
         gpu_mat.emission = lambert->getEmission();
 
         if (auto tex = lambert->getAlbedoTexture()) {
-            gpu_mat.texture_index = registerTexture(tex, texture_to_index, texture_handles);
+            gpu_mat.albedo_tex_index = registerTexture(tex, texture_to_index, texture_handles);
+        }
+        if (auto tex = lambert->getEmissionTexture()) {
+            gpu_mat.emission_tex_index = registerTexture(tex, texture_to_index, texture_handles);
+        }
+        if (auto tex = lambert->getNormalMapTexture()) {
+            gpu_mat.normal_map_tex_index = registerTexture(tex, texture_to_index, texture_handles);
         }
     }
     else if (std::shared_ptr<Metal> metal = std::dynamic_pointer_cast<Metal>(mat)) {
@@ -49,7 +58,16 @@ inline uint32 addMaterial(const std::shared_ptr<Material>& mat, std::unordered_m
         gpu_mat.emission = metal->getEmission();
 
         if (auto tex = metal->getAlbedoTexture()) {
-            gpu_mat.texture_index = registerTexture(tex, texture_to_index, texture_handles);
+            gpu_mat.albedo_tex_index = registerTexture(tex, texture_to_index, texture_handles);
+        }
+        if (auto tex = metal->getRoughnessTexture()) {
+            gpu_mat.roughness_tex_index = registerTexture(tex, texture_to_index, texture_handles);
+        }
+        if (auto tex = metal->getEmissionTexture()) {
+            gpu_mat.emission_tex_index = registerTexture(tex, texture_to_index, texture_handles);
+        }
+        if (auto tex = metal->getNormalMapTexture()) {
+            gpu_mat.normal_map_tex_index = registerTexture(tex, texture_to_index, texture_handles);
         }
     }
     else if (std::shared_ptr<Emissive> emissive = std::dynamic_pointer_cast<Emissive>(mat)) {
@@ -57,8 +75,8 @@ inline uint32 addMaterial(const std::shared_ptr<Material>& mat, std::unordered_m
         gpu_mat.roughness = emissive->getRoughness();
         gpu_mat.emission = emissive->getEmission();
 
-        if (auto tex = emissive->getAlbedoTexture()) {
-            gpu_mat.texture_index = registerTexture(tex, texture_to_index, texture_handles);
+        if (auto tex = emissive->getEmissionTexture()) {
+            gpu_mat.emission_tex_index = registerTexture(tex, texture_to_index, texture_handles);
         }
     }
 

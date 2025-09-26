@@ -123,7 +123,6 @@ public:
     }
 
     vec3 getAlbedo() const override { return tex_->value(0.0f, 0.0f); }
-    float getRoughness() const override { return 1.0f; }
     vec3 getEmission() const override { return emissive_tex_ ? emissive_tex_->value(0.0f, 0.0f) : vec3(0.0f); }
 
     std::shared_ptr<Texture> getAlbedoTexture() const override { return tex_; }
@@ -272,8 +271,6 @@ public:
         return tex_->value(uv[0], uv[1]);
     }
 
-    vec3 getAlbedo() const override { return vec3(0.0f); }
-    float getRoughness() const override { return 0.0f; }
     vec3 getEmission() const override { return tex_->value(0.0f, 0.0f); }
 
     std::shared_ptr<Texture> getEmissionTexture() const override { return tex_; }

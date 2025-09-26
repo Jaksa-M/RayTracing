@@ -11,13 +11,18 @@
 const float FLOAT_MAX = 3.402823466e+38;
 const float EPSILON = 1e-6;
 const float PI = 3.14;
+const uint INVALID_TEX = uint(-1); // invalid texture
 
 // Struct types
 struct Material {
     vec3 albedo;
     float roughness; // for metal (currently unused)
     vec3 emission;
-    uint texture_index;
+    uint albedo_tex_index;
+    uint roughness_tex_index; // for metal (currently unused)
+    uint emission_tex_index;
+    uint normal_map_tex_index;
+    uint unused1;
 };
 
 struct Ray {
@@ -222,12 +227,142 @@ void getUVs(MeshDesc desc, uvec3 idx, out vec2 uv0, out vec2 uv1, out vec2 uv2) 
 }
 
 // Material utility functions
-vec3 emitted(in HitRecord h) {
-    return h.mat.emission;
+// vec3 emitted(in HitRecord h) {
+//     return h.mat.emission;
+// }
+
+// bool scatterLambertian(inout uint rng_state, HitRecord rec, out vec3 attenuation, out vec3 new_dir) {
+//     if(rec.triangle_index == uint(-1)){
+//         vec3 scatter_direction = normalize(rec.normal + randomUnitVector(rng_state));
+//         if (length(scatter_direction) < EPSILON) scatter_direction = rec.normal;
+//         new_dir = scatter_direction;
+//         attenuation = rec.mat.albedo;
+//         return true;
+//     }
+
+//     GPUMeshInstance inst = u_instances[rec.instance_index];
+//     MeshDesc desc = u_mesh_descs[inst.mesh_index];
+//     uvec3 idxs = getIndices(desc, rec.triangle_index);
+//     vec2 uv0, uv1, uv2;
+//     getUVs(desc, idxs, uv0, uv1, uv2);
+//     vec2 interpolated_uv  = barycentricInterpolate(uv0, uv1, uv2, rec.buv);
+
+//     vec3 scatter_direction = normalize(rec.normal + randomUnitVector(rng_state));
+
+//     if (length(scatter_direction) < EPSILON) scatter_direction = rec.normal;
+//     new_dir = scatter_direction;
+//     attenuation = texture(textures[rec.mat.texture_index], interpolated_uv).rgb;
+//     //attenuation = vec3(interpolated_uv[0], interpolated_uv[1], 0.0f);
+//     return true;
+// }
+
+vec3 sampleAlbedo(in Material mat, in HitRecord rec) {
+    // if albedo texture is present, use it. Otherwise use mat.albedo.
+    if (mat.albedo_tex_index != INVALID_TEX) {
+        // get UV's from triangle that is hit and interpolate it
+        GPUMeshInstance inst = u_instances[rec.instance_index];
+        MeshDesc desc = u_mesh_descs[inst.mesh_index];
+        uvec3 idxs = getIndices(desc, rec.triangle_index);
+        vec2 uv0, uv1, uv2;
+        getUVs(desc, idxs, uv0, uv1, uv2);
+        vec2 uv = barycentricInterpolate(uv0, uv1, uv2, rec.buv);
+
+        return texture(textures[mat.albedo_tex_index], uv).rgb;
+    }
+    return mat.albedo;
 }
 
-bool scatterLambertian(inout uint rng_state, HitRecord rec, out vec3 attenuation, out vec3 new_dir) {
-    if(rec.triangle_index == uint(-1)){
+float sampleRoughness(in Material mat, in HitRecord rec) {
+    // If roughness texture is present, sample its R channel. Otherwise use mat.roughness.
+    if (mat.roughness_tex_index != INVALID_TEX) {
+        GPUMeshInstance inst = u_instances[rec.instance_index];
+        MeshDesc desc = u_mesh_descs[inst.mesh_index];
+        uvec3 idxs = getIndices(desc, rec.triangle_index);
+        vec2 uv0, uv1, uv2;
+        getUVs(desc, idxs, uv0, uv1, uv2);
+        vec2 uv = barycentricInterpolate(uv0, uv1, uv2, rec.buv);
+
+        return texture(textures[mat.roughness_tex_index], uv).r;
+    }
+    return mat.roughness;
+}
+
+vec3 sampleEmission(in Material mat, in HitRecord rec) {
+    // If emissive texture is present, use it. Otherwise use mat.emission.
+    if (mat.emission_tex_index != INVALID_TEX) {
+        GPUMeshInstance inst = u_instances[rec.instance_index];
+        MeshDesc desc = u_mesh_descs[inst.mesh_index];
+        uvec3 idxs = getIndices(desc, rec.triangle_index);
+        vec2 uv0, uv1, uv2;
+        getUVs(desc, idxs, uv0, uv1, uv2);
+        vec2 uv = barycentricInterpolate(uv0, uv1, uv2, rec.buv);
+
+        return texture(textures[mat.emission_tex_index], uv).rgb;
+    }
+    return mat.emission;
+}
+
+vec3 applyNormalMap(in Material mat, in HitRecord rec) {
+    if (mat.normal_map_tex_index == INVALID_TEX) {
+        return rec.normal;
+    }
+
+    GPUMeshInstance inst = u_instances[rec.instance_index];
+    MeshDesc desc = u_mesh_descs[inst.mesh_index];
+    uvec3 idxs = getIndices(desc, rec.triangle_index);
+
+    // Get vertex positions (local) and transform to world space
+    vec3 lv0, lv1, lv2;
+    getVertices(desc, idxs, lv0, lv1, lv2);
+
+    // Build local_to_world matrix (same as in hitMesh)
+    mat4 local_to_world;
+    local_to_world[0] = vec4(inst.local_to_world_row_0.x, inst.local_to_world_row_1.x, inst.local_to_world_row_2.x, 0.0);
+    local_to_world[1] = vec4(inst.local_to_world_row_0.y, inst.local_to_world_row_1.y, inst.local_to_world_row_2.y, 0.0);
+    local_to_world[2] = vec4(inst.local_to_world_row_0.z, inst.local_to_world_row_1.z, inst.local_to_world_row_2.z, 0.0);
+    local_to_world[3] = vec4(inst.local_to_world_row_0.w, inst.local_to_world_row_1.w, inst.local_to_world_row_2.w, 1.0);
+
+    vec3 v0w = transformPointAffine(lv0, local_to_world);
+    vec3 v1w = transformPointAffine(lv1, local_to_world);
+    vec3 v2w = transformPointAffine(lv2, local_to_world);
+
+    // Get per-vertex UVs
+    vec2 uv0, uv1, uv2;
+    getUVs(desc, idxs, uv0, uv1, uv2);
+
+    // Tangent and bitangent calculation
+    vec2 delta_uv1 = uv1 - uv0;
+    vec2 delta_uv2 = uv2 - uv0;
+    vec3 delta_pos1 = v1w - v0w;
+    vec3 delta_pos2 = v2w - v0w;
+
+    float denom = delta_uv1.x * delta_uv2.y - delta_uv1.y * delta_uv2.x;
+    float r = (abs(denom) < EPSILON) ? 1.0 : (1.0 / denom); // preventing division by zero
+
+    vec3 tangent = r * (delta_pos1 * delta_uv2.y - delta_pos2 * delta_uv1.y);
+    tangent = normalize(tangent);
+    vec3 bitangent = normalize(cross(rec.normal, tangent));
+
+    // Interpolate UV to get sample coords
+    vec2 uv = barycentricInterpolate(uv0, uv1, uv2, rec.buv);
+
+    // Sample normal map (assumed in tangent space, stored in [0,1])
+    vec3 nmap = texture(textures[mat.normal_map_tex_index], uv).rgb;
+    vec3 tangent_normal = normalize(2.0 * nmap - vec3(1.0)); // [0,1] -> [-1,1]
+
+    // Build TBN: columns are tangent, bitangent, normal
+    mat3 TBN = mat3(tangent, bitangent, rec.normal);
+    vec3 shading_normal = normalize(TBN * tangent_normal);
+    return shading_normal;
+}
+
+vec3 emitted(in HitRecord h) {
+    return sampleEmission(h.mat, h);
+}
+
+bool scatterLambertian(inout uint rng_state, in HitRecord rec, out vec3 attenuation, out vec3 new_dir) {
+    // If triangle_index invalid (ray didn't hit mesh), use standard approach
+    if (rec.triangle_index == uint(-1)) {
         vec3 scatter_direction = normalize(rec.normal + randomUnitVector(rng_state));
         if (length(scatter_direction) < EPSILON) scatter_direction = rec.normal;
         new_dir = scatter_direction;
@@ -235,19 +370,19 @@ bool scatterLambertian(inout uint rng_state, HitRecord rec, out vec3 attenuation
         return true;
     }
 
-    GPUMeshInstance inst = u_instances[rec.instance_index];
-    MeshDesc desc = u_mesh_descs[inst.mesh_index];
-    uvec3 idxs = getIndices(desc, rec.triangle_index);
-    vec2 uv0, uv1, uv2;
-    getUVs(desc, idxs, uv0, uv1, uv2);
-    vec2 interpolated_uv  = barycentricInterpolate(uv0, uv1, uv2, rec.buv);
+    vec3 albedo = sampleAlbedo(rec.mat, rec);
+    //float roughness = sampleRoughness(rec.mat, rec);
 
-    vec3 scatter_direction = normalize(rec.normal + randomUnitVector(rng_state));
+    // Compute normal -> apply normal map if exists
+    vec3 final_normal = applyNormalMap(rec.mat, rec);
+    if (any(isnan(final_normal))) final_normal = rec.normal;
+    final_normal = normalize(final_normal);
 
-    if (length(scatter_direction) < EPSILON) scatter_direction = rec.normal;
+    vec3 scatter_direction = normalize(final_normal + randomUnitVector(rng_state));
+    if (length(scatter_direction) < EPSILON) scatter_direction = final_normal;
     new_dir = scatter_direction;
-    attenuation = texture(textures[rec.mat.texture_index], interpolated_uv).rgb;
-    //attenuation = vec3(interpolated_uv[0], interpolated_uv[1], 0.0f);
+
+    attenuation = albedo;
     return true;
 }
 

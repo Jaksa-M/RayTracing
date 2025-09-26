@@ -29,7 +29,11 @@ struct GPUMaterial {
     vec3 albedo;
     float roughness;
     vec3 emission;
-    uint32 texture_index;
+    uint32 albedo_tex_index;
+    uint32 roughness_tex_index;
+    uint32 emission_tex_index;
+    uint32 normal_map_tex_index;
+    uint32 unused1;
 };
 
 
