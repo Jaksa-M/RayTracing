@@ -22,6 +22,11 @@ public:
     virtual vec3 getAlbedo() const { return vec3(0.0f); }
     virtual float getRoughness() const { return 0.0f; }
     virtual vec3 getEmission() const { return vec3(0.0f); }
+
+    virtual std::shared_ptr<Texture> getAlbedoTexture() const { return nullptr; }
+    virtual std::shared_ptr<Texture> getRoughnessTexture() const { return nullptr; }
+    virtual std::shared_ptr<Texture> getNormalMapTexture() const { return nullptr; }
+    virtual std::shared_ptr<Texture> getEmissionTexture() const { return nullptr; }
 };
 
 
@@ -120,6 +125,10 @@ public:
     vec3 getAlbedo() const override { return tex_->value(0.0f, 0.0f); }
     float getRoughness() const override { return 1.0f; }
     vec3 getEmission() const override { return emissive_tex_ ? emissive_tex_->value(0.0f, 0.0f) : vec3(0.0f); }
+
+    std::shared_ptr<Texture> getAlbedoTexture() const override { return tex_; }
+    std::shared_ptr<Texture> getNormalMapTexture() const override { return normal_map_tex_; }
+    std::shared_ptr<Texture> getEmissionTexture() const override { return emissive_tex_; }
 
 private:
     std::shared_ptr<Texture> tex_;
@@ -228,6 +237,11 @@ public:
     float getRoughness() const override { return roughness_tex_->value(0.0f, 0.0f).x(); }
     vec3 getEmission() const override { return emissive_tex_ ? emissive_tex_->value(0.0f, 0.0f) : vec3(0.0f); }
 
+    std::shared_ptr<Texture> getAlbedoTexture() const override { return albedo_tex_; }
+    std::shared_ptr<Texture> getRoughnessTexture() const override { return roughness_tex_; }
+    std::shared_ptr<Texture> getNormalMapTexture() const override { return normal_map_tex_; }
+    std::shared_ptr<Texture> getEmissionTexture() const override { return emissive_tex_; }
+
 private:
     std::shared_ptr<Texture> albedo_tex_;
     std::shared_ptr<Texture> roughness_tex_;
@@ -261,6 +275,8 @@ public:
     vec3 getAlbedo() const override { return vec3(0.0f); }
     float getRoughness() const override { return 0.0f; }
     vec3 getEmission() const override { return tex_->value(0.0f, 0.0f); }
+
+    std::shared_ptr<Texture> getEmissionTexture() const override { return tex_; }
 
 private:
     std::shared_ptr<Texture> tex_;

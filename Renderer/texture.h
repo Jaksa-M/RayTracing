@@ -22,6 +22,10 @@ class Texture {
 
     vec3 value(float u, float v) const;
 
+    // Used for GPU
+    void uploadToGPU(); // create GL texture and upload data
+    uint32 getTextureId() const;
+
    private:
     std::vector<uint8> data_;
 
@@ -29,6 +33,9 @@ class Texture {
     TexDescription tex_description_;
 
     vec4 pixelData(uint32 x, uint32 y) const;
+
+    // Used for GPU
+    uint32 texture_id_ = 0;
 };
 
 #endif
