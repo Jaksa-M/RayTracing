@@ -2,6 +2,12 @@
 #include "texture_utility.h"
 #include "utility.h"
 
+// Removing warnings caused by gl.h file
+#pragma warning(push)
+#pragma warning(disable : 4551)
+#include <glad/gl.h>
+#pragma warning(pop)
+
 Texture::Texture() {}
 
 Texture::Texture(const color& solid_color) {
@@ -44,6 +50,64 @@ vec3 Texture::value(float u, float v) const {
     vec4 pixel_data = pixelData(i, j);
     return vec3(pixel_data[0], pixel_data[1], pixel_data[2]);
 }
+
+void Texture::uploadToGPU() {
+    if (texture_id_ != 0) return; // already uploaded
+
+    glCreateTextures(GL_TEXTURE_2D, 1, &texture_id_);
+
+    GLenum internal_format = GL_RGBA8;
+    GLenum format = GL_RGBA;
+    GLenum type = GL_UNSIGNED_BYTE;
+    uint32 channels = getChannelCount(tex_description_.format);
+    if (isFloatFormat(tex_description_.format)) {
+        if (channels == 1) {
+            internal_format = GL_R32F;
+            format = GL_LUMINANCE;
+            type = GL_FLOAT;
+        }
+        else if (channels == 3) {
+            internal_format = GL_RGB32F;
+            format = GL_RGB;
+            type = GL_FLOAT;
+        }
+        else if (channels == 4) {
+            internal_format = GL_RGBA32F;
+            format = GL_RGBA;
+            type = GL_FLOAT;
+        }
+    }
+    else {
+        if (channels == 1) {
+            internal_format = GL_R8;
+            format = GL_LUMINANCE;
+            type = GL_UNSIGNED_BYTE;
+        }
+        else if (channels == 3) {
+            internal_format = GL_RGB8;
+            format = GL_RGB;
+            type = GL_UNSIGNED_BYTE;
+        }
+        else if (channels == 4) {
+            internal_format = GL_RGBA8;
+            format = GL_RGBA;
+            type = GL_UNSIGNED_BYTE;
+        }
+    }
+
+
+    glTextureStorage2D(texture_id_, 1, internal_format, tex_description_.image_width, tex_description_.image_height);
+    glTextureSubImage2D(texture_id_, 0, 0, 0, tex_description_.image_width, tex_description_.image_height, format, type, data_.data());
+
+    if (channels == 1) {
+        GLint swizzleMask[] = {GL_RED, GL_RED, GL_RED, GL_ONE};
+        glTextureParameteriv(texture_id_, GL_TEXTURE_SWIZZLE_RGBA, swizzleMask);
+    }
+
+    glGenerateTextureMipmap(texture_id_);
+}
+
+uint32 Texture::getTextureId() const { return texture_id_; }
 
 vec4 Texture::pixelData(uint32 x, uint32 y) const { // Return the address of the three RGB bytes of the pixel at x,y
     if (data_.empty()) return vec4(1.0f, 0.0f, 1.0f, 1.0f); // If there is no image data, returns magenta.
