@@ -53,12 +53,7 @@ bool ObjLoader::load(Context& context) {
         std::shared_ptr<Texture> emissive_tex;
         std::shared_ptr<Texture> diffuse_tex;
 
-        fs::path normal_map_texture_path = file_.parent_path() / "textures/vase_round_bump.png";
-        TextureLoader normal_map_tex_loader(normal_map_texture_path.string());
-        TexDescription desc(normal_map_tex_loader.getImageWidth(), normal_map_tex_loader.getImageHeight(), normal_map_tex_loader.getFormat());
-        normal_map_tex = std::make_shared<Texture>(normal_map_tex_loader.getData(), desc);
-
-        /*if (!mat.bump_texname.empty()) {
+        if (!mat.bump_texname.empty()) {
             fs::path normal_map_texture_path = file_.parent_path() / mat.bump_texname;
             TextureLoader normal_map_tex_loader(normal_map_texture_path.string());
             if (!normal_map_tex_loader.load(false)) {
@@ -68,7 +63,7 @@ bool ObjLoader::load(Context& context) {
                 TexDescription desc(normal_map_tex_loader.getImageWidth(), normal_map_tex_loader.getImageHeight(), normal_map_tex_loader.getFormat());
                 normal_map_tex = std::make_shared<Texture>(normal_map_tex_loader.getData(), desc);
             }
-        }*/
+        }
         if (!mat.specular_texname.empty()) {
             fs::path specular_texture_path = file_.parent_path() / mat.specular_texname;
             TextureLoader spec_tex_loader(specular_texture_path.string());

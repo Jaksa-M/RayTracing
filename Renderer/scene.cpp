@@ -120,11 +120,13 @@ void Scene::setBackgroundTexture(std::shared_ptr<Texture> tex) {
 }
 
 void Scene::sendMeshDataToGPU() {
+    // Mesh related
     std::unordered_map<MeshHandle, uint32> mesh_handle_to_gpu_index;
     std::vector<MeshHandle> all_mesh_handles;
     std::span<const float> gpu_mesh_data_buffer = context.mesh_buf_manager->getBuffer();
     std::vector<MeshDesc> descs;
 
+    // Materials related
     std::vector<GPUMaterial> gpu_materials;
     std::unordered_map<std::shared_ptr<Material>, uint32> material_to_index;
 
