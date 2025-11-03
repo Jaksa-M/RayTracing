@@ -19,10 +19,10 @@ struct GPUMeshInstance {
     vec4 local_to_world_row_0;
     vec4 local_to_world_row_1;
     vec4 local_to_world_row_2;
-    uint32_t mesh_index; // index into MeshDesc array
-    uint32_t material_index;
-    uint32_t unused1; // keep padding so instance size is multiple of 16 bytes
-    uint32_t unused2;
+    uint32 mesh_index; // index into MeshDesc array
+    uint32 material_index;
+    uint32 blas_offset;
+    uint32 blas_size;
 };
 
 struct GPUMaterial {
@@ -36,5 +36,18 @@ struct GPUMaterial {
     uint32 unused1;
 };
 
+struct GPUBLASNode {
+    vec3 aabb_min;
+    uint32 left_child;
+    vec3 aabb_max;
+    uint32 right_child;
+    uint32 first_triangle_index, triangle_cnt;
+    uint32 unused1, unused2;
+};
+
+struct BLASInfo { // used for storing data before sending to GPU
+    uint32 offset;
+    uint32 size;
+};
 
 #endif

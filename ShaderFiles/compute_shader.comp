@@ -7,8 +7,15 @@
 #extension GL_ARB_gpu_shader_int64 : require
 #extension GL_ARB_bindless_texture : require
 
+#define DEBUG_INSTANCE_ID 0
+#define DEBUG_BLAS_ID 1
+#define DEBUG_TRIANGLE_ID 2
+#define DEBUG_ALBEDO 3
+#define DEBUG_TRIANGLE_INDEX 4
+
 // Global constants
 const float FLOAT_MAX = 3.402823466e+38;
+const float INFINITY_FLOAT = 1e30;
 const float EPSILON = 1e-6;
 const float PI = 3.14;
 const uint INVALID_TEX = uint(-1); // invalid texture
@@ -79,9 +86,21 @@ struct GPUMeshInstance {
     vec4 local_to_world_row_2;
     uint mesh_index; // index into MeshDesc array
     uint material_index; // index into Materials array
-    uint unused1; // keep padding so instance size is multiple of 16 bytes
-    uint unused2;
+    uint blas_offset;
+    uint blas_size;
 };
+
+struct GPUBLASNode {
+    vec3 aabb_min;
+    uint left_child;
+    vec3 aabb_max;
+    uint right_child;
+    uint first_triangle_index, triangle_cnt;
+    uint unused1, unused2;
+};
+bool isLeaf(in GPUBLASNode node) {
+    return node.triangle_cnt > 0u;
+}
 
 layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
@@ -93,8 +112,8 @@ layout(std430, binding = 3) buffer MeshData { float u_mesh_data[]; };
 layout(std430, binding = 4) buffer MeshDescs { MeshDesc u_mesh_descs[]; };
 layout(std430, binding = 5) buffer MeshInstances { GPUMeshInstance u_instances[]; };
 layout(std430, binding = 6) buffer Materials { Material u_materials[]; };
-
 layout(std430, binding = 7) readonly buffer ssbo3 { sampler2D textures[]; };
+layout(std430, binding = 8) readonly buffer BLASNodes { GPUBLASNode u_blas_nodes[]; };
 
 
 uniform ivec2 u_resolution; // (width, height)
@@ -195,6 +214,13 @@ mat4 buildLocalToWorldMatrix(in GPUMeshInstance instance) {
     return local_to_world;
 }
 
+vec3 fibonacci3d(uint n) {
+    const float g = 1.22074408460575947536;
+    const float a1 = 1.0 / g;
+    const float a2 = 1.0 / (g * g);
+    const float a3 = 1.0 / (g * g * g);
+    return vec3(fract(0.5 + a1 * n), fract(0.5 + a2 * n), fract(0.5 + a3 * n));
+}
 
 // Utility functions for meshes
 uvec3 getIndices(MeshDesc desc, uint tri_index) {
@@ -376,18 +402,181 @@ bool intersectTriangleMT(Ray ray, vec3 v0, vec3 v1, vec3 v2, out float t, out fl
     return true;
 }
 
+void getInstanceWorldAABB(in GPUMeshInstance inst, out vec3 aabb_min_ws, out vec3 aabb_max_ws) {
+    // root node (AABB in local space)
+    GPUBLASNode root = u_blas_nodes[inst.blas_offset];
+
+    mat4 local_to_world = buildLocalToWorldMatrix(inst);
+
+    // Transform all 8 corners to world space to get the full world AABB
+    vec3 local_min = root.aabb_min;
+    vec3 local_max = root.aabb_max;
+    vec3 corners[8] = vec3[8](
+        vec3(local_min.x, local_min.y, local_min.z),
+        vec3(local_max.x, local_min.y, local_min.z),
+        vec3(local_min.x, local_max.y, local_min.z),
+        vec3(local_max.x, local_max.y, local_min.z),
+        vec3(local_min.x, local_min.y, local_max.z),
+        vec3(local_max.x, local_min.y, local_max.z),
+        vec3(local_min.x, local_max.y, local_max.z),
+        vec3(local_max.x, local_max.y, local_max.z)
+    );
+
+    aabb_min_ws = vec3( 1e30 );
+    aabb_max_ws = vec3(-1e30);
+    for (int i = 0; i < 8; i++) {
+        vec3 p = transformPointAffine(corners[i], local_to_world);
+        aabb_min_ws = min(aabb_min_ws, p);
+        aabb_max_ws = max(aabb_max_ws, p);
+    }
+}
+bool intersectAABBWorld(
+    in vec3 ro, in vec3 rd, in vec3 inv_dir,
+    in vec3 aabb_min_ws, in vec3 aabb_max_ws,
+    in float tmax,
+    out float t_hit)
+{
+    vec3 t1 = (aabb_min_ws - ro) * inv_dir;
+    vec3 t2 = (aabb_max_ws - ro) * inv_dir;
+
+    vec3 tmin3 = min(t1, t2);
+    vec3 tmax3 = max(t1, t2);
+
+    float tmin = max( max(tmin3.x, tmin3.y), max(tmin3.z, 0.0) );
+    float tmax_ = min( min(tmax3.x, tmax3.y), min(tmax3.z, tmax) );
+
+    t_hit = tmin;
+    return tmax_ >= tmin;
+}
+
+void slabTestTwoNodes(
+    vec3 inv_dir, float ray_tmax,
+    vec3 node1_min, vec3 node1_max,
+    vec3 node2_min, vec3 node2_max,
+    float rox, float roy, float roz,
+    bvec3 signMask,
+    out float d1, out float d2
+) {
+    // Node 1
+    float tx_min1 = ((signMask.x ? node1_min.x : node1_max.x) * inv_dir.x) - rox;
+    float tx_max1 = ((signMask.x ? node1_max.x : node1_min.x) * inv_dir.x) - rox;
+    float ty_min1 = ((signMask.y ? node1_min.y : node1_max.y) * inv_dir.y) - roy;
+    float ty_max1 = ((signMask.y ? node1_max.y : node1_min.y) * inv_dir.y) - roy;
+    float tz_min1 = ((signMask.z ? node1_min.z : node1_max.z) * inv_dir.z) - roz;
+    float tz_max1 = ((signMask.z ? node1_max.z : node1_min.z) * inv_dir.z) - roz;
+
+    float tmin1 = max(max(tx_min1, ty_min1), max(tz_min1, 0.0));
+    float tmax1 = min(min(tx_max1, ty_max1), min(tz_max1, ray_tmax));
+    d1 = (tmax1 >= tmin1) ? tmin1 : 1e30;
+
+    // Node 2
+    float tx_min2 = ((signMask.x ? node2_min.x : node2_max.x) * inv_dir.x) - rox;
+    float tx_max2 = ((signMask.x ? node2_max.x : node2_min.x) * inv_dir.x) - rox;
+    float ty_min2 = ((signMask.y ? node2_min.y : node2_max.y) * inv_dir.y) - roy;
+    float ty_max2 = ((signMask.y ? node2_max.y : node2_min.y) * inv_dir.y) - roy;
+    float tz_min2 = ((signMask.z ? node2_min.z : node2_max.z) * inv_dir.z) - roz;
+    float tz_max2 = ((signMask.z ? node2_max.z : node2_min.z) * inv_dir.z) - roz;
+
+    float tmin2 = max(max(tx_min2, ty_min2), max(tz_min2, 0.0));
+    float tmax2 = min(min(tx_max2, ty_max2), min(tz_max2, ray_tmax));
+    d2 = (tmax2 >= tmin2) ? tmin2 : 1e30;
+}
+
+bool intersectBLAS( in Ray local_ray, in MeshDesc desc, in uint blas_offset, out float best_t,
+    out uint best_index_offset, out float best_u, out float best_v) 
+{
+    const uint MAX_STACK_SIZE = 64u;
+    uint node_stack[MAX_STACK_SIZE];
+    uint stack_top = 0u;
+
+    node_stack[stack_top++] = 0u; // root node index
+
+    best_t = FLOAT_MAX;
+    best_index_offset = uint(-1);
+    best_u = 0.0;
+    best_v = 0.0;
+
+    vec3 inv_dir = vec3(1.0) / local_ray.rd;
+    float rox = local_ray.ro.x * inv_dir.x;
+    float roy = local_ray.ro.y * inv_dir.y;
+    float roz = local_ray.ro.z * inv_dir.z;
+    bvec3 signMask = bvec3(local_ray.rd.x >= 0.0, local_ray.rd.y >= 0.0, local_ray.rd.z >= 0.0);
+
+    while (stack_top > 0u) {
+        uint node_local_idx = node_stack[--stack_top];
+        uint node_abs_idx = blas_offset + node_local_idx;
+        GPUBLASNode node = u_blas_nodes[node_abs_idx];
+
+        if (isLeaf(node)) {
+            for (uint i = 0u; i < node.triangle_cnt; i++) {
+                uint tri_base = node.first_triangle_index * 3u + i * 3u;
+                
+                uvec3 idxs = getIndices(desc, tri_base);
+                vec3 v0, v1, v2;
+                getVertices(desc, idxs, v0, v1, v2);
+
+                float t, u, v;
+                if (intersectTriangleMT(local_ray, v0, v1, v2, t, u, v)) {
+                    if (t > 0.0 && t < best_t) {
+                        best_t = t;
+                        best_index_offset = tri_base;
+                        best_u = u;
+                        best_v = v;
+                    }
+                }
+            }
+            continue;
+        }
+
+        uint left_local = node.left_child;
+        uint right_local = node.right_child;
+
+        GPUBLASNode node_left = u_blas_nodes[blas_offset + left_local];
+        GPUBLASNode node_right = u_blas_nodes[blas_offset + right_local];
+
+        float dist_left = FLOAT_MAX;
+        float dist_right = FLOAT_MAX;
+        slabTestTwoNodes(inv_dir, local_ray.tMax,
+                         node_left.aabb_min, node_left.aabb_max,
+                         node_right.aabb_min, node_right.aabb_max,
+                         rox, roy, roz, signMask,
+                         dist_left, dist_right);
+
+        bool left_check = dist_left < best_t;
+        bool right_check = dist_right < best_t;
+
+        // Sort children based on distance to prioritize closer node
+        if (dist_right < dist_left) {
+            uint temp_local = left_local; left_local = right_local; right_local = temp_local;
+            bool temp_check = left_check; left_check = right_check; right_check = temp_check;
+            float temp_dist = dist_left; dist_left = dist_right; dist_right = temp_dist;
+            GPUBLASNode temp_node = node_left; node_left = node_right; node_right = temp_node;
+        }
+
+        // push further child first (so closer child gets popped first)
+        if (right_check && dist_right < best_t && stack_top < MAX_STACK_SIZE) {
+            node_stack[stack_top++] = right_local;
+        }
+        if (left_check && dist_left < best_t && stack_top < MAX_STACK_SIZE) {
+            node_stack[stack_top++] = left_local;
+        }
+    }
+
+    return (best_index_offset != uint(-1) && best_t < FLOAT_MAX);
+}
+
 bool hitMesh(in Ray world_ray, in MeshDesc desc, out HitRecord out_hit, in GPUMeshInstance instance) {
     if (desc.indices_count < 3u || desc.vertices_count == 0u) return false;
 
     mat4 local_to_world = buildLocalToWorldMatrix(instance);
     mat4 world_to_local = inverse(local_to_world);
 
-    // Transforming ray that is in world space into local space
+    // Transform ray into local space
     Ray local_ray;
     local_ray.ro = transformPointAffine(world_ray.ro, world_to_local);
     local_ray.rd = transformDirection(world_ray.rd, mat3(world_to_local));
 
-    // Convert boundaries of the ray (tMin/tMax) to local space
+    // Convert ray bounds to local space (same as your previous code)
     vec3 pmin_world = world_ray.ro + world_ray.rd * world_ray.tMin;
     vec3 pmax_world = world_ray.ro + world_ray.rd * world_ray.tMax;
     vec3 pmin_local = transformPointAffine(pmin_world, world_to_local);
@@ -403,33 +592,17 @@ bool hitMesh(in Ray world_ray, in MeshDesc desc, out HitRecord out_hit, in GPUMe
     float best_u = 0.0;
     float best_v = 0.0;
 
-    // Iterate over triangles
-    for (uint i = 0u; i < desc.indices_count; i += 3u) {
-        uvec3 idxs = getIndices(desc, i);
+    bool hit = intersectBLAS(local_ray, desc, instance.blas_offset, best_t, best_index_offset, best_u, best_v);
+    if (!hit) return false;
 
-        vec3 v0, v1, v2;
-        getVertices(desc, idxs, v0, v1, v2); // these are local-space vertices
-
-        float t, u, v;
-        if (intersectTriangleMT(local_ray, v0, v1, v2, t, u, v)) {
-            if (t >= local_ray.tMin && t <= local_ray.tMax && t > 0.0 && t < best_t) {
-                best_t = t;
-                best_index_offset = i;
-                best_u = u;
-                best_v = v;
-            }
-        }
-    }
-
-    if (best_index_offset == uint(-1) || best_t == FLOAT_MAX) return false;
-
-    // Build local hit
+    // Build local hit record
     HitRecord local_hit;
     hit_struct_init(local_hit);
     local_hit.t = best_t;
     local_hit.p = local_ray.ro + best_t * local_ray.rd;
     local_hit.triangle_index = best_index_offset;
 
+    // Fetch triangle vertices (local)
     uvec3 best_idxs = getIndices(desc, best_index_offset);
     vec3 lv0, lv1, lv2;
     getVertices(desc, best_idxs, lv0, lv1, lv2);
@@ -439,7 +612,7 @@ bool hitMesh(in Ray world_ray, in MeshDesc desc, out HitRecord out_hit, in GPUMe
     local_hit.normal = geomN_local;
     local_hit.buv = vec2(best_u, best_v);
 
-    // Transform local hit to world space
+    // Transform to world space
     vec3 p_world = transformPointAffine(local_hit.p, local_to_world);
     mat3 normal_mat = transpose(inverse(mat3(local_to_world)));
     vec3 n_world = normalize(normal_mat * local_hit.normal);
@@ -456,24 +629,72 @@ bool hitMesh(in Ray world_ray, in MeshDesc desc, out HitRecord out_hit, in GPUMe
     return true;
 }
 
-
 bool hitScene(inout Ray ray, inout HitRecord closest_hit) {
+    float closest_t = FLOAT_MAX;
+    uint closest_instance = uint(-1);
+
     for (uint m = 0u; m < u_instance_count; m++) {
         GPUMeshInstance inst = u_instances[m];
+
+        // AABB intersection in world space
+        vec3 aabb_min_ws, aabb_max_ws;
+        getInstanceWorldAABB(inst, aabb_min_ws, aabb_max_ws);
+
+        vec3 inv_dir = 1.0 / ray.rd;
+        float t_aabb;
+        bool hit_aabb = intersectAABBWorld(ray.ro, ray.rd, inv_dir, aabb_min_ws, aabb_max_ws, ray.tMax, t_aabb);
+
+        if (!hit_aabb || t_aabb > closest_t) continue; // Skip far or missed AABBs
+
         MeshDesc desc = u_mesh_descs[inst.mesh_index];
         Material mat = u_materials[inst.material_index];
 
         HitRecord mh;
         hit_struct_init(mh);
 
-        if (hitMesh(ray, desc, mh, inst) && mh.t < closest_hit.t) {
+        if (hitMesh(ray, desc, mh, inst) && mh.t < closest_t) {
             closest_hit = mh;
             closest_hit.mat = mat;
             closest_hit.instance_index = m;
+            closest_t = mh.t;
+            closest_instance = m;
         }
     }
 
-    return closest_hit.t < FLOAT_MAX;
+    return closest_t < FLOAT_MAX;
+}
+
+vec3 getDebug (inout Ray ray, uint debug_mode) {
+    HitRecord h;
+    hit_struct_init(h);
+
+    if (hitScene(ray, h)) {
+        switch (debug_mode) {
+            case DEBUG_INSTANCE_ID:
+                return fibonacci3d(h.instance_index);
+                break;
+            case DEBUG_BLAS_ID:
+                //return fibonacci3d(h.blas_id);
+                break;
+            case DEBUG_TRIANGLE_ID:
+                //return fibonacci3d(h.triangle_index);
+                break;
+            case DEBUG_ALBEDO:
+                return h.mat.albedo;
+                break;
+            case DEBUG_TRIANGLE_INDEX:
+                return fibonacci3d(h.triangle_index); 
+                break;
+        }
+    }
+    return vec3(1,0,1);
+}
+
+vec3 tracePathDebug(inout Ray ray, inout uint rng_state) {
+    vec3 result = vec3(0.0, 0.0, 0.0);
+    vec3 attenuation = vec3(1.0);
+
+    return result = getDebug(ray, DEBUG_INSTANCE_ID);
 }
 
 vec3 tracePath(inout Ray ray, inout uint rng_state) {

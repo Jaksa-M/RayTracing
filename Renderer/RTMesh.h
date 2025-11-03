@@ -36,6 +36,8 @@ public:
 
     void getWorldBoundingBox(vec3& aabb_min, vec3& aabb_max);
 
+    std::span<const BLASNode> getBLASNodes();
+
 private:
     Context& context_;
 

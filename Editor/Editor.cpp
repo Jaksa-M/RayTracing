@@ -139,7 +139,7 @@ int main(int, char**) {
     std::vector<uint8> image_data;
     std::vector<vec3> image_data_float;
     float trace_percentage = 0.1f; // Decides how much pixels will be traced
-    int32 max_bounces = 3;
+    int32 max_bounces = 1;
     float environment_light = 1.0f;
     bool reset_accumulated = false;
     bool freeze_camera = false;
