@@ -491,16 +491,21 @@ bool intersectBLAS( in Ray local_ray, in MeshDesc desc, in uint blas_offset, out
 
     node_stack[stack_top++] = 0u; // root node index
 
+    // Initialize best intersection data
     best_t = FLOAT_MAX;
-    best_index_offset = uint(-1);
+    best_index_offset = uint(-1); // Invalid triangle
     best_u = 0.0;
     best_v = 0.0;
 
+    // Precompute ray inverse direction and sign mask for faster AABB tests
     vec3 inv_dir = vec3(1.0) / local_ray.rd;
     float rox = local_ray.ro.x * inv_dir.x;
     float roy = local_ray.ro.y * inv_dir.y;
     float roz = local_ray.ro.z * inv_dir.z;
-    bvec3 signMask = bvec3(local_ray.rd.x >= 0.0, local_ray.rd.y >= 0.0, local_ray.rd.z >= 0.0);
+
+    // sign_mask tells whether each direction component is positive or negative
+    // (used to decide which slab planes to use for min/max)
+    bvec3 sign_mask = bvec3(local_ray.rd.x >= 0.0, local_ray.rd.y >= 0.0, local_ray.rd.z >= 0.0);
 
     while (stack_top > 0u) {
         uint node_local_idx = node_stack[--stack_top];
@@ -508,6 +513,7 @@ bool intersectBLAS( in Ray local_ray, in MeshDesc desc, in uint blas_offset, out
         GPUBLASNode node = u_blas_nodes[node_abs_idx];
 
         if (isLeaf(node)) {
+            // Loop through all triangles in this leaf
             for (uint i = 0u; i < node.triangle_cnt; i++) {
                 uint tri_base = node.first_triangle_index * 3u + i * 3u;
                 
@@ -515,8 +521,10 @@ bool intersectBLAS( in Ray local_ray, in MeshDesc desc, in uint blas_offset, out
                 vec3 v0, v1, v2;
                 getVertices(desc, idxs, v0, v1, v2);
 
+                // ray-triangle intersection
                 float t, u, v;
                 if (intersectTriangleMT(local_ray, v0, v1, v2, t, u, v)) {
+                    // If the intersection is valid and closer than the current best
                     if (t > 0.0 && t < best_t) {
                         best_t = t;
                         best_index_offset = tri_base;
@@ -531,6 +539,7 @@ bool intersectBLAS( in Ray local_ray, in MeshDesc desc, in uint blas_offset, out
         uint left_local = node.left_child;
         uint right_local = node.right_child;
 
+        // Fetch the child nodes
         GPUBLASNode node_left = u_blas_nodes[blas_offset + left_local];
         GPUBLASNode node_right = u_blas_nodes[blas_offset + right_local];
 
@@ -539,7 +548,7 @@ bool intersectBLAS( in Ray local_ray, in MeshDesc desc, in uint blas_offset, out
         slabTestTwoNodes(inv_dir, local_ray.tMax,
                          node_left.aabb_min, node_left.aabb_max,
                          node_right.aabb_min, node_right.aabb_max,
-                         rox, roy, roz, signMask,
+                         rox, roy, roz, sign_mask,
                          dist_left, dist_right);
 
         bool left_check = dist_left < best_t;
