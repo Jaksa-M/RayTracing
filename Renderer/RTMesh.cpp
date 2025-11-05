@@ -350,3 +350,7 @@ void RTMesh::getWorldBoundingBox(vec3& aabb_min, vec3& aabb_max) {
     aabb_max = node.aabb_max;
     transformAABB(aabb_min, aabb_max, local_to_world_mat_); // transforms aabb from local to world space
 }
+
+std::span<const BLASNode> RTMesh::getBLASNodes() {
+    return bvh_nodes_;
+}

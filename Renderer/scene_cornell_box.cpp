@@ -99,6 +99,8 @@ void SceneCornellBox::initialize() {
         transformation::create_scaling_matrix(0.5f, 0.5f, 0.5f); // size of light source
     rect_mesh_light_->setTransformationMatrix(m);
 
+
+
 	std::vector<MeshHandle> meshes;
     meshes.push_back(rect_prism_mesh_->getMeshHandle());
     meshes.push_back(cube_mesh_->getMeshHandle());
@@ -108,8 +110,7 @@ void SceneCornellBox::initialize() {
     meshes.push_back(rect_mesh_left_->getMeshHandle());
     meshes.push_back(rect_mesh_right_->getMeshHandle());
     meshes.push_back(rect_mesh_light_->getMeshHandle());
-
-	rt_meshes_.push_back(std::move(rect_prism_mesh_));
+    rt_meshes_.push_back(std::move(rect_prism_mesh_));
     rt_meshes_.push_back(std::move(cube_mesh_));
     rt_meshes_.push_back(std::move(rect_mesh_back_));
     rt_meshes_.push_back(std::move(rect_mesh_top_));
@@ -117,19 +118,37 @@ void SceneCornellBox::initialize() {
     rt_meshes_.push_back(std::move(rect_mesh_left_));
     rt_meshes_.push_back(std::move(rect_mesh_right_));
     rt_meshes_.push_back(std::move(rect_mesh_light_));
+
+
+	//sphere1_ = MeshUtils::GenerateIcosphere(context, mat_red, 4);
+ //   matrix4x4 m = transformation::create_translation_matrix(vec3(-2.0f, 0.0f, 0.0f));
+ //   sphere1_->setTransformationMatrix(m);
+
+ //   sphere2_ = std::make_shared<RTMesh>(context, sphere1_->getMeshHandle(), mat_yellow);
+ //   m = transformation::create_translation_matrix(vec3(0.0f, 0.0f, 0.0f));
+ //   sphere2_->setTransformationMatrix(m);
+
+ //   sphere3_ = std::make_shared<RTMesh>(context, sphere1_->getMeshHandle(), mat_green);
+ //   m = transformation::create_translation_matrix(vec3(2.0f, 0.0f, 0.0f));
+ //   sphere3_->setTransformationMatrix(m);
+
+ //   sphere4_ = std::make_shared<RTMesh>(context, sphere1_->getMeshHandle(), mat_white);
+ //   m = transformation::create_translation_matrix(vec3(5.0f, 0.0f, 0.0f));
+ //   sphere4_->setTransformationMatrix(m);
+ //   meshes.push_back(sphere1_->getMeshHandle());
+ //   meshes.push_back(sphere2_->getMeshHandle());
+ //   meshes.push_back(sphere3_->getMeshHandle());
+ //   meshes.push_back(sphere4_->getMeshHandle());
+ //   rt_meshes_.push_back(std::move(sphere1_));
+ //   rt_meshes_.push_back(std::move(sphere2_));
+ //   rt_meshes_.push_back(std::move(sphere3_));
+ //   rt_meshes_.push_back(std::move(sphere4_));
+
+
+
     for (uint32 i = 0; i < rt_meshes_.size(); i++) {
         world_->add(rt_meshes_[i]);
     }
-
-	//rect_prism_mesh_ = MeshUtils::GenerateTriangleCube(context, mat_yellow, 2);
- //   matrix4x4 m = matrix4x4::identity();
- //   //m = transformation::create_translation_matrix(vec3(0.0f, 1.98f, -10.0f));
- //   rect_prism_mesh_->setTransformationMatrix(m);
-
- //   std::vector<MeshHandle> meshes;
- //   meshes.push_back(rect_prism_mesh_->getMeshHandle());
- //   rt_meshes_.push_back(std::move(rect_prism_mesh_));
- //   world_->add(rt_meshes_[0]);
 
 	sendMeshDataToGPU();
 

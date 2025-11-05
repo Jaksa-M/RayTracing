@@ -6,6 +6,11 @@
 #include <glad/gl.h>
 #pragma warning(pop)
 
+struct BLASInfo { // temporary storage just to be able to collect blas data to send to GPU
+    uint32 offset;
+    uint32 size;
+};
+
 inline uint32 registerTexture(const std::shared_ptr<Texture>& tex, std::unordered_map<std::shared_ptr<Texture>, uint32>& texture_to_index,
                                 std::vector<uint64>& texture_handles) {
     auto it = texture_to_index.find(tex);
@@ -134,9 +139,38 @@ void Scene::sendMeshDataToGPU() {
     std::vector<uint64> texture_handles;
     std::unordered_map<std::shared_ptr<Texture>, uint32> texture_to_index;
 
+    // BLAS related
+    std::unordered_map<MeshHandle, BLASInfo> mesh_handle_to_blas_info;
+    std::vector<BLASNode> all_blas_nodes; // flat array of all BLAS nodes
+    std::vector<GPUBLASNode> all_blas_nodes_gpu_format;
+
     for (uint32 i = 0; i < rt_meshes_.size(); i++) {
-        MeshHandle mesh_handle = dynamic_cast<RTMesh*>(rt_meshes_[i].get())->getMeshHandle();
+        RTMesh* rt_mesh = dynamic_cast<RTMesh*>(rt_meshes_[i].get());
+        MeshHandle mesh_handle = rt_mesh->getMeshHandle();
         all_mesh_handles.push_back(mesh_handle);
+
+        // BLAS part
+        if (mesh_handle_to_blas_info.find(mesh_handle) == mesh_handle_to_blas_info.end()) {
+            std::span<const BLASNode> nodes = rt_mesh->getBLASNodes();
+            uint32 blas_offset = static_cast<uint32>(all_blas_nodes.size());
+            uint32 blas_size = static_cast<uint32>(nodes.size());
+            all_blas_nodes.insert(all_blas_nodes.end(), nodes.begin(), nodes.end());
+
+            mesh_handle_to_blas_info[mesh_handle] = {blas_offset, blas_size};
+        }
+    }
+
+    // Copying the blas nodes to proper format for gpu struct
+    for (uint32 i = 0; i < all_blas_nodes.size(); i++) {
+        BLASNode blas_node = all_blas_nodes[i];
+        GPUBLASNode new_blas_node;
+        new_blas_node.aabb_min = blas_node.aabb_min;
+        new_blas_node.aabb_max = blas_node.aabb_max;
+        new_blas_node.first_triangle_index = blas_node.first_triangle_index;
+        new_blas_node.left_child = blas_node.left_child;
+        new_blas_node.right_child = blas_node.right_child;
+        new_blas_node.triangle_cnt = blas_node.triangle_cnt;
+        all_blas_nodes_gpu_format.push_back(new_blas_node);
     }
 
     for (MeshHandle mesh_handle : all_mesh_handles) {
@@ -158,6 +192,10 @@ void Scene::sendMeshDataToGPU() {
 
         instance.mesh_index = mesh_handle_to_gpu_index[rt_mesh->getMeshHandle()];
         instance.material_index = addMaterial(rt_mesh->getMaterial(), material_to_index, gpu_materials, texture_to_index, texture_handles);
+        BLASInfo blas_info = mesh_handle_to_blas_info[rt_mesh->getMeshHandle()];
+        instance.blas_offset = blas_info.offset;
+        instance.blas_size = blas_info.size;
+
         instances.push_back(instance);
     }
 
@@ -166,8 +204,8 @@ void Scene::sendMeshDataToGPU() {
     mesh_desc_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(descs)), BufferUsage::DynamicDraw);
     mesh_instance_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(instances)), BufferUsage::StaticDraw);
     material_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(gpu_materials)), BufferUsage::StaticDraw);
-
     texture_handles_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(texture_handles)), BufferUsage::StaticDraw);
+    blas_nodes_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(all_blas_nodes_gpu_format)), BufferUsage::StaticDraw);
 }
 
 void Scene::bindResources(Shader* shader) {
@@ -176,6 +214,7 @@ void Scene::bindResources(Shader* shader) {
     shader->bindBuffer(mesh_instance_buffer_.get(), 5);
     shader->bindBuffer(material_buffer_.get(), 6);
     shader->bindBuffer(texture_handles_buffer_.get(), 7);
+    shader->bindBuffer(blas_nodes_buffer_.get(), 8);
 }
 
 uint32 Scene::getRtMeshesSize() {
