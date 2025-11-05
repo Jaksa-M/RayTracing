@@ -6,6 +6,11 @@
 #include <glad/gl.h>
 #pragma warning(pop)
 
+struct BLASInfo { // temporary storage just to be able to collect blas data to send to GPU
+    uint32 offset;
+    uint32 size;
+};
+
 inline uint32 registerTexture(const std::shared_ptr<Texture>& tex, std::unordered_map<std::shared_ptr<Texture>, uint32>& texture_to_index,
                                 std::vector<uint64>& texture_handles) {
     auto it = texture_to_index.find(tex);

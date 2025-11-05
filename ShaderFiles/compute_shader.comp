@@ -430,7 +430,7 @@ void getInstanceWorldAABB(in GPUMeshInstance inst, out vec3 aabb_min_ws, out vec
         aabb_max_ws = max(aabb_max_ws, p);
     }
 }
-bool intersectAABBWorld(
+bool intersectAABB(
     in vec3 ro, in vec3 rd, in vec3 inv_dir,
     in vec3 aabb_min_ws, in vec3 aabb_max_ws,
     in float tmax,
@@ -492,7 +492,6 @@ bool intersectBLAS( in Ray local_ray, in MeshDesc desc, in uint blas_offset, out
     node_stack[stack_top++] = 0u; // root node index
 
     // Initialize best intersection data
-    best_t = FLOAT_MAX;
     best_index_offset = uint(-1); // Invalid triangle
     best_u = 0.0;
     best_v = 0.0;
@@ -651,17 +650,21 @@ bool hitScene(inout Ray ray, inout HitRecord closest_hit) {
 
         vec3 inv_dir = 1.0 / ray.rd;
         float t_aabb;
-        bool hit_aabb = intersectAABBWorld(ray.ro, ray.rd, inv_dir, aabb_min_ws, aabb_max_ws, ray.tMax, t_aabb);
+        bool hit_aabb = intersectAABB(ray.ro, ray.rd, inv_dir, aabb_min_ws, aabb_max_ws, ray.tMax, t_aabb);
 
         if (!hit_aabb || t_aabb > closest_t) continue; // Skip far or missed AABBs
 
         MeshDesc desc = u_mesh_descs[inst.mesh_index];
         Material mat = u_materials[inst.material_index];
 
+        // Limit the ray range to current closest hit
+        Ray limited_ray = ray;
+        limited_ray.tMax = closest_t; 
+
         HitRecord mh;
         hit_struct_init(mh);
 
-        if (hitMesh(ray, desc, mh, inst) && mh.t < closest_t) {
+        if (hitMesh(limited_ray, desc, mh, inst) && mh.t < closest_t) {
             closest_hit = mh;
             closest_hit.mat = mat;
             closest_hit.instance_index = m;

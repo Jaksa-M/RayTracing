@@ -121,7 +121,7 @@ int main(int, char**) {
     std::unique_ptr<Statistics> statistics = std::make_unique<Statistics>();
     std::unique_ptr<TimeMeasurement> time_measurement = std::make_unique<TimeMeasurement>();
 
-    SceneType selected_scene_index = SceneType::OBJ_LOADER;
+    SceneType selected_scene_index = SceneType::CORNELL_BOX;
     BVHTechnique chosen_technique_index = BVHTechnique::MIDPOINT_SPLIT;
     MeshColor chosen_mesh_color = MeshColor::MATERIAL;
 
@@ -139,7 +139,7 @@ int main(int, char**) {
     std::vector<uint8> image_data;
     std::vector<vec3> image_data_float;
     float trace_percentage = 0.1f; // Decides how much pixels will be traced
-    int32 max_bounces = 1;
+    int32 max_bounces = 3;
     float environment_light = 1.0f;
     bool reset_accumulated = false;
     bool freeze_camera = false;

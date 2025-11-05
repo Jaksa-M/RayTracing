@@ -45,9 +45,4 @@ struct GPUBLASNode {
     uint32 unused1, unused2;
 };
 
-struct BLASInfo { // used for storing data before sending to GPU
-    uint32 offset;
-    uint32 size;
-};
-
 #endif
