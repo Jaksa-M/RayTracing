@@ -150,9 +150,9 @@ void SceneCornellBox::initialize() {
         world_->add(rt_meshes_[i]);
     }
 
-	sendMeshDataToGPU();
-
 	static_cast<HittableListCustomBVH*>(world_.get())->buildTLAS(context.bvh_manager, meshes, rt_meshes_);
+
+	sendMeshDataToGPU();
 
 	initShader();
 }

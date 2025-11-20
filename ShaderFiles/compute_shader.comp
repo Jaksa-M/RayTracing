@@ -102,6 +102,16 @@ bool isLeaf(in GPUBLASNode node) {
     return node.triangle_cnt > 0u;
 }
 
+struct GPUTLASNode {
+    vec3 aabb_min;
+    uint left_right; // 2x16 bits for left and right child index
+    vec3 aabb_max;
+    uint blas; // Valid only for leaf nodes
+};
+bool isTLASLeaf(in GPUTLASNode node) {
+    return node.left_right == 0u;
+}
+
 layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 layout (rgba8, binding = 0) uniform image2D u_display_img;
@@ -114,6 +124,7 @@ layout(std430, binding = 5) buffer MeshInstances { GPUMeshInstance u_instances[]
 layout(std430, binding = 6) buffer Materials { Material u_materials[]; };
 layout(std430, binding = 7) readonly buffer ssbo3 { sampler2D textures[]; };
 layout(std430, binding = 8) readonly buffer BLASNodes { GPUBLASNode u_blas_nodes[]; };
+layout(std430, binding = 9) readonly buffer TLASNodes { GPUTLASNode u_tlas_nodes[]; };
 
 
 uniform ivec2 u_resolution; // (width, height)
@@ -164,6 +175,17 @@ vec3 randomUnitVector(inout uint rng_state) {
 float atan2(float y, float x) {
     float s = abs(x) > abs(y) ? 1.0 : 0.0;
     return mix(PI / 2.0 - atan(x, y), atan(y, x), s);
+}
+
+// Function that inverts the vec3 in a safe way (avoiding division by 0)
+float invertCoord(float x) {
+    if (abs(x) > 1e-12) return 1.0 / x;
+    else return (x >= 0.0) ? FLOAT_MAX : -FLOAT_MAX;
+}
+
+// Safe inversion of a vec3
+vec3 invertVecSafe(vec3 v) {
+    return vec3(invertCoord(v.x), invertCoord(v.y), invertCoord(v.z));
 }
 
 // The name comes from the equirectangular projection (also called lat-long mapping), which is a very common way of mapping
@@ -449,6 +471,42 @@ bool intersectAABB(
     return tmax_ >= tmin;
 }
 
+void slabTestTwoTLASNodes(
+    in vec3 inv_dir, in float ray_tmax,
+    in vec3 n1_min, in vec3 n1_max,
+    in vec3 n2_min, in vec3 n2_max,
+    in float rox, in float roy, in float roz,
+    in bvec3 signMask,
+    out bool hit1, out float d1,
+    out bool hit2, out float d2
+) {
+    // Node 1
+    float tx_min1 = ((signMask.x ? n1_min.x : n1_max.x) * inv_dir.x) - rox;
+    float tx_max1 = ((signMask.x ? n1_max.x : n1_min.x) * inv_dir.x) - rox;
+    float ty_min1 = ((signMask.y ? n1_min.y : n1_max.y) * inv_dir.y) - roy;
+    float ty_max1 = ((signMask.y ? n1_max.y : n1_min.y) * inv_dir.y) - roy;
+    float tz_min1 = ((signMask.z ? n1_min.z : n1_max.z) * inv_dir.z) - roz;
+    float tz_max1 = ((signMask.z ? n1_max.z : n1_min.z) * inv_dir.z) - roz;
+
+    float tmin1 = max(max(tx_min1, ty_min1), max(tz_min1, 0.0));
+    float tmax1 = min(min(tx_max1, ty_max1), min(tz_max1, ray_tmax));
+    hit1 = (tmax1 >= tmin1) && (tmin1 < ray_tmax) && (tmax1 > 0.0);
+    d1 = hit1 ? tmin1 : 1e30;
+
+    // Node 2
+    float tx_min2 = ((signMask.x ? n2_min.x : n2_max.x) * inv_dir.x) - rox;
+    float tx_max2 = ((signMask.x ? n2_max.x : n2_min.x) * inv_dir.x) - rox;
+    float ty_min2 = ((signMask.y ? n2_min.y : n2_max.y) * inv_dir.y) - roy;
+    float ty_max2 = ((signMask.y ? n2_max.y : n2_min.y) * inv_dir.y) - roy;
+    float tz_min2 = ((signMask.z ? n2_min.z : n2_max.z) * inv_dir.z) - roz;
+    float tz_max2 = ((signMask.z ? n2_max.z : n2_min.z) * inv_dir.z) - roz;
+
+    float tmin2 = max(max(tx_min2, ty_min2), max(tz_min2, 0.0));
+    float tmax2 = min(min(tx_max2, ty_max2), min(tz_max2, ray_tmax));
+    hit2 = (tmax2 >= tmin2) && (tmin2 < ray_tmax) && (tmax2 > 0.0);
+    d2 = hit2 ? tmin2 : 1e30;
+}
+
 void slabTestTwoNodes(
     vec3 inv_dir, float ray_tmax,
     vec3 node1_min, vec3 node1_max,
@@ -637,7 +695,115 @@ bool hitMesh(in Ray world_ray, in MeshDesc desc, out HitRecord out_hit, in GPUMe
     return true;
 }
 
+bool intersectTLAS(in Ray ray, inout float closest_t, out HitRecord best_hit) {
+    const uint MAX_STACK = 64u;
+    uint stack[MAX_STACK];
+    uint stack_ptr = 0u;
+
+    stack[stack_ptr++] = 0u; // TLAS root is node 0
+
+    vec3 inv_dir = invertVecSafe(ray.rd);
+    float rox = ray.ro.x * inv_dir.x;
+    float roy = ray.ro.y * inv_dir.y;
+    float roz = ray.ro.z * inv_dir.z;
+    bvec3 signMask = bvec3(inv_dir.x >= 0.0, inv_dir.y >= 0.0, inv_dir.z >= 0.0);
+
+    bool hit_anything = false;
+    HitRecord temp_hit;
+    hit_struct_init(temp_hit);
+
+    while (stack_ptr > 0u) {
+        uint node_idx = stack[--stack_ptr];
+        GPUTLASNode node = u_tlas_nodes[node_idx];
+
+        // Quick rejection of whole node
+        float tx_min = ((signMask.x ? node.aabb_min.x : node.aabb_max.x) * inv_dir.x) - rox;
+        float tx_max = ((signMask.x ? node.aabb_max.x : node.aabb_min.x) * inv_dir.x) - rox;
+        float ty_min = ((signMask.y ? node.aabb_min.y : node.aabb_max.y) * inv_dir.y) - roy;
+        float ty_max = ((signMask.y ? node.aabb_max.y : node.aabb_min.y) * inv_dir.y) - roy;
+        float tz_min = ((signMask.z ? node.aabb_min.z : node.aabb_max.z) * inv_dir.z) - roz;
+        float tz_max = ((signMask.z ? node.aabb_max.z : node.aabb_min.z) * inv_dir.z) - roz;
+
+        float tmin = tx_min > ty_min ? tx_min : ty_min;
+        if (tz_min > tmin) tmin = tz_min;
+
+        float tmax = tx_max < ty_max ? tx_max : ty_max;
+        if (tz_max < tmax) tmax = tz_max;
+
+        if ((tmin > tmax) || (tmax < 0.0) || (tmin > closest_t)) continue; // miss node entirely
+
+        if (isTLASLeaf(node)) {
+            uint instance_idx = node.blas;
+            if (instance_idx == uint(-1)) continue;
+
+            // Limit ray tMax is set to current closest_t (so hitMesh can early out)
+            Ray limited_ray = ray; // world space
+            limited_ray.tMax = closest_t;
+
+            GPUMeshInstance inst = u_instances[instance_idx];
+            MeshDesc desc = u_mesh_descs[inst.mesh_index];
+
+            HitRecord world_hit;
+            hit_struct_init(world_hit);
+
+            // We pass limited_ray so hitMesh / intersectBLAS can cull with closest_t.
+            if (hitMesh(limited_ray, desc, world_hit, inst)) {
+                if (world_hit.t < closest_t && world_hit.t > 0.0) {
+                    best_hit = world_hit;
+                    best_hit.instance_index = instance_idx;
+                    best_hit.mat = u_materials[inst.material_index];
+                    closest_t = world_hit.t;
+                    hit_anything = true;
+                }
+            }
+            continue;
+        }
+
+        // Internal node -> push children in distance order
+        uint left = node.left_right & 0xFFFFu;
+        uint right = (node.left_right >> 16) & 0xFFFFu;
+
+        GPUTLASNode leftNode = u_tlas_nodes[left];
+        GPUTLASNode rightNode = u_tlas_nodes[right];
+
+        bool hit_left; float dist_left;
+        bool hit_right; float dist_right;
+        slabTestTwoTLASNodes(
+            inv_dir, closest_t,
+            leftNode.aabb_min, leftNode.aabb_max,
+            rightNode.aabb_min, rightNode.aabb_max,
+            rox, roy, roz, signMask,
+            hit_left, dist_left, hit_right, dist_right
+        );
+
+        if (hit_left && hit_right) {
+            stack[stack_ptr++] = (dist_left < dist_right) ? right : left;
+            stack[stack_ptr++] = (dist_left < dist_right) ? left : right;
+        }
+        else if (hit_left) {
+            stack[stack_ptr++] = left;
+        }
+        else if (hit_right) {
+            stack[stack_ptr++] = right;
+        }
+    } // while loop end
+
+    return hit_anything;
+}
+
 bool hitScene(inout Ray ray, inout HitRecord closest_hit) {
+    float closest_t = ray.tMax; // intersectTLAS will update closest_t as it finds hits.
+    HitRecord best;
+    hit_struct_init(best);
+
+    bool hit = intersectTLAS(ray, closest_t, best);
+    if (!hit) return false;
+
+    closest_hit = best;
+    return true;
+}
+
+bool hitSceneOld(inout Ray ray, inout HitRecord closest_hit) {
     float closest_t = FLOAT_MAX;
     uint closest_instance = uint(-1);
 

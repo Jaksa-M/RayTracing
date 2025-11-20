@@ -53,7 +53,7 @@ void SceneObjLoader::initialize() {
         std::cout << "ERROR: custom mesh failed to load" << std::endl;
     }
 
-    //atrix4x4 m = transformation::create_scaling_matrix(0.02f, 0.02f, 0.02f); // teapot
+    //matrix4x4 m = transformation::create_scaling_matrix(0.02f, 0.02f, 0.02f); // teapot
     matrix4x4 m = transformation::create_scaling_matrix(1.0f, 1.0f, 1.0f); // sponza, cornell_box
     //matrix4x4 m = transformation::create_scaling_matrix(0.3f, 0.3f, 0.3f); // erato
     //matrix4x4 m = transformation::create_scaling_matrix(0.01f, 0.01f, 0.01f); // crytek_sponza
@@ -69,14 +69,14 @@ void SceneObjLoader::initialize() {
         }
     }
 
-    sendMeshDataToGPU();
-
     if (context.settings->use_tiny_bvh) {
         static_cast<HittableListTinybvh*>(world_.get())->buildTLAS();
     }
     else {
         static_cast<HittableListCustomBVH*>(world_.get())->buildTLAS(context.bvh_manager , meshes, rt_meshes_);
     }
+
+    sendMeshDataToGPU();
     
     auto end_time = std::chrono::high_resolution_clock::now(); // End timing
     std::chrono::duration<double> elapsed = end_time - start_time;
