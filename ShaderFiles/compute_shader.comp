@@ -507,7 +507,7 @@ void slabTestTwoTLASNodes(
     d2 = hit2 ? tmin2 : 1e30;
 }
 
-void slabTestTwoNodes(
+void slabTestTwoNodes1(
     vec3 inv_dir, float ray_tmax,
     vec3 node1_min, vec3 node1_max,
     vec3 node2_min, vec3 node2_max,
@@ -538,6 +538,48 @@ void slabTestTwoNodes(
     float tmin2 = max(max(tx_min2, ty_min2), max(tz_min2, 0.0));
     float tmax2 = min(min(tx_max2, ty_max2), min(tz_max2, ray_tmax));
     d2 = (tmax2 >= tmin2) ? tmin2 : 1e30;
+}
+
+void slabTestTwoNodes(
+    in vec3 inv_dir, in float ray_tmax,
+    in vec3 node1_min,  in vec3 node1_max,
+    in vec3 node2_min,  in vec3 node2_max,
+    in float rox, in float roy, in float roz,
+    in bvec3 signMask,
+    out bool hit1, out float dist1,
+    out bool hit2, out float dist2
+) {
+    // Node 1
+    float tx_min1 = ((signMask.x ? node1_min.x : node1_max.x) * inv_dir.x) - rox;
+    float tx_max1 = ((signMask.x ? node1_max.x : node1_min.x) * inv_dir.x) - rox;
+
+    float ty_min1 = ((signMask.y ? node1_min.y : node1_max.y) * inv_dir.y) - roy;
+    float ty_max1 = ((signMask.y ? node1_max.y : node1_min.y) * inv_dir.y) - roy;
+
+    float tz_min1 = ((signMask.z ? node1_min.z : node1_max.z) * inv_dir.z) - roz;
+    float tz_max1 = ((signMask.z ? node1_max.z : node1_min.z) * inv_dir.z) - roz;
+
+    float tmin1 = max(max(tx_min1, ty_min1), max(tz_min1, 0.0));
+    float tmax1 = min(min(tx_max1, ty_max1), min(tz_max1, ray_tmax));
+
+    hit1 = (tmax1 >= tmin1) && (tmax1 > 0.0) && (tmin1 < ray_tmax);
+    dist1 = hit1 ? tmin1 : FLOAT_MAX;
+
+    // Node 2
+    float tx_min2 = ((signMask.x ? node2_min.x : node2_max.x) * inv_dir.x) - rox;
+    float tx_max2 = ((signMask.x ? node2_max.x : node2_min.x) * inv_dir.x) - rox;
+
+    float ty_min2 = ((signMask.y ? node2_min.y : node2_max.y) * inv_dir.y) - roy;
+    float ty_max2 = ((signMask.y ? node2_max.y : node2_min.y) * inv_dir.y) - roy;
+
+    float tz_min2 = ((signMask.z ? node2_min.z : node2_max.z) * inv_dir.z) - roz;
+    float tz_max2 = ((signMask.z ? node2_max.z : node2_min.z) * inv_dir.z) - roz;
+
+    float tmin2 = max(max(tx_min2, ty_min2), max(tz_min2, 0.0));
+    float tmax2 = min(min(tx_max2, ty_max2), min(tz_max2, ray_tmax));
+
+    hit2 = (tmax2 >= tmin2) && (tmax2 > 0.0) && (tmin2 < ray_tmax);
+    dist2 = hit2 ? tmin2 : FLOAT_MAX;
 }
 
 bool intersectBLAS( in Ray local_ray, in MeshDesc desc, in uint blas_offset, out float best_t,
@@ -602,11 +644,22 @@ bool intersectBLAS( in Ray local_ray, in MeshDesc desc, in uint blas_offset, out
 
         float dist_left = FLOAT_MAX;
         float dist_right = FLOAT_MAX;
-        slabTestTwoNodes(inv_dir, local_ray.tMax,
-                         node_left.aabb_min, node_left.aabb_max,
-                         node_right.aabb_min, node_right.aabb_max,
-                         rox, roy, roz, sign_mask,
-                         dist_left, dist_right);
+        // slabTestTwoNodes(inv_dir, local_ray.tMax,
+        //                  node_left.aabb_min, node_left.aabb_max,
+        //                  node_right.aabb_min, node_right.aabb_max,
+        //                  rox, roy, roz, sign_mask,
+        //                  dist_left, dist_right);
+
+        bool hitL, hitR;
+        slabTestTwoNodes(
+            inv_dir, local_ray.tMax,
+            node_left.aabb_min, node_left.aabb_max,
+            node_right.aabb_min, node_right.aabb_max,
+            rox, roy, roz, sign_mask,
+            hitL, dist_left,
+            hitR, dist_right
+        );
+
 
         bool left_check = dist_left < best_t;
         bool right_check = dist_right < best_t;
@@ -696,6 +749,8 @@ bool hitMesh(in Ray world_ray, in MeshDesc desc, out HitRecord out_hit, in GPUMe
 }
 
 bool intersectTLAS(in Ray ray, inout float closest_t, out HitRecord best_hit) {
+    hit_struct_init(best_hit); // it is out variable and it should be initalized here.
+
     const uint MAX_STACK = 64u;
     uint stack[MAX_STACK];
     uint stack_ptr = 0u;
@@ -709,8 +764,6 @@ bool intersectTLAS(in Ray ray, inout float closest_t, out HitRecord best_hit) {
     bvec3 signMask = bvec3(inv_dir.x >= 0.0, inv_dir.y >= 0.0, inv_dir.z >= 0.0);
 
     bool hit_anything = false;
-    HitRecord temp_hit;
-    hit_struct_init(temp_hit);
 
     while (stack_ptr > 0u) {
         uint node_idx = stack[--stack_ptr];
@@ -734,7 +787,6 @@ bool intersectTLAS(in Ray ray, inout float closest_t, out HitRecord best_hit) {
 
         if (isTLASLeaf(node)) {
             uint instance_idx = node.blas;
-            if (instance_idx == uint(-1)) continue;
 
             // Limit ray tMax is set to current closest_t (so hitMesh can early out)
             Ray limited_ray = ray; // world space
@@ -768,13 +820,22 @@ bool intersectTLAS(in Ray ray, inout float closest_t, out HitRecord best_hit) {
 
         bool hit_left; float dist_left;
         bool hit_right; float dist_right;
-        slabTestTwoTLASNodes(
+        // slabTestTwoTLASNodes(
+        //     inv_dir, closest_t,
+        //     leftNode.aabb_min, leftNode.aabb_max,
+        //     rightNode.aabb_min, rightNode.aabb_max,
+        //     rox, roy, roz, signMask,
+        //     hit_left, dist_left, hit_right, dist_right
+        // );
+        slabTestTwoNodes(
             inv_dir, closest_t,
             leftNode.aabb_min, leftNode.aabb_max,
             rightNode.aabb_min, rightNode.aabb_max,
             rox, roy, roz, signMask,
-            hit_left, dist_left, hit_right, dist_right
+            hit_left, dist_left,
+            hit_right, dist_right
         );
+
 
         if (hit_left && hit_right) {
             stack[stack_ptr++] = (dist_left < dist_right) ? right : left;
@@ -794,7 +855,6 @@ bool intersectTLAS(in Ray ray, inout float closest_t, out HitRecord best_hit) {
 bool hitScene(inout Ray ray, inout HitRecord closest_hit) {
     float closest_t = ray.tMax; // intersectTLAS will update closest_t as it finds hits.
     HitRecord best;
-    hit_struct_init(best);
 
     bool hit = intersectTLAS(ray, closest_t, best);
     if (!hit) return false;
