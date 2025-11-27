@@ -51,7 +51,6 @@ struct HitRecord {
     float t;
     vec3 normal;
     uint instance_index;
-    Material mat;
     vec2 buv;
     uint triangle_index;
 };
@@ -303,7 +302,7 @@ vec3 sampleTexture(uint tex_index, in vec3 flat_material, in HitRecord rec, int 
         vec2 uv0, uv1, uv2;
         getUVs(desc, idxs, uv0, uv1, uv2);
         vec2 uv = barycentricInterpolate(uv0, uv1, uv2, rec.buv);
-        uv.y = 1.0 - uv.y;
+        uv.y = 1.0 - uv.y; // inverting the uv y coordinate for proper texture mapping
         vec3 texel = texture(u_textures[tex_index], uv).rgb;
 
         if (mode == 0) return texel; // RGB case
@@ -373,25 +372,25 @@ vec3 applyNormalMap(in Material mat, in HitRecord rec) {
     return shading_normal;
 }
 
-vec3 emitted(in HitRecord h) {
-    return sampleEmission(h.mat, h);
+vec3 emitted(in Material mat, in HitRecord h) {
+    return sampleEmission(mat, h);
 }
 
-bool scatterLambertian(inout uint rng_state, in HitRecord rec, out vec3 attenuation, out vec3 new_dir) {
+bool scatterLambertian(inout uint rng_state, in Material mat, in HitRecord rec, out vec3 attenuation, out vec3 new_dir) {
     // If triangle_index invalid (ray didn't hit mesh), use standard approach
     if (rec.triangle_index == uint(-1)) {
         vec3 scatter_direction = normalize(rec.normal + randomUnitVector(rng_state));
         if (length(scatter_direction) < EPSILON) scatter_direction = rec.normal;
         new_dir = scatter_direction;
-        attenuation = rec.mat.albedo;
+        attenuation = mat.albedo;
         return true;
     }
 
-    vec3 albedo = sampleAlbedo(rec.mat, rec);
-    //float roughness = sampleRoughness(rec.mat, rec);
+    vec3 albedo = sampleAlbedo(mat, rec);
+    //float roughness = sampleRoughness(mat, rec);
 
     // Compute normal -> apply normal map if exists
-    vec3 final_normal = applyNormalMap(rec.mat, rec);
+    vec3 final_normal = applyNormalMap(mat, rec);
     if (any(isnan(final_normal))) final_normal = rec.normal;
     final_normal = normalize(final_normal);
 
@@ -764,9 +763,7 @@ bool intersectTLAS(in Ray ray, inout float closest_t, out HitRecord best_hit) {
             stack[stack_ptr++] = right;
         }
     } // while loop end
-    if(hit_anything){
-        best_hit.mat = u_materials[u_instances[best_hit.instance_index].material_index];
-    }
+
     return hit_anything;
 }
 
@@ -810,7 +807,6 @@ bool hitSceneBLAS(inout Ray ray, inout HitRecord closest_hit) {
 
         if (hitMesh(limited_ray, desc, mh, inst) && mh.t < closest_t) {
             closest_hit = mh;
-            closest_hit.mat = mat;
             closest_hit.instance_index = m;
             closest_t = mh.t;
             closest_instance = m;
@@ -837,6 +833,7 @@ vec3 getDebug (inout Ray ray, uint debug_mode) {
     hit_struct_init(h);
 
     if (hitScene(ray, h)) {
+        Material mat = u_materials[u_instances[h.instance_index].material_index];
         switch (debug_mode) {
             case DEBUG_INSTANCE_ID:
                 return fibonacci3d(h.instance_index);
@@ -845,7 +842,7 @@ vec3 getDebug (inout Ray ray, uint debug_mode) {
             case DEBUG_TRIANGLE_ID:
                 //return fibonacci3d(h.triangle_index);
             case DEBUG_ALBEDO:
-                return sampleAlbedo(h.mat, h);
+                return sampleAlbedo(mat, h);
             case DEBUG_TRIANGLE_INDEX:
                 return fibonacci3d(h.triangle_index); 
             case DEBUG_UV:
@@ -853,17 +850,17 @@ vec3 getDebug (inout Ray ray, uint debug_mode) {
             case DEBUG_GEOMETRIC_NORMAL:
                 return h.normal * 0.5 + 0.5;
             case DEBUG_SHADING_NORMAL:
-                return applyNormalMap(h.mat, h) * 0.5 + 0.5;
+                return applyNormalMap(mat, h) * 0.5 + 0.5;
         }
     }
-    return vec3(1,0,1);
+    return vec3(1,0,1); // background
 }
 
 vec3 tracePathDebug(inout Ray ray, inout uint rng_state) {
     vec3 result = vec3(0.0, 0.0, 0.0);
     vec3 attenuation = vec3(1.0);
 
-    return result = getDebug(ray, DEBUG_ALBEDO);
+    return result = getDebug(ray, DEBUG_UV);
 }
 
 vec3 tracePath(inout Ray ray, inout uint rng_state) {
@@ -885,10 +882,11 @@ vec3 tracePath(inout Ray ray, inout uint rng_state) {
         vec3 new_dir;
         vec3 new_attenuation;
 
-        vec3 color_from_emission = emitted(h);
+        Material mat = u_materials[u_instances[h.instance_index].material_index];
+        vec3 color_from_emission = emitted(mat, h);
         result += attenuation * color_from_emission;
 
-        scatterLambertian(rng_state, h, new_attenuation, new_dir);
+        scatterLambertian(rng_state, mat, h, new_attenuation, new_dir);
 
         attenuation *= new_attenuation;
         ray.ro = h.p + h.normal * 0.0001; // offset to avoid self-hit
