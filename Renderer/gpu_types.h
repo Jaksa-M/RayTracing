@@ -45,4 +45,12 @@ struct GPUBLASNode {
     uint32 unused1, unused2;
 };
 
+struct GPUTLASNode {
+    vec3 aabb_min;
+    uint32 left_right; // 2x16 bits for left and right child index
+    vec3 aabb_max;
+    uint32 blas;
+    // const Hittable* blas; // Valid only for leaf nodes
+};
+
 #endif

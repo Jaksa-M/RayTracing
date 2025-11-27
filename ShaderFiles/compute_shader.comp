@@ -12,6 +12,9 @@
 #define DEBUG_TRIANGLE_ID 2
 #define DEBUG_ALBEDO 3
 #define DEBUG_TRIANGLE_INDEX 4
+#define DEBUG_UV 5
+#define DEBUG_GEOMETRIC_NORMAL 6
+#define DEBUG_SHADING_NORMAL 7
 
 // Global constants
 const float FLOAT_MAX = 3.402823466e+38;
@@ -48,7 +51,6 @@ struct HitRecord {
     float t;
     vec3 normal;
     uint instance_index;
-    Material mat;
     vec2 buv;
     uint triangle_index;
 };
@@ -102,6 +104,16 @@ bool isLeaf(in GPUBLASNode node) {
     return node.triangle_cnt > 0u;
 }
 
+struct GPUTLASNode {
+    vec3 aabb_min;
+    uint left_right; // 2x16 bits for left and right child index
+    vec3 aabb_max;
+    uint blas; // Valid only for leaf nodes
+};
+bool isTLASLeaf(in GPUTLASNode node) {
+    return node.left_right == 0u;
+}
+
 layout (local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 layout (rgba8, binding = 0) uniform image2D u_display_img;
@@ -112,8 +124,9 @@ layout(std430, binding = 3) buffer MeshData { float u_mesh_data[]; };
 layout(std430, binding = 4) buffer MeshDescs { MeshDesc u_mesh_descs[]; };
 layout(std430, binding = 5) buffer MeshInstances { GPUMeshInstance u_instances[]; };
 layout(std430, binding = 6) buffer Materials { Material u_materials[]; };
-layout(std430, binding = 7) readonly buffer ssbo3 { sampler2D textures[]; };
+layout(std430, binding = 7) readonly buffer ssbo3 { sampler2D u_textures[]; };
 layout(std430, binding = 8) readonly buffer BLASNodes { GPUBLASNode u_blas_nodes[]; };
+layout(std430, binding = 9) readonly buffer TLASNodes { GPUTLASNode u_tlas_nodes[]; };
 
 
 uniform ivec2 u_resolution; // (width, height)
@@ -164,6 +177,17 @@ vec3 randomUnitVector(inout uint rng_state) {
 float atan2(float y, float x) {
     float s = abs(x) > abs(y) ? 1.0 : 0.0;
     return mix(PI / 2.0 - atan(x, y), atan(y, x), s);
+}
+
+// Function that inverts the vec3 in a safe way (avoiding division by 0)
+float invertCoord(float x) {
+    if (abs(x) > 1e-12) return 1.0 / x;
+    else return (x >= 0.0) ? FLOAT_MAX : -FLOAT_MAX;
+}
+
+// Safe inversion of a vec3
+vec3 invertVecSafe(vec3 v) {
+    return vec3(invertCoord(v.x), invertCoord(v.y), invertCoord(v.z));
 }
 
 // The name comes from the equirectangular projection (also called lat-long mapping), which is a very common way of mapping
@@ -278,10 +302,10 @@ vec3 sampleTexture(uint tex_index, in vec3 flat_material, in HitRecord rec, int 
         vec2 uv0, uv1, uv2;
         getUVs(desc, idxs, uv0, uv1, uv2);
         vec2 uv = barycentricInterpolate(uv0, uv1, uv2, rec.buv);
+        uv.y = 1.0 - uv.y; // inverting the uv y coordinate for proper texture mapping
+        vec3 texel = texture(u_textures[tex_index], uv).rgb;
 
-        vec3 texel = texture(textures[tex_index], uv).rgb;
-
-        if (mode == 0) return texel;  // RGB case
+        if (mode == 0) return texel; // RGB case
         if (mode == 1) return vec3(texel.r, texel.r, texel.r); // R only
     }
     return flat_material;
@@ -339,7 +363,7 @@ vec3 applyNormalMap(in Material mat, in HitRecord rec) {
     vec2 uv = barycentricInterpolate(uv0, uv1, uv2, rec.buv);
 
     // Sample normal map (assumed in tangent space, stored in [0,1])
-    vec3 nmap = texture(textures[mat.normal_map_tex_index], uv).rgb;
+    vec3 nmap = texture(u_textures[mat.normal_map_tex_index], uv).rgb;
     vec3 tangent_normal = normalize(2.0 * nmap - vec3(1.0)); // [0,1] -> [-1,1]
 
     // Build TBN: columns are tangent, bitangent, normal
@@ -348,25 +372,25 @@ vec3 applyNormalMap(in Material mat, in HitRecord rec) {
     return shading_normal;
 }
 
-vec3 emitted(in HitRecord h) {
-    return sampleEmission(h.mat, h);
+vec3 emitted(in Material mat, in HitRecord h) {
+    return sampleEmission(mat, h);
 }
 
-bool scatterLambertian(inout uint rng_state, in HitRecord rec, out vec3 attenuation, out vec3 new_dir) {
+bool scatterLambertian(inout uint rng_state, in Material mat, in HitRecord rec, out vec3 attenuation, out vec3 new_dir) {
     // If triangle_index invalid (ray didn't hit mesh), use standard approach
     if (rec.triangle_index == uint(-1)) {
         vec3 scatter_direction = normalize(rec.normal + randomUnitVector(rng_state));
         if (length(scatter_direction) < EPSILON) scatter_direction = rec.normal;
         new_dir = scatter_direction;
-        attenuation = rec.mat.albedo;
+        attenuation = mat.albedo;
         return true;
     }
 
-    vec3 albedo = sampleAlbedo(rec.mat, rec);
-    //float roughness = sampleRoughness(rec.mat, rec);
+    vec3 albedo = sampleAlbedo(mat, rec);
+    //float roughness = sampleRoughness(mat, rec);
 
     // Compute normal -> apply normal map if exists
-    vec3 final_normal = applyNormalMap(rec.mat, rec);
+    vec3 final_normal = applyNormalMap(mat, rec);
     if (any(isnan(final_normal))) final_normal = rec.normal;
     final_normal = normalize(final_normal);
 
@@ -450,12 +474,13 @@ bool intersectAABB(
 }
 
 void slabTestTwoNodes(
-    vec3 inv_dir, float ray_tmax,
-    vec3 node1_min, vec3 node1_max,
-    vec3 node2_min, vec3 node2_max,
-    float rox, float roy, float roz,
-    bvec3 signMask,
-    out float d1, out float d2
+    in vec3 inv_dir, in float ray_tmax,
+    in vec3 node1_min,  in vec3 node1_max,
+    in vec3 node2_min,  in vec3 node2_max,
+    in float rox, in float roy, in float roz,
+    in bvec3 signMask,
+    out bool hit1, out float dist1,
+    out bool hit2, out float dist2
 ) {
     // Node 1
     float tx_min1 = ((signMask.x ? node1_min.x : node1_max.x) * inv_dir.x) - rox;
@@ -467,7 +492,9 @@ void slabTestTwoNodes(
 
     float tmin1 = max(max(tx_min1, ty_min1), max(tz_min1, 0.0));
     float tmax1 = min(min(tx_max1, ty_max1), min(tz_max1, ray_tmax));
-    d1 = (tmax1 >= tmin1) ? tmin1 : 1e30;
+
+    hit1 = (tmax1 >= tmin1) && (tmax1 > 0.0) && (tmin1 < ray_tmax);
+    dist1 = hit1 ? tmin1 : FLOAT_MAX;
 
     // Node 2
     float tx_min2 = ((signMask.x ? node2_min.x : node2_max.x) * inv_dir.x) - rox;
@@ -476,10 +503,12 @@ void slabTestTwoNodes(
     float ty_max2 = ((signMask.y ? node2_max.y : node2_min.y) * inv_dir.y) - roy;
     float tz_min2 = ((signMask.z ? node2_min.z : node2_max.z) * inv_dir.z) - roz;
     float tz_max2 = ((signMask.z ? node2_max.z : node2_min.z) * inv_dir.z) - roz;
-
+    
     float tmin2 = max(max(tx_min2, ty_min2), max(tz_min2, 0.0));
     float tmax2 = min(min(tx_max2, ty_max2), min(tz_max2, ray_tmax));
-    d2 = (tmax2 >= tmin2) ? tmin2 : 1e30;
+
+    hit2 = (tmax2 >= tmin2) && (tmax2 > 0.0) && (tmin2 < ray_tmax);
+    dist2 = hit2 ? tmin2 : FLOAT_MAX;
 }
 
 bool intersectBLAS( in Ray local_ray, in MeshDesc desc, in uint blas_offset, out float best_t,
@@ -544,11 +573,17 @@ bool intersectBLAS( in Ray local_ray, in MeshDesc desc, in uint blas_offset, out
 
         float dist_left = FLOAT_MAX;
         float dist_right = FLOAT_MAX;
-        slabTestTwoNodes(inv_dir, local_ray.tMax,
-                         node_left.aabb_min, node_left.aabb_max,
-                         node_right.aabb_min, node_right.aabb_max,
-                         rox, roy, roz, sign_mask,
-                         dist_left, dist_right);
+
+        bool hitL, hitR; // not used in this function, but required for a call
+        slabTestTwoNodes(
+            inv_dir, local_ray.tMax,
+            node_left.aabb_min, node_left.aabb_max,
+            node_right.aabb_min, node_right.aabb_max,
+            rox, roy, roz, sign_mask,
+            hitL, dist_left,
+            hitR, dist_right
+        );
+
 
         bool left_check = dist_left < best_t;
         bool right_check = dist_right < best_t;
@@ -637,7 +672,113 @@ bool hitMesh(in Ray world_ray, in MeshDesc desc, out HitRecord out_hit, in GPUMe
     return true;
 }
 
+bool intersectTLAS(in Ray ray, inout float closest_t, out HitRecord best_hit) {
+    hit_struct_init(best_hit); // it is "out" variable and it should be initalized here.
+
+    const uint MAX_STACK = 64u;
+    uint stack[MAX_STACK];
+    uint stack_ptr = 0u;
+
+    stack[stack_ptr++] = 0u; // TLAS root is node 0
+
+    vec3 inv_dir = invertVecSafe(ray.rd);
+    float rox = ray.ro.x * inv_dir.x;
+    float roy = ray.ro.y * inv_dir.y;
+    float roz = ray.ro.z * inv_dir.z;
+    bvec3 signMask = bvec3(inv_dir.x >= 0.0, inv_dir.y >= 0.0, inv_dir.z >= 0.0);
+
+    bool hit_anything = false;
+
+    while (stack_ptr > 0u) {
+        uint node_idx = stack[--stack_ptr];
+        GPUTLASNode node = u_tlas_nodes[node_idx];
+
+        // Quick rejection of whole node
+        float tx_min = ((signMask.x ? node.aabb_min.x : node.aabb_max.x) * inv_dir.x) - rox;
+        float tx_max = ((signMask.x ? node.aabb_max.x : node.aabb_min.x) * inv_dir.x) - rox;
+        float ty_min = ((signMask.y ? node.aabb_min.y : node.aabb_max.y) * inv_dir.y) - roy;
+        float ty_max = ((signMask.y ? node.aabb_max.y : node.aabb_min.y) * inv_dir.y) - roy;
+        float tz_min = ((signMask.z ? node.aabb_min.z : node.aabb_max.z) * inv_dir.z) - roz;
+        float tz_max = ((signMask.z ? node.aabb_max.z : node.aabb_min.z) * inv_dir.z) - roz;
+
+        float tmin = tx_min > ty_min ? tx_min : ty_min;
+        if (tz_min > tmin) tmin = tz_min;
+
+        float tmax = tx_max < ty_max ? tx_max : ty_max;
+        if (tz_max < tmax) tmax = tz_max;
+
+        if ((tmin > tmax) || (tmax < 0.0) || (tmin > closest_t)) continue; // miss node entirely
+
+        if (isTLASLeaf(node)) {
+            uint instance_idx = node.blas;
+
+            // Limit ray tMax is set to current closest_t (so hitMesh can early out)
+            Ray limited_ray = ray; // world space
+            limited_ray.tMax = closest_t;
+
+            GPUMeshInstance inst = u_instances[instance_idx];
+            MeshDesc desc = u_mesh_descs[inst.mesh_index];
+
+            HitRecord world_hit;
+            hit_struct_init(world_hit);
+
+            // We pass limited_ray so hitMesh / intersectBLAS can cull with closest_t.
+            if (hitMesh(limited_ray, desc, world_hit, inst)) {
+                if (world_hit.t < closest_t && world_hit.t > 0.0) {
+                    best_hit = world_hit;
+                    best_hit.instance_index = instance_idx;
+                    closest_t = world_hit.t;
+                    hit_anything = true;
+                }
+            }
+            continue;
+        }
+
+        // Internal node -> push children in distance order
+        uint left = node.left_right & 0xFFFFu;
+        uint right = (node.left_right >> 16) & 0xFFFFu;
+
+        GPUTLASNode leftNode = u_tlas_nodes[left];
+        GPUTLASNode rightNode = u_tlas_nodes[right];
+
+        bool hit_left; float dist_left;
+        bool hit_right; float dist_right;
+        slabTestTwoNodes(
+            inv_dir, closest_t,
+            leftNode.aabb_min, leftNode.aabb_max,
+            rightNode.aabb_min, rightNode.aabb_max,
+            rox, roy, roz, signMask,
+            hit_left, dist_left,
+            hit_right, dist_right
+        );
+
+        if (hit_left && hit_right) {
+            stack[stack_ptr++] = (dist_left < dist_right) ? right : left;
+            stack[stack_ptr++] = (dist_left < dist_right) ? left : right;
+        }
+        else if (hit_left) {
+            stack[stack_ptr++] = left;
+        }
+        else if (hit_right) {
+            stack[stack_ptr++] = right;
+        }
+    } // while loop end
+
+    return hit_anything;
+}
+
 bool hitScene(inout Ray ray, inout HitRecord closest_hit) {
+    float closest_t = ray.tMax; // intersectTLAS will update closest_t as it finds hits.
+    HitRecord best;
+
+    bool hit = intersectTLAS(ray, closest_t, best);
+    if (!hit) return false;
+
+    closest_hit = best;
+    return true;
+}
+
+bool hitSceneBLAS(inout Ray ray, inout HitRecord closest_hit) {
     float closest_t = FLOAT_MAX;
     uint closest_instance = uint(-1);
 
@@ -666,7 +807,6 @@ bool hitScene(inout Ray ray, inout HitRecord closest_hit) {
 
         if (hitMesh(limited_ray, desc, mh, inst) && mh.t < closest_t) {
             closest_hit = mh;
-            closest_hit.mat = mat;
             closest_hit.instance_index = m;
             closest_t = mh.t;
             closest_instance = m;
@@ -676,37 +816,51 @@ bool hitScene(inout Ray ray, inout HitRecord closest_hit) {
     return closest_t < FLOAT_MAX;
 }
 
+vec2 getHitUV(in HitRecord rec) {
+    GPUMeshInstance inst = u_instances[rec.instance_index];
+    MeshDesc desc = u_mesh_descs[inst.mesh_index];
+
+    uvec3 idxs = getIndices(desc, rec.triangle_index);
+
+    vec2 uv0, uv1, uv2;
+    getUVs(desc, idxs, uv0, uv1, uv2);
+
+    return barycentricInterpolate(uv0, uv1, uv2, rec.buv);
+}
+
 vec3 getDebug (inout Ray ray, uint debug_mode) {
     HitRecord h;
     hit_struct_init(h);
 
     if (hitScene(ray, h)) {
+        Material mat = u_materials[u_instances[h.instance_index].material_index];
         switch (debug_mode) {
             case DEBUG_INSTANCE_ID:
                 return fibonacci3d(h.instance_index);
-                break;
             case DEBUG_BLAS_ID:
                 //return fibonacci3d(h.blas_id);
-                break;
             case DEBUG_TRIANGLE_ID:
                 //return fibonacci3d(h.triangle_index);
-                break;
             case DEBUG_ALBEDO:
-                return h.mat.albedo;
-                break;
+                return sampleAlbedo(mat, h);
             case DEBUG_TRIANGLE_INDEX:
                 return fibonacci3d(h.triangle_index); 
-                break;
+            case DEBUG_UV:
+                return vec3(getHitUV(h), 0.0);
+            case DEBUG_GEOMETRIC_NORMAL:
+                return h.normal * 0.5 + 0.5;
+            case DEBUG_SHADING_NORMAL:
+                return applyNormalMap(mat, h) * 0.5 + 0.5;
         }
     }
-    return vec3(1,0,1);
+    return vec3(1,0,1); // background
 }
 
 vec3 tracePathDebug(inout Ray ray, inout uint rng_state) {
     vec3 result = vec3(0.0, 0.0, 0.0);
     vec3 attenuation = vec3(1.0);
 
-    return result = getDebug(ray, DEBUG_INSTANCE_ID);
+    return result = getDebug(ray, DEBUG_UV);
 }
 
 vec3 tracePath(inout Ray ray, inout uint rng_state) {
@@ -721,17 +875,18 @@ vec3 tracePath(inout Ray ray, inout uint rng_state) {
             // background
             vec2 uv = directionToEquirecangularUV(ray.rd);
             vec3 bg = texture(u_background_img, vec2(uv.x, 1-uv.y)).rgb;
-            result += attenuation * bg;
+            result += attenuation * bg * u_environment_light;
             break;
         }
 
         vec3 new_dir;
         vec3 new_attenuation;
 
-        vec3 color_from_emission = emitted(h);
+        Material mat = u_materials[u_instances[h.instance_index].material_index];
+        vec3 color_from_emission = emitted(mat, h);
         result += attenuation * color_from_emission;
 
-        scatterLambertian(rng_state, h, new_attenuation, new_dir);
+        scatterLambertian(rng_state, mat, h, new_attenuation, new_dir);
 
         attenuation *= new_attenuation;
         ray.ro = h.p + h.normal * 0.0001; // offset to avoid self-hit

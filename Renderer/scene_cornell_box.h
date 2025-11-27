@@ -19,7 +19,6 @@ public:
 
 private:
     std::unique_ptr<MeshBufferManager> mesh_buf_manager_;
-    std::unique_ptr<BVHManager> bvh_manager_;
 
     std::shared_ptr<RTMesh> rect_prism_mesh_;
     std::shared_ptr<RTMesh> cube_mesh_;

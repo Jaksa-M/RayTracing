@@ -144,15 +144,13 @@ void SceneCornellBox::initialize() {
  //   rt_meshes_.push_back(std::move(sphere3_));
  //   rt_meshes_.push_back(std::move(sphere4_));
 
-
-
     for (uint32 i = 0; i < rt_meshes_.size(); i++) {
         world_->add(rt_meshes_[i]);
     }
 
-	sendMeshDataToGPU();
-
 	static_cast<HittableListCustomBVH*>(world_.get())->buildTLAS(context.bvh_manager, meshes, rt_meshes_);
+
+	sendMeshDataToGPU();
 
 	initShader();
 }

@@ -144,6 +144,16 @@ void Scene::sendMeshDataToGPU() {
     std::vector<BLASNode> all_blas_nodes; // flat array of all BLAS nodes
     std::vector<GPUBLASNode> all_blas_nodes_gpu_format;
 
+    // TLAS related
+    BVHManager* bvh_manager = context.bvh_manager;
+    std::span<const TLASNode> tlas_nodes = bvh_manager->getTLASNodes();
+    std::vector<GPUTLASNode> tlas_nodes_gpu_format;
+    std::unordered_map<const Hittable*, uint32> hittable_to_instance_index;
+
+    for (uint32 i = 0; i < rt_meshes_.size(); i++) {
+        hittable_to_instance_index[rt_meshes_[i].get()] = i;
+    }
+
     for (uint32 i = 0; i < rt_meshes_.size(); i++) {
         RTMesh* rt_mesh = dynamic_cast<RTMesh*>(rt_meshes_[i].get());
         MeshHandle mesh_handle = rt_mesh->getMeshHandle();
@@ -171,6 +181,31 @@ void Scene::sendMeshDataToGPU() {
         new_blas_node.right_child = blas_node.right_child;
         new_blas_node.triangle_cnt = blas_node.triangle_cnt;
         all_blas_nodes_gpu_format.push_back(new_blas_node);
+    }
+
+    // Copying the tlas nodes to proper format for gpu struct
+    for (uint32 i = 0; i < tlas_nodes.size(); i++) {
+        TLASNode tlas_node = tlas_nodes[i];
+        GPUTLASNode new_tlas_node;
+        new_tlas_node.aabb_min = tlas_node.aabb_min;
+        new_tlas_node.aabb_max = tlas_node.aabb_max;
+        new_tlas_node.left_right = tlas_node.left_right;
+
+        if (tlas_node.isLeaf()) {
+            auto it = hittable_to_instance_index.find(tlas_node.blas);
+            if (it != hittable_to_instance_index.end()) {
+                new_tlas_node.blas = it->second;
+            }
+            else {
+                new_tlas_node.blas = uint32(-1);
+            }
+        }
+        else {
+            // Internal node -> no BLAS assigned
+            new_tlas_node.blas = uint32(-1);
+        }
+
+        tlas_nodes_gpu_format.push_back(new_tlas_node);
     }
 
     for (MeshHandle mesh_handle : all_mesh_handles) {
@@ -206,6 +241,7 @@ void Scene::sendMeshDataToGPU() {
     material_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(gpu_materials)), BufferUsage::StaticDraw);
     texture_handles_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(texture_handles)), BufferUsage::StaticDraw);
     blas_nodes_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(all_blas_nodes_gpu_format)), BufferUsage::StaticDraw);
+    tlas_nodes_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(tlas_nodes_gpu_format)), BufferUsage::StaticDraw);
 }
 
 void Scene::bindResources(Shader* shader) {
@@ -215,6 +251,7 @@ void Scene::bindResources(Shader* shader) {
     shader->bindBuffer(material_buffer_.get(), 6);
     shader->bindBuffer(texture_handles_buffer_.get(), 7);
     shader->bindBuffer(blas_nodes_buffer_.get(), 8);
+    shader->bindBuffer(tlas_nodes_buffer_.get(), 9);
 }
 
 uint32 Scene::getRtMeshesSize() {
