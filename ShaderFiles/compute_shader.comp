@@ -198,7 +198,7 @@ vec2 directionToEquirecangularUV(in vec3 rd){
     return vec2(u, v);
 }
 
-void getRay(float i, float j, vec2 offset, out Ray ray) {
+void getRay(float i, float j, vec2 offset, inout Ray ray) {
     // Construct a camera ray originating from the origin and directed at randomly sampled point around the pixel location i, j.
     // Jitter is the process of selecting random offsets inside the pixel. 
     vec3 pixel_sample = u_pixel00_loc
@@ -511,7 +511,7 @@ void slabTestTwoNodes(
     dist2 = hit2 ? tmin2 : FLOAT_MAX;
 }
 
-bool intersectBLAS( in Ray local_ray, in MeshDesc desc, in uint blas_offset, out float best_t,
+bool intersectBLAS( in Ray local_ray, in MeshDesc desc, in uint blas_offset, inout float best_t,
     out uint best_index_offset, out float best_u, out float best_v) 
 {
     const uint MAX_STACK_SIZE = 64u;
