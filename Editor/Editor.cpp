@@ -79,8 +79,13 @@ int main(int, char**) {
     if (!glfwInit()) return 1;
 
     const char* glsl_version = "#version 430";
+    // 4.6 because texture upload uses 4.5 DSA functions (glCreateTextures, glTextureStorage2D...).
+    // AMD gives the newest version even when 4.3 is requested, NVIDIA gives exactly 4.3 and glad leaves those functions NULL.
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+    // Ask for sRGB capable default framebuffer, so GL_FRAMEBUFFER_SRGB does the gamma conversion.
+    // AMD gives it by default, NVIDIA doesn't (image would be too dark).
+    glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
 
 
     // Create window with graphics context
@@ -170,19 +175,22 @@ int main(int, char**) {
     GLuint tex = 0, background_tex = 0, accumulated_tex = 0;
     GLsizei tex_width = 512, tex_height = 512;
     GLsizei background_tex_width = 512, background_tex_height = 512;
-    std::vector<unsigned char> pixels;
+
+    // Texture that holds the final image (written by compute shader on GPU, or uploaded from CPU).
+    // It is drawn to the screen with a fullscreen triangle instead of glDrawPixels.
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, tex_width, tex_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    std::unique_ptr<Shader> fullscreen_shader = std::make_unique<Shader>("../ShaderFiles/shader_fullscreen.vs.txt", "../ShaderFiles/shader_fullscreen.fs.txt");
+    GLuint fullscreen_vao = 0; // Empty VAO, vertices are generated in vertex shader from gl_VertexID
+    glGenVertexArrays(1, &fullscreen_vao);
 
     if (gui_settings->use_gpu) { // using compute shader
         comp_shader = std::make_shared<Shader>("../ShaderFiles/compute_shader.comp");
-
-        glGenTextures(1, &tex);
-        glBindTexture(GL_TEXTURE_2D, tex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, tex_width, tex_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-        //glBindImageTexture(0, tex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
 
         // generating accumulated image that will be used on gpu
         glGenTextures(1, &accumulated_tex);
@@ -489,6 +497,13 @@ int main(int, char**) {
         active_scene->context.settings->block_size = block_size;
         active_scene->update(display_w, display_h);
 
+        if (display_w != tex_width || display_h != tex_height) {
+            tex_width = display_w;
+            tex_height = display_h;
+            resizeTexture(tex, tex_width, tex_height, false);
+            if (gui_settings->use_gpu) resizeTexture(accumulated_tex, tex_width, tex_height, true);
+        }
+
         if (!gui_settings->use_gpu) {
             Camera& cam = active_scene->getActiveCamera();
             cam.render(active_scene->getWorld(), image_data_acc, *(context.settings));
@@ -496,6 +511,13 @@ int main(int, char**) {
             // Filling image_data
             image_data.resize(display_w * display_h * 3);
             convertAccumulatedToImageData(image_data, image_data_acc, display_w, display_h);
+
+            // Upload CPU image to the texture that gets drawn to the screen
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // RGB rows are not always 4-byte aligned
+            glBindTexture(GL_TEXTURE_2D, tex);
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
+            glBindTexture(GL_TEXTURE_2D, 0);
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 
             // Screenshots processing
             if (screenshot_button_pressed) {
@@ -528,16 +550,9 @@ int main(int, char**) {
 
             comp_shader->bind();
             comp_shader->setIVec2("u_resolution", display_w, display_h);
-            pixels.resize(display_w * display_h * 4);
 
-            if (display_w != tex_width || display_h != tex_height) {
-                tex_width = display_w;
-                tex_height = display_h;
-                resizeTexture(tex, tex_width, tex_height, false);
-                resizeTexture(accumulated_tex, tex_width, tex_height, true);
-            }
             glBindImageTexture(0, tex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
-            glBindImageTexture(2, accumulated_tex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+            glBindImageTexture(2, accumulated_tex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 
             Camera& active_cam = active_scene->getActiveCamera();
             active_cam.initialize();
@@ -570,28 +585,30 @@ int main(int, char**) {
             //glMemoryBarrier(GL_ALL_BARRIER_BITS); // before dispatch
             glDispatchCompute(num_groups_x, num_groups_y, 1);
             // Barrier that ensures that data writting is completely finished
-            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT);
+            // (TEXTURE_FETCH because fullscreen pass reads tex with texture() right after)
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
             if (GLenum err = glGetError(); err != GL_NO_ERROR) {
                 std::cout << "GLerror: " << err;
             }
 
-            glBindTexture(GL_TEXTURE_2D, tex);
-            glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
-
             // unbinding the textures
             glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
-            glBindImageTexture(2, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+            glBindImageTexture(2, 0, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
             glBindTexture(GL_TEXTURE_2D, 0);
-
-            // todo issue #34 
-            // renders tex to backbuffer
-            //renderQuad()
+            comp_shader->unbind(); // compute-only program must not stay bound while drawing
         }
-        
-        // TODO: remove later, too slow. It should be all done on GPU.
+
+        // Fullscreen pass: draws tex to the screen framebuffer
         glEnable(GL_FRAMEBUFFER_SRGB);
-        if (gui_settings->use_gpu) glDrawPixels(display_w, display_h, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data()); // EXTREMELY SLOW
-        else glDrawPixels(display_w, display_h, GL_RGB, GL_UNSIGNED_BYTE, image_data.data());
+        fullscreen_shader->bind();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        fullscreen_shader->setTexture("u_screen_tex", 0);
+        glBindVertexArray(fullscreen_vao);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        fullscreen_shader->unbind();
         glDisable(GL_FRAMEBUFFER_SRGB);
 
         active_scene->drawBVH(); // Drawing of BVH tree/leaves
@@ -609,12 +626,15 @@ int main(int, char**) {
     printMeasuredTime(context.time_measurement->total_bvh_time, context.time_measurement->total_bvh_calls, context.time_measurement->min_bvh_time,
                       context.time_measurement->max_bvh_time);
     // Cleanup
+    active_scene.reset();
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
-    /*glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);*/
+    glDeleteVertexArrays(1, &fullscreen_vao);
+    glDeleteTextures(1, &tex);
+    glDeleteTextures(1, &accumulated_tex);
+    glDeleteTextures(1, &background_tex);
 
     glfwDestroyWindow(window);
     glfwTerminate();

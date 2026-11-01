@@ -16,7 +16,7 @@ struct GUISettings {
     uint32 block_size = 8;
     bool multithreading = true;
     bool use_tiny_bvh = false;
-    bool use_gpu = true;
+    bool use_gpu = false;
     int32 spp = 1; // Samples per pixel
 };
 
