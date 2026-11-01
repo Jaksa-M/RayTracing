@@ -26,7 +26,7 @@ void SceneMaterialTesting::initialize() {
 
     prev_BVH_technique_ = context.settings->BVH_technique;
 
-    TextureLoader tex_loader("Resources/textures/san_giuseppe_bridge.hdr");
+    TextureLoader tex_loader("../Resources/textures/san_giuseppe_bridge.hdr");
     if (!tex_loader.load()) {
         std::cerr << "ERROR: Could not load background texture file.\n";
     }
@@ -37,19 +37,19 @@ void SceneMaterialTesting::initialize() {
     }
 
     // Loading texture from an image
-    TextureLoader tex_loader2("Resources/textures/spnza_bricks_a_diff.png");
+    TextureLoader tex_loader2("../Resources/textures/spnza_bricks_a_diff.png");
     if (!tex_loader2.load()) {
         std::cerr << "ERROR: Could not load texture file" << "\n ";
     }
     TexDescription desc2(tex_loader2.getImageWidth(), tex_loader2.getImageHeight(), tex_loader2.getFormat());
 
-    TextureLoader tex_loader3("Resources/textures/spnza_bricks_a_spec.png");
+    TextureLoader tex_loader3("../Resources/textures/spnza_bricks_a_spec.png");
     if (!tex_loader3.load()) {
         std::cerr << "ERROR: Could not load texture file" << "\n ";
     }
     TexDescription desc3(tex_loader3.getImageWidth(), tex_loader3.getImageHeight(), TexFormat::RGB8_UNORM);
 
-    TextureLoader normal_map_tex_loader("Resources/textures/spnza_bricks_a_bump.png");
+    TextureLoader normal_map_tex_loader("../Resources/textures/spnza_bricks_a_bump.png");
     std::shared_ptr<Texture> normal_map_tex;
     if (!normal_map_tex_loader.load(false)) {
         std::cerr << "ERROR: Could not load texture file" << "\n ";
@@ -113,6 +113,15 @@ void SceneMaterialTesting::initialize() {
     rect_prism_mesh2_->setTransformationMatrix(m);
     world_.add(rect_prism_mesh2_);*/
 
+    // Only meshes that are added to world_ go here (same order in both vectors)
+    std::vector<MeshHandle> meshes;
+    meshes.push_back(plane_mesh2_->getMeshHandle());
+    rt_meshes_.push_back(plane_mesh2_);
+
+    static_cast<HittableListCustomBVH*>(world_.get())->buildTLAS(context.bvh_manager, meshes, rt_meshes_);
+
+    sendMeshDataToGPU();
+
     initShader();
 }
 
@@ -128,7 +137,7 @@ void SceneMaterialTesting::update(uint32 display_w, uint32 display_h) {
 }
 
 void SceneMaterialTesting::initShader() {
-    shader_prog_ = std::make_unique<Shader>("ShaderFiles/shader_bounding_box.vs.txt", "ShaderFiles/shader_bounding_box.fs.txt");
+    shader_prog_ = std::make_unique<Shader>("../ShaderFiles/shader_bounding_box.vs.txt", "../ShaderFiles/shader_bounding_box.fs.txt");
 }
 
 void SceneMaterialTesting::drawBVH() {

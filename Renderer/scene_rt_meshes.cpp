@@ -67,9 +67,10 @@ void SceneRtMeshes::initialize() {
         world_->add(rt_meshes_[i]);
     }
 
-    sendMeshDataToGPU();
-
+    // TLAS has to be built before sending data to GPU, because GPU TLAS buffer is made from it
     static_cast<HittableListCustomBVH*>(world_.get())->buildTLAS(context.bvh_manager, meshes, rt_meshes_);
+
+    sendMeshDataToGPU();
 
     initShader();
 }
