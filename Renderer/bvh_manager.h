@@ -19,6 +19,7 @@ public:
 	BVHManager(GUISettings* settings);
 
 	void buildBLAS(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_handle); // building BLASes
+	void rebuildBLAS(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_handle); // building BLAS again with current BVH technique
     void buildTLAS(std::span<const std::pair<vec3, vec3>> blas_bounds,
                    std::span<std::shared_ptr<Hittable>> rt_meshes); // building TLAS
 

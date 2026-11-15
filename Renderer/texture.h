@@ -25,6 +25,7 @@ class Texture {
     // Used for GPU
     void uploadToGPU(); // create GL texture and upload data
     uint32 getTextureId() const;
+    uint64 getBindlessHandle(); // uploads texture if needed and makes its bindless handle resident (only once)
 
    private:
     std::vector<uint8> data_;
@@ -36,6 +37,7 @@ class Texture {
 
     // Used for GPU
     uint32 texture_id_ = 0;
+    uint64 bindless_handle_ = 0;
 };
 
 #endif

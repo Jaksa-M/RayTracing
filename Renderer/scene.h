@@ -46,6 +46,9 @@ public:
 
     virtual void sendMeshDataToGPU();
 
+    // Builds BLASes and TLAS again with the current BVH technique and sends them to GPU (scene itself is not reloaded)
+    virtual void rebuildBVH();
+
     virtual void bindResources(Shader* shader);
 
     virtual uint32 getRtMeshesSize();
