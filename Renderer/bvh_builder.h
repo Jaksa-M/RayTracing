@@ -36,7 +36,7 @@ private:
 
     uint32 nodes_used_ = 1;
 
-    float evaluateSAH(BLASNode& node, uint32 axis, float pos);
+    void findBestSplitSAH(const BLASNode& node, int32& best_axis, float& best_pos, float& best_cost);
     void reorderIndices(); // Because triangle_indices are getting swapped during BVH building, indices will have to swap also
 
 
