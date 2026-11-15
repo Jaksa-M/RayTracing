@@ -232,8 +232,9 @@ void BVHBuilder::subdivideSAH(uint32 node_index) {
 
 float BVHBuilder::evaluateSAH(BLASNode& node, uint32 axis, float pos) {
     // Initialize bounds and counts
-    vec3 left_box_min(float_max), left_box_max(float_min); // Left aabb (axis aligned bounding box)
-    vec3 right_box_min(float_max), right_box_max(float_min); // Right aabb
+    const float lowest = std::numeric_limits<float>::lowest();
+    vec3 left_box_min(float_max), left_box_max(lowest); // Left aabb (axis aligned bounding box)
+    vec3 right_box_min(float_max), right_box_max(lowest); // Right aabb
     int leftCount = 0, rightCount = 0;
 
     // Determine triangle counts and bounds for this split candidate
