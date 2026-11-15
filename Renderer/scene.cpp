@@ -1,4 +1,6 @@
 #include "scene.h"
+#include <unordered_set>
+#include "hittable_list_custom_bvh.h"
 
 // Removing warnings caused by gl.h file
 #pragma warning(push)
@@ -16,10 +18,7 @@ inline uint32 registerTexture(const std::shared_ptr<Texture>& tex, std::unordere
     auto it = texture_to_index.find(tex);
     if (it != texture_to_index.end()) return it->second;
 
-    // Upload and make resident
-    tex->uploadToGPU();
-    uint64 handle = glGetTextureHandleARB(tex->getTextureId());
-    glMakeTextureHandleResidentARB(handle);
+    uint64 handle = tex->getBindlessHandle();
 
     uint32 index = static_cast<uint32>(texture_handles.size());
     texture_to_index[tex] = index;
@@ -242,6 +241,26 @@ void Scene::sendMeshDataToGPU() {
     texture_handles_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(texture_handles)), BufferUsage::StaticDraw);
     blas_nodes_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(all_blas_nodes_gpu_format)), BufferUsage::StaticDraw);
     tlas_nodes_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(tlas_nodes_gpu_format)), BufferUsage::StaticDraw);
+}
+
+void Scene::rebuildBVH() {
+    // tinybvh builds its own BVH, BVH technique doesn't affect it
+    if (context.settings->use_tiny_bvh) return;
+
+    std::vector<MeshHandle> meshes; // mesh handle of every rt_mesh, in the same order as rt_meshes_ (needed by buildTLAS)
+    std::unordered_set<MeshHandle> rebuilt; // several instances can share one mesh, its BLAS is rebuilt only once
+    for (uint32 i = 0; i < rt_meshes_.size(); i++) {
+        MeshHandle mesh_handle = dynamic_cast<RTMesh*>(rt_meshes_[i].get())->getMeshHandle();
+        meshes.push_back(mesh_handle);
+        if (rebuilt.insert(mesh_handle).second) {
+            context.bvh_manager->rebuildBLAS(context.mesh_buf_manager, mesh_handle);
+        }
+    }
+
+    world_->update(); // RTMesh keeps a span to its BLAS nodes, so it has to point to the new ones
+    static_cast<HittableListCustomBVH*>(world_.get())->buildTLAS(context.bvh_manager, meshes, rt_meshes_);
+
+    sendMeshDataToGPU(); // index buffer was reordered by the BLAS build, so mesh data is sent again together with BLAS/TLAS
 }
 
 void Scene::bindResources(Shader* shader) {

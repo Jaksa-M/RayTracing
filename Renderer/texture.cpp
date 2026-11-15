@@ -109,6 +109,15 @@ void Texture::uploadToGPU() {
 
 uint32 Texture::getTextureId() const { return texture_id_; }
 
+uint64 Texture::getBindlessHandle() {
+    if (bindless_handle_ == 0) {
+        uploadToGPU();
+        bindless_handle_ = glGetTextureHandleARB(texture_id_);
+        glMakeTextureHandleResidentARB(bindless_handle_);
+    }
+    return bindless_handle_;
+}
+
 vec4 Texture::pixelData(uint32 x, uint32 y) const { // Return the address of the three RGB bytes of the pixel at x,y
     if (data_.empty()) return vec4(1.0f, 0.0f, 1.0f, 1.0f); // If there is no image data, returns magenta.
 

@@ -33,6 +33,12 @@ void BVHManager::buildBLAS(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_
     }
 }
 
+void BVHManager::rebuildBLAS(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_handle) {
+    // buildBLAS skips meshes that already have a BLAS, so the old one is removed first
+    bvh_info_.erase(mesh_handle);
+    buildBLAS(mesh_buf_manager, mesh_handle);
+}
+
 void BVHManager::buildTLAS(std::span<const std::pair<vec3, vec3>> blas_bounds, std::span<std::shared_ptr<Hittable>> rt_meshes) {
     BVHBuilder bvh_builder;
     tlas_nodes_ = bvh_builder.buildTLAS(blas_bounds, rt_meshes);

@@ -127,8 +127,9 @@ void SceneMaterialTesting::initialize() {
 
 void SceneMaterialTesting::update(uint32 display_w, uint32 display_h) {
     if (prev_BVH_technique_ != context.settings->BVH_technique) {
-        world_->clear();
-        initialize();
+        // Only BVH is built again, the scene is not reloaded
+        prev_BVH_technique_ = context.settings->BVH_technique;
+        rebuildBVH();
     }
     cameras_[active_camera_]->image_width = display_w;
     cameras_[active_camera_]->image_height = display_h;
