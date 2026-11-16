@@ -170,18 +170,7 @@ void BVHBuilder::subdivideSAH(uint32 node_index) {
     int32 best_axis = -1; // x = 0, y = 1, z = 2
     float best_pos = 0;
     float best_cost = float_max; // Maximum value for float, it is taken from math_constants.h file
-    for (uint32 axis = 0; axis < 3; axis++) { // Iterate over every axis
-        for (uint32 i = 0; i < node.triangle_cnt; i++) { // Iterate over every triangle inside current node
-            const Triangle& triangle = triangles_[triangle_indices_[node.first_triangle_index + i]];
-            float val = triangle.centroid[axis];
-            float cost = evaluateSAH(node, axis, val);
-            if (cost < best_cost) {
-                best_pos = val;
-                best_axis = axis;
-                best_cost = cost;
-            }
-        }
-    }
+    findBestSplitSAH(node, best_axis, best_pos, best_cost);
     int32 axis = best_axis;
     float splitPos = best_pos;
 
@@ -230,47 +219,82 @@ void BVHBuilder::subdivideSAH(uint32 node_index) {
     subdivideSAH(right_child_index);
 }
 
-float BVHBuilder::evaluateSAH(BLASNode& node, uint32 axis, float pos) {
-    // Initialize bounds and counts
-    vec3 left_box_min(float_max), left_box_max(float_min); // Left aabb (axis aligned bounding box)
-    vec3 right_box_min(float_max), right_box_max(float_min); // Right aabb
-    int leftCount = 0, rightCount = 0;
+// Full SAH using the sweep method (Wald et al. 2007): for each axis the triangles are sorted by centroid, then
+// one sweep from the right stores the area of every right box and one sweep from the left evaluates every split.
+// That is O(n log n) per node.
+void BVHBuilder::findBestSplitSAH(const BLASNode& node, int32& best_axis, float& best_pos, float& best_cost) {
+    const uint32 n = node.triangle_cnt;
+    constexpr float lowest = std::numeric_limits<float>::lowest();
 
-    // Determine triangle counts and bounds for this split candidate
-    for (uint32 i = 0; i < node.triangle_cnt; i++) {
-        const Triangle& triangle = triangles_[triangle_indices_[node.first_triangle_index + i]];
-        if (triangle.centroid[axis] < pos) {
-            leftCount++;
-            left_box_min.setX(std::min({ left_box_min.x(), triangle.v0.x(), triangle.v1.x(), triangle.v2.x() }));
-            left_box_min.setY(std::min({ left_box_min.y(), triangle.v0.y(), triangle.v1.y(), triangle.v2.y() }));
-            left_box_min.setZ(std::min({ left_box_min.z(), triangle.v0.z(), triangle.v1.z(), triangle.v2.z() }));
+    auto growBox = [](vec3& box_min, vec3& box_max, const Triangle& triangle) {
+        box_min.setX(std::min({ box_min.x(), triangle.v0.x(), triangle.v1.x(), triangle.v2.x() }));
+        box_min.setY(std::min({ box_min.y(), triangle.v0.y(), triangle.v1.y(), triangle.v2.y() }));
+        box_min.setZ(std::min({ box_min.z(), triangle.v0.z(), triangle.v1.z(), triangle.v2.z() }));
 
-            left_box_max.setX(std::max({ left_box_max.x(), triangle.v0.x(), triangle.v1.x(), triangle.v2.x() }));
-            left_box_max.setY(std::max({ left_box_max.y(), triangle.v0.y(), triangle.v1.y(), triangle.v2.y() }));
-            left_box_max.setZ(std::max({ left_box_max.z(), triangle.v0.z(), triangle.v1.z(), triangle.v2.z() }));
+        box_max.setX(std::max({ box_max.x(), triangle.v0.x(), triangle.v1.x(), triangle.v2.x() }));
+        box_max.setY(std::max({ box_max.y(), triangle.v0.y(), triangle.v1.y(), triangle.v2.y() }));
+        box_max.setZ(std::max({ box_max.z(), triangle.v0.z(), triangle.v1.z(), triangle.v2.z() }));
+    };
+    auto boxArea = [](const vec3& box_min, const vec3& box_max) {
+        vec3 extent = box_max - box_min;
+        return extent.x() * extent.y() + extent.y() * extent.z() + extent.z() * extent.x();
+    };
+    auto triangleAt = [&](uint32 order) -> const Triangle& {
+        return triangles_[triangle_indices_[node.first_triangle_index + order]];
+    };
+
+    struct SAHCandidate {
+        float centroid; // centroid of the triangle on the current axis
+        uint32 order; // position of the triangle inside the node (used to find the triangle and for tie-breaking)
+    };
+    std::vector<SAHCandidate> candidates(n); // sorted copy of the node's triangles
+    std::vector<float> right_areas(n); // right_areas[i] = area of the box around candidates i..n-1
+
+    for (uint32 axis = 0; axis < 3; axis++) { // Iterate over every axis
+        for (uint32 i = 0; i < n; i++) {
+            candidates[i] = { triangleAt(i).centroid[axis], i };
         }
-        else {
-            rightCount++;
-            right_box_min.setX(std::min({ right_box_min.x(), triangle.v0.x(), triangle.v1.x(), triangle.v2.x() }));
-            right_box_min.setY(std::min({ right_box_min.y(), triangle.v0.y(), triangle.v1.y(), triangle.v2.y() }));
-            right_box_min.setZ(std::min({ right_box_min.z(), triangle.v0.z(), triangle.v1.z(), triangle.v2.z() }));
+        // Sort by centroid; equal centroids keep node order, so the first of a group has the smallest order
+        std::sort(candidates.begin(), candidates.end(), [](const SAHCandidate& a, const SAHCandidate& b) {
+            return a.centroid < b.centroid || (a.centroid == b.centroid && a.order < b.order);
+        });
 
-            right_box_max.setX(std::max({ right_box_max.x(), triangle.v0.x(), triangle.v1.x(), triangle.v2.x() }));
-            right_box_max.setY(std::max({ right_box_max.y(), triangle.v0.y(), triangle.v1.y(), triangle.v2.y() }));
-            right_box_max.setZ(std::max({ right_box_max.z(), triangle.v0.z(), triangle.v1.z(), triangle.v2.z() }));
+        // Sweep from the right: right_areas[i] = area of the box around candidates i..n-1
+        vec3 right_min(float_max), right_max(lowest);
+        for (uint32 i = n - 1; i > 0; i--) {
+            growBox(right_min, right_max, triangleAt(candidates[i].order));
+            right_areas[i] = boxArea(right_min, right_max);
+        }
+
+        // Sweep from the left: split before candidate i puts candidates 0..i-1 left and i..n-1 right
+        float axis_best_cost = float_max;
+        uint32 axis_best_order = 0;
+        float axis_best_pos = 0;
+        vec3 left_min(float_max), left_max(lowest);
+        for (uint32 i = 1; i < n; i++) {
+            growBox(left_min, left_max, triangleAt(candidates[i - 1].order));
+
+            // Split position is a centroid value, so triangles with the same centroid can't be separated
+            if (candidates[i].centroid == candidates[i - 1].centroid) continue;
+
+            float cost = i * boxArea(left_min, left_max) + (n - i) * right_areas[i];
+            if (!(cost > 0)) continue;
+
+            // On equal cost keep the triangle that comes first in node order (same choice as checking candidates one by one)
+            if (cost < axis_best_cost || (cost == axis_best_cost && candidates[i].order < axis_best_order)) {
+                axis_best_cost = cost;
+                axis_best_order = candidates[i].order;
+                axis_best_pos = candidates[i].centroid;
+            }
+        }
+
+        // Earlier axis wins on equal cost
+        if (axis_best_cost < best_cost) {
+            best_cost = axis_best_cost;
+            best_axis = axis;
+            best_pos = axis_best_pos;
         }
     }
-
-    // Compute areas
-    vec3 left_extent = left_box_max - left_box_min;
-    float left_area = left_extent.x() * left_extent.y() + left_extent.y() * left_extent.z() + left_extent.z() * left_extent.x();
-
-    vec3 right_extent = right_box_max - right_box_min;
-    float right_area = right_extent.x() * right_extent.y() + right_extent.y() * right_extent.z() + right_extent.z() * right_extent.x();
-
-    // Compute the SAH cost
-    float cost = leftCount * left_area + rightCount * right_area;
-    return cost > 0 ? cost : float_max;
 }
 
 void BVHBuilder::reorderIndices() {
