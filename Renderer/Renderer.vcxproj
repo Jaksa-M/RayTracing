@@ -189,6 +189,7 @@
     <ClInclude Include="scene_material_testing.h" />
     <ClInclude Include="scene_meshes.h" />
     <ClInclude Include="scene_obj_loader.h" />
+    <ClInclude Include="scene_obj_single_mesh.h" />
     <ClInclude Include="scene_rt_meshes.h" />
     <ClInclude Include="shader.h" />
     <ClInclude Include="statistics.h" />
@@ -222,6 +223,7 @@
     <ClCompile Include="scene_material_testing.cpp" />
     <ClCompile Include="scene_meshes.cpp" />
     <ClCompile Include="scene_obj_loader.cpp" />
+    <ClCompile Include="scene_obj_single_mesh.cpp" />
     <ClCompile Include="scene_rt_meshes.cpp" />
     <ClCompile Include="shader.cpp" />
     <ClCompile Include="texture.cpp" />

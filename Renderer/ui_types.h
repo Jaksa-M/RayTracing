@@ -8,7 +8,8 @@ enum class SceneType {
     RT_MESHES,       // scene_rt_meshes
     CORNELL_BOX,     // scene_cornell_box
     OBJ_LOADER,      // scene_custom_meshes
-    MATERIAL_TESTING // scene_material_testing
+    MATERIAL_TESTING, // scene_material_testing
+    OBJ_SINGLE_MESH  // scene_obj_single_mesh (whole OBJ as one mesh, for BVH benchmarking)
 };
 
 enum class BVHTechnique {

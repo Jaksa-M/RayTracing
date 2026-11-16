@@ -293,3 +293,115 @@ std::span<MeshHandle> ObjLoader::getMeshes() {
     return meshes_;
 }
 
+bool ObjLoader::loadAsSingleMesh(Context& context) {
+    tinyobj::ObjReaderConfig reader_config;
+    reader_config.triangulate = true;
+    reader_config.mtl_search_path = "";  // Path to material files
+
+    tinyobj::ObjReader reader;
+
+    if (!reader.ParseFromFile(file_.string(), reader_config)) {
+        if (!reader.Error().empty()) {
+            std::cerr << "TinyObjReader: " << reader.Error();
+        }
+        return false;
+    }
+
+    auto& attrib = reader.GetAttrib();
+    auto& shapes = reader.GetShapes();
+
+    std::vector<uint32> indices;
+    std::vector<float> vertices;
+    std::vector<float> vertex_normals;
+    std::vector<float> uv;
+    std::unordered_map<uint64, uint32> vertex_map;
+    bool missing_normals = false; // if any vertex has no normal, normals are calculated for the whole mesh
+    uint32 new_index = 0;
+
+    // All triangles of all shapes go into the same index/vertex arrays (same vertex deduplication as in load())
+    for (const tinyobj::shape_t& shape : shapes) {
+        for (const tinyobj::index_t& index : shape.mesh.indices) {
+            // Ensure indices fit within 21 bits
+            assert(index.vertex_index <= 0x1FFFFF);
+            assert(index.normal_index <= 0x1FFFFF);
+            assert(index.texcoord_index <= 0x1FFFFF);
+
+            // Create a unique key using 21 bits for each index
+            uint64 key = (static_cast<uint64>(index.vertex_index) & 0x1FFFFF) |
+                         ((static_cast<uint64>(index.normal_index) & 0x1FFFFF) << 21) |
+                         ((static_cast<uint64>(index.texcoord_index) & 0x1FFFFF) << 42);
+
+            // If vertex is already mapped, reuse the mapped index
+            if (auto it = vertex_map.find(key); it != vertex_map.end()) {
+                indices.push_back(it->second);
+                continue;
+            }
+            vertex_map[key] = new_index;
+            indices.push_back(new_index++);
+
+            std::size_t v_offset = index.vertex_index * 3;
+            vertices.push_back(attrib.vertices[v_offset]);
+            vertices.push_back(attrib.vertices[v_offset + 1]);
+            vertices.push_back(attrib.vertices[v_offset + 2]);
+
+            if (index.normal_index >= 0) {
+                std::size_t n_offset = index.normal_index * 3;
+                vertex_normals.push_back(attrib.normals[n_offset]);
+                vertex_normals.push_back(attrib.normals[n_offset + 1]);
+                vertex_normals.push_back(attrib.normals[n_offset + 2]);
+            } else {
+                missing_normals = true;
+                vertex_normals.insert(vertex_normals.end(), {0.0f, 0.0f, 0.0f}); // placeholder, calculated below
+            }
+
+            if (index.texcoord_index >= 0) {
+                std::size_t t_offset = index.texcoord_index * 2;
+                uv.push_back(attrib.texcoords[t_offset]);
+                uv.push_back(attrib.texcoords[t_offset + 1]);
+            } else {
+                uv.push_back(0.0f);
+                uv.push_back(0.0f);
+            }
+        }
+    }
+
+    if (indices.empty()) return false;
+
+    if (missing_normals) { // Calculating vertex normals from face normals (same as in load())
+        std::vector<vec3> temp_normals(vertices.size() / 3, vec3(0.0f));
+        for (uint32 i = 0; i < indices.size(); i += 3) {
+            uint32 i0 = indices[i];
+            uint32 i1 = indices[i + 1];
+            uint32 i2 = indices[i + 2];
+
+            vec3 v0(vertices[i0 * 3], vertices[i0 * 3 + 1], vertices[i0 * 3 + 2]);
+            vec3 v1(vertices[i1 * 3], vertices[i1 * 3 + 1], vertices[i1 * 3 + 2]);
+            vec3 v2(vertices[i2 * 3], vertices[i2 * 3 + 1], vertices[i2 * 3 + 2]);
+
+            vec3 normal = unit_vector(cross(v1 - v0, v2 - v0));
+            temp_normals[i0] += normal;
+            temp_normals[i1] += normal;
+            temp_normals[i2] += normal;
+        }
+        for (uint32 i = 0; i < temp_normals.size(); i++) {
+            vec3 normalized_n = unit_vector(temp_normals[i]);
+            vertex_normals[i * 3 + 0] = normalized_n.x();
+            vertex_normals[i * 3 + 1] = normalized_n.y();
+            vertex_normals[i * 3 + 2] = normalized_n.z();
+        }
+    }
+
+    std::vector<Attribute> attributes;
+    attributes.push_back(Attribute(AttributeType::Position, vertices));
+    attributes.push_back(Attribute(AttributeType::Normal, vertex_normals));
+    attributes.push_back(Attribute(AttributeType::UV, uv));
+
+    MeshHandle mesh_handle = context.mesh_buf_manager->addToBuffer(attributes, indices);
+
+    if (!context.settings->use_tiny_bvh) {
+        context.bvh_manager->buildBLAS(context.mesh_buf_manager, mesh_handle);
+    }
+    meshes_.push_back(mesh_handle);
+    return true;
+}
+
