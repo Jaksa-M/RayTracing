@@ -52,6 +52,8 @@ std::vector<BLASNode> BVHBuilder::buildBLAS() {
     subdivide(0);
 
     reorderIndices();
+
+    blas_nodes_.resize(nodes_used_); // Trim unused nodes
     return blas_nodes_;
 }
 
