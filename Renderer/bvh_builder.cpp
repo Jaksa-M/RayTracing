@@ -105,38 +105,46 @@ void BVHBuilder::createBoundBox(uint32 node_index) {
 }
 
 void BVHBuilder::subdivide(uint32 node_index) {
-    // Current split method: split along longest axis
+    // Midpoint split: halve the longest axis of the centroid bounds, so both children get at least one triangle.
     BLASNode& node = blas_nodes_[node_index];
 
     // Decided to return if node contains 2 or less triangles. The reason for that is because 2 triangles can be aligned with splitting axis
     // and we can't split it into 2 non empty halves. This is still not 100% safe.
     if (node.triangle_cnt <= 2) return;
 
+    uint32* first = &triangle_indices_[node.first_triangle_index]; // triangles of this node
+    uint32* last = first + node.triangle_cnt;
+
+    // Bounds of triangle centroids
+    vec3 centroid_min(float_max), centroid_max(std::numeric_limits<float>::lowest());
+    for (uint32* t = first; t != last; t++) {
+        centroid_min = vec3::minVec(centroid_min, triangles_[*t].centroid);
+        centroid_max = vec3::maxVec(centroid_max, triangles_[*t].centroid);
+    }
+
     // Midpoint split
-    vec3 extent = node.aabb_max - node.aabb_min;
+    vec3 extent = centroid_max - centroid_min;
     uint32 axis = 0; // x-axis
     if (extent.y() > extent.x()) axis = 1; // y-axis
     if (extent.z() > extent.x() && extent.z() > extent.y()) axis = 2; // z-axis
-    float split_pos = node.aabb_min[axis] + extent[axis] * 0.5f; // split that axis in half
 
-    // split the box in halves
-    uint32 i = node.first_triangle_index;
-    uint32 j = i + node.triangle_cnt - 1;
-    while (i <= j) {
-        if (triangles_[triangle_indices_[i]].centroid[axis] < split_pos) {
-            i++;
-        }
-        else {
-            // We swap indices only. It is because swapping whole Triangles wouldn't be efficient
-            std::swap(triangle_indices_[i], triangle_indices_[j--]);
-        }
+    // All centroids are in the same point, triangles can't be separated, so the node stays a leaf
+    if (extent[axis] <= 0.0f) return;
+
+    float split_pos = centroid_min[axis] + extent[axis] * 0.5f; // split that axis in half
+
+    // split the box in halves (we swap indices only, swapping whole Triangles wouldn't be efficient)
+    auto centroidOnAxis = [&](uint32 triangle_index) { return triangles_[triangle_index].centroid[axis]; };
+    uint32* middle = std::partition(first, last, [&](uint32 triangle_index) { return centroidOnAxis(triangle_index) < split_pos; });
+    uint32 left_count = static_cast<uint32>(middle - first); // How many triangles will be in left child
+
+    // One side can still be empty if extent is so small that split_pos rounds to centroid_min (float precision).
+    // Then triangles are split in two halves by count (sorted by centroid on the same axis).
+    if (left_count == 0 || left_count == node.triangle_cnt) {
+        left_count = node.triangle_cnt / 2;
+        std::nth_element(first, first + left_count, last,
+                         [&](uint32 a, uint32 b) { return centroidOnAxis(a) < centroidOnAxis(b); });
     }
-
-    uint32 left_count = i - node.first_triangle_index; // How many nodes will be in left child
-
-    // This check ensures to avoid empty child nodes and infinite recursion
-    // (the function could keep attempting to split nodes indefinitely, especially when triangles align along the splitting axis)
-    if (left_count == 0 || left_count == node.triangle_cnt) return;
 
     // Create child nodes
     uint32 left_child_index = nodes_used_++;
@@ -145,7 +153,7 @@ void BVHBuilder::subdivide(uint32 node_index) {
     node.right_child = right_child_index;
     blas_nodes_[left_child_index].first_triangle_index = node.first_triangle_index;
     blas_nodes_[left_child_index].triangle_cnt = left_count;
-    blas_nodes_[right_child_index].first_triangle_index = i;
+    blas_nodes_[right_child_index].first_triangle_index = node.first_triangle_index + left_count;
     blas_nodes_[right_child_index].triangle_cnt = node.triangle_cnt - left_count;
 
     // We also use this variable to know if it is leaf node or not. Leaf nodes have primCount > 0.
