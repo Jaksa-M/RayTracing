@@ -6,10 +6,10 @@ CameraController::CameraController(Camera& cam, float speed) : cam_(cam), speed_
 void CameraController::handleKeyboardInput(float dt) {
     delta_time_seconds_ = dt;
     if (ImGui::IsKeyDown(ImGuiKey_Q)) {
-        moveDown();
+        moveUp();
     }
     if (ImGui::IsKeyDown(ImGuiKey_E)) {
-        moveUp();
+        moveDown();
     }
     if (ImGui::IsKeyDown(ImGuiKey_A)) {
         moveLeft();
