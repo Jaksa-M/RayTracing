@@ -41,6 +41,7 @@
 #include "scene_cornell_box.h"
 #include "scene_obj_loader.h"
 #include "scene_material_testing.h"
+#include "scene_obj_single_mesh.h"
 
 // ImGui things
 #include "imgui/imgui.h"
@@ -234,7 +235,7 @@ int main(int, char**) {
         if (show_demo_window) {
             static float f = 0.0f;
             const char* scenes[] = {"scene_rt_meshes", "scene_cornell_box", "scene_obj_loader",
-                                    "scene_material_testing"}; // Dropdown list (combo) items for scene selection
+                                    "scene_material_testing", "scene_obj_single_mesh"}; // Dropdown list (combo) items for scene selection
             const char* techniques[] = { "midpoint split", "SAH" }; // Dropdown list (combo) items for technique selection
             const char* mesh_colors[] = {"material", "geometric normal", "shading normal", "depth",
                                          "uv", "roughness"}; // Dropdown list (combo) items for color representation selection
@@ -422,6 +423,9 @@ int main(int, char**) {
                         break;
                     case SceneType::MATERIAL_TESTING: // scene_material_testing
                         active_scene = std::make_unique<SceneMaterialTesting>();
+                        break;
+                    case SceneType::OBJ_SINGLE_MESH: // scene_obj_single_mesh
+                        active_scene = std::make_unique<SceneObjSingleMesh>();
                         break;
                 }
                 active_scene->context = context;

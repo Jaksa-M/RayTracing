@@ -14,6 +14,10 @@ public:
 
     bool load(Context& context);
 
+    // Loads all triangles of the file into one mesh (one BLAS), materials and textures are ignored.
+    // Used for BVH benchmarking, so the result depends only on the BVH of that one mesh (no TLAS over many meshes).
+    bool loadAsSingleMesh(Context& context);
+
     std::span<const std::shared_ptr<Material>> getMaterials() const;
     std::span<const int32> getMaterialsIndices() const;
     std::span<MeshHandle> getMeshes();
