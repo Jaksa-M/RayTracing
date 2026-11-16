@@ -2,7 +2,6 @@
 #define TYPES_H
 
 #include <cstdint> // std::size_t
-#include <chrono> // for time
 
 #include <filesystem>
 
@@ -30,13 +29,6 @@ struct TexDescription {
     uint32 image_width;
     uint32 image_height;
     TexFormat format;
-};
-
-struct TimeMeasurement {
-    std::chrono::microseconds total_bvh_time{0};
-    size_t total_bvh_calls = 0;
-    std::chrono::microseconds min_bvh_time{std::chrono::microseconds::max()};
-    std::chrono::microseconds max_bvh_time{0};
 };
 
 #endif

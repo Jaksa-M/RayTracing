@@ -58,7 +58,6 @@ class BaseScene: public ::testing::Test {
     std::unique_ptr<MeshBufferManager> mesh_buf_manager;
     std::unique_ptr<BVHManager> bvh_manager;
     std::unique_ptr<GUISettings> gui_settings;
-    std::unique_ptr<TimeMeasurement> time_measurement;
     std::vector<std::shared_ptr<Hittable>> rt_meshes;
     std::vector<std::unique_ptr<Camera>> cameras;
     std::shared_ptr<Texture> background_texture_;
@@ -72,9 +71,6 @@ class BaseScene: public ::testing::Test {
         
         bvh_manager = std::make_unique<BVHManager>(gui_settings.get());
         context.bvh_manager = bvh_manager.get();
-
-        time_measurement = std::make_unique<TimeMeasurement>();
-        context.time_measurement = time_measurement.get();
 
         TextureLoader tex_loader("../Resources/textures/san_giuseppe_bridge.hdr");
         if (!tex_loader.load()) {
