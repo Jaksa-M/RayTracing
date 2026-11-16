@@ -16,7 +16,7 @@
 template <bool posX, bool posY, bool posZ>
 void templatedIntersectBLAS(const ray& r, interval ray_t, IntersectResult& intersect_result, const uint32 node_idx, float& closest_hit_t,
                            std::span<const BLASNode> bvh_nodes, const ResolvedMeshInfo& res_mesh_info) { // version without cost
-    const uint32 MAX_STACK_SIZE = 64;
+    const uint32 MAX_STACK_SIZE = BLAS_TRAVERSAL_STACK_SIZE;
     uint32 node_stack[MAX_STACK_SIZE];
     uint32 stack_top = 0;
 
