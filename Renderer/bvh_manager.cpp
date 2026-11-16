@@ -4,6 +4,24 @@
 #include "gui_settings.h"
 #include "hittable.h"
 #include <utility> // for std::pair
+#include <algorithm> // for std::max
+#include <iostream>
+
+// Depth of the deepest leaf (root has depth 1)
+static uint32 maxDepth(const std::vector<BLASNode>& nodes) {
+    uint32 max_depth = 0;
+    std::vector<std::pair<uint32, uint32>> stack{{0u, 1u}}; // node index, depth
+    while (!stack.empty()) {
+        auto [index, depth] = stack.back();
+        stack.pop_back();
+        max_depth = std::max(max_depth, depth);
+        if (!nodes[index].isLeaf()) {
+            stack.push_back({nodes[index].left_child, depth + 1});
+            stack.push_back({nodes[index].right_child, depth + 1});
+        }
+    }
+    return max_depth;
+}
 
 BVHManager::BVHManager(GUISettings* settings): settings_(settings) {
     
@@ -29,6 +47,13 @@ void BVHManager::buildBLAS(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_
         case BVHTechnique::SAH: // SAH
             bvh_info_[mesh_handle].bvh_nodes = bvh_builder.buildBLASSAH();
             break;
+        }
+
+        // Traversal stack holds at most one node per level, so a deeper tree could lose nodes during traversal
+        uint32 depth = maxDepth(bvh_info_[mesh_handle].bvh_nodes);
+        if (depth > BLAS_TRAVERSAL_STACK_SIZE) {
+            std::cerr << "WARNING: BLAS of mesh " << mesh_handle << " has depth " << depth << ", but traversal stack holds only "
+                      << BLAS_TRAVERSAL_STACK_SIZE << " nodes. Parts of the mesh may not be rendered.\n";
         }
     }
 }

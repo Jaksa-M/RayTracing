@@ -6,6 +6,9 @@
 
 class Hittable; // Had to put it because of TLASNode
 
+// Traversal skips nodes when the stack is full, so a tree deeper than this could lose parts of the mesh.
+constexpr uint32 BLAS_TRAVERSAL_STACK_SIZE = 64;
+
 struct BLASNode {
     vec3 aabb_min, aabb_max;
     uint32 left_child, right_child;
