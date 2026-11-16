@@ -109,18 +109,7 @@ bool RTMesh::hit_BVH(const ray& r, interval ray_t, HitRecord& rec) const {
     IntersectResult intersect_result;
     float closest_hit_t = std::numeric_limits<float>::max();
 
-    // Start timing
-    auto start_time = std::chrono::high_resolution_clock::now();
-
     intersectBLAS(changed_ray, ray_t, intersect_result, 0, closest_hit_t);
-
-    // End timing
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = duration_cast<std::chrono::microseconds>(end_time - start_time);
-    context_.time_measurement->total_bvh_time += duration;
-    context_.time_measurement->total_bvh_calls++;
-    if (duration < context_.time_measurement->min_bvh_time) context_.time_measurement->min_bvh_time = duration;
-    if (duration > context_.time_measurement->max_bvh_time) context_.time_measurement->max_bvh_time = duration;
 
     if (closest_hit_t != std::numeric_limits<float>::max()) {
         rec.mat = mat_;
