@@ -247,6 +247,7 @@ void Scene::rebuildBVH() {
     // tinybvh builds its own BVH, BVH technique doesn't affect it
     if (context.settings->use_tiny_bvh) return;
 
+    context.bvh_manager->resetBLASStats();
     std::vector<MeshHandle> meshes; // mesh handle of every rt_mesh, in the same order as rt_meshes_ (needed by buildTLAS)
     std::unordered_set<MeshHandle> rebuilt; // several instances can share one mesh, its BLAS is rebuilt only once
     for (uint32 i = 0; i < rt_meshes_.size(); i++) {

@@ -6,6 +6,7 @@
 #include <utility> // for std::pair
 #include <algorithm> // for std::max
 #include <iostream>
+#include <chrono>
 
 // Depth of the deepest leaf (root has depth 1)
 static uint32 maxDepth(const std::vector<BLASNode>& nodes) {
@@ -40,6 +41,7 @@ void BVHManager::buildBLAS(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_
 
         BVHBuilder bvh_builder(vertices, indices, triangles, triangle_indices);
 
+        auto start_time = std::chrono::steady_clock::now();
         switch (settings_->BVH_technique) {
         case BVHTechnique::MIDPOINT_SPLIT: // midpoint split
             bvh_info_[mesh_handle].bvh_nodes = bvh_builder.buildBLAS();
@@ -48,12 +50,26 @@ void BVHManager::buildBLAS(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_
             bvh_info_[mesh_handle].bvh_nodes = bvh_builder.buildBLASSAH();
             break;
         }
+        std::chrono::duration<double, std::milli> build_time = std::chrono::steady_clock::now() - start_time;
+
+        const std::vector<BLASNode>& nodes = bvh_info_[mesh_handle].bvh_nodes;
 
         // Traversal stack holds at most one node per level, so a deeper tree could lose nodes during traversal
-        uint32 depth = maxDepth(bvh_info_[mesh_handle].bvh_nodes);
+        uint32 depth = maxDepth(nodes);
         if (depth > BLAS_TRAVERSAL_STACK_SIZE) {
             std::cerr << "WARNING: BLAS of mesh " << mesh_handle << " has depth " << depth << ", but traversal stack holds only "
                       << BLAS_TRAVERSAL_STACK_SIZE << " nodes. Parts of the mesh may not be rendered.\n";
+        }
+
+        blas_stats_.build_time_ms += build_time.count();
+        blas_stats_.blas_cnt++;
+        blas_stats_.node_cnt += nodes.size();
+        blas_stats_.max_depth = std::max(blas_stats_.max_depth, depth);
+        for (const BLASNode& node : nodes) {
+            if (node.isLeaf()) {
+                blas_stats_.leaf_cnt++;
+                blas_stats_.leaf_triangle_cnt += node.triangle_cnt;
+            }
         }
     }
 }
@@ -78,6 +94,14 @@ std::span<const BLASNode> BVHManager::getBLASNodes(MeshHandle mesh_handle) const
 
 std::span<const TLASNode> BVHManager::getTLASNodes() const {
     return tlas_nodes_;
+}
+
+const BLASStats& BVHManager::getBLASStats() const {
+    return blas_stats_;
+}
+
+void BVHManager::resetBLASStats() {
+    blas_stats_ = BLASStats();
 }
 
 void BVHManager::transformToTriangles(std::span<const float> vertices, std::span<const uint32> indices,
