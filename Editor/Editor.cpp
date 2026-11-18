@@ -29,6 +29,8 @@
 #include "mesh_buffer_manager.h"
 #include "bvh_manager.h"
 #include "gpu_types.h"
+#include "gpu_timer.h"
+#include "rolling_average.h"
 #include "context.h"
 #include "statistics.h"
 #include "camera.h"
@@ -189,8 +191,14 @@ int main(int, char**) {
     GLuint fullscreen_vao = 0; // Empty VAO, vertices are generated in vertex shader from gl_VertexID
     glGenVertexArrays(1, &fullscreen_vao);
 
+    // Render times (only ray tracing, without UI and drawing to the screen), averaged over last 60 frames for the UI
+    RollingAverage cpu_render_ms(60);
+    RollingAverage gpu_render_ms(60);
+    std::unique_ptr<GpuTimer> gpu_timer;
+
     if (gui_settings->use_gpu) { // using compute shader
         comp_shader = std::make_shared<Shader>("../ShaderFiles/compute_shader.comp");
+        gpu_timer = std::make_unique<GpuTimer>();
 
         // generating accumulated image that will be used on gpu
         glGenTextures(1, &accumulated_tex);
@@ -473,6 +481,9 @@ int main(int, char**) {
             ImGui::Separator();
             ImGui::Text("------------------Statistics------------------");
             ImGui::Text("FPS: %.1f", io.Framerate);
+            ImGui::Text("Frame time: %.2f ms", 1000.0f / io.Framerate); // whole frame, limited by vsync
+            if (gui_settings->use_gpu) ImGui::Text("GPU render time: %.2f ms", gpu_render_ms.average());
+            else ImGui::Text("CPU render time: %.2f ms", cpu_render_ms.average());
             ImGui::Text("Triangle count: %d", statistics->triangle_cnt);
             ImGui::Text("RTMeshes count: %d", statistics->rt_mesh_cnt);
 
@@ -519,7 +530,10 @@ int main(int, char**) {
 
         if (!gui_settings->use_gpu) {
             Camera& cam = active_scene->getActiveCamera();
+            auto render_start = std::chrono::steady_clock::now();
             cam.render(active_scene->getWorld(), image_data_acc, *(context.settings));
+            std::chrono::duration<double, std::milli> render_time = std::chrono::steady_clock::now() - render_start;
+            cpu_render_ms.add(render_time.count());
 
             // Filling image_data
             image_data.resize(display_w * display_h * 3);
@@ -596,7 +610,10 @@ int main(int, char**) {
             comp_shader->setTexture("u_background_img", 0); // compute shader uniform background_img should sample from texture unit 0
 
             //glMemoryBarrier(GL_ALL_BARRIER_BITS); // before dispatch
+            gpu_timer->begin();
             glDispatchCompute(num_groups_x, num_groups_y, 1);
+            gpu_timer->end();
+            if (double ms; gpu_timer->getResult(ms)) gpu_render_ms.add(ms);
             // Barrier that ensures that data writting is completely finished
             // (TEXTURE_FETCH because fullscreen pass reads tex with texture() right after)
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
@@ -646,6 +663,7 @@ int main(int, char**) {
     glDeleteTextures(1, &tex);
     glDeleteTextures(1, &accumulated_tex);
     glDeleteTextures(1, &background_tex);
+    gpu_timer.reset();
 
     glfwDestroyWindow(window);
     glfwTerminate();
