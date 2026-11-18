@@ -6,6 +6,7 @@ x64/
 
 # Some files that I only need on my PC
 Cameras/saved_presets.txt
+Benchmarks/
 Resources/sponza/sponza_split.obj
 Resources/sponza/sponza_split2.obj
 Resources/sponza/sponza2.obj
