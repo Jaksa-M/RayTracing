@@ -166,6 +166,8 @@
     <ClInclude Include="context.h" />
     <ClInclude Include="gpu_buffer.h" />
     <ClInclude Include="gpu_types.h" />
+    <ClInclude Include="gpu_timer.h" />
+    <ClInclude Include="rolling_average.h" />
     <ClInclude Include="gui_settings.h" />
     <ClInclude Include="hittable.h" />
     <ClInclude Include="hittable_list.h" />
@@ -207,6 +209,7 @@
     <ClCompile Include="bvh_manager.cpp" />
     <ClCompile Include="camera.cpp" />
     <ClCompile Include="gpu_buffer.cpp" />
+    <ClCompile Include="gpu_timer.cpp" />
     <ClCompile Include="hittable_list.cpp" />
     <ClCompile Include="hittable_list_custom_bvh.cpp" />
     <ClCompile Include="hittable_list_tinybvh.cpp" />
