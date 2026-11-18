@@ -24,6 +24,16 @@ struct TLASNode {
     bool isLeaf() const { return left_right == 0; } // for interior nodes one of the childs must be greater than 0
 };
 
+// Summed over all BLASes built since the last reset (scene load or BVH technique switch)
+struct BLASStats {
+    double build_time_ms = 0.0; // only the build algorithm, without preparing the triangles
+    uint32 blas_cnt = 0;
+    uint64 node_cnt = 0;
+    uint64 leaf_cnt = 0;
+    uint64 leaf_triangle_cnt = 0; // average triangles per leaf
+    uint32 max_depth = 0;
+};
+
 struct IntersectResult {
     float t = float_max; // Intersection distance
     // buv is short for barycentrics uv, vec3(alpha, beta, gamma), we currently store only beta and gamma and calculate alpha with those 2

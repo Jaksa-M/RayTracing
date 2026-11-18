@@ -28,6 +28,7 @@
 #include "gui_settings.h"
 #include "mesh_buffer_manager.h"
 #include "bvh_manager.h"
+#include "gpu_types.h"
 #include "context.h"
 #include "statistics.h"
 #include "camera.h"
@@ -429,6 +430,7 @@ int main(int, char**) {
                         break;
                 }
                 active_scene->context = context;
+                bvh_manager->resetBLASStats();
                 active_scene->initialize();
 
                 const std::vector<std::unique_ptr<Camera>>& cameras = active_scene->getCameras();
@@ -473,6 +475,15 @@ int main(int, char**) {
             ImGui::Text("FPS: %.1f", io.Framerate);
             ImGui::Text("Triangle count: %d", statistics->triangle_cnt);
             ImGui::Text("RTMeshes count: %d", statistics->rt_mesh_cnt);
+
+            const BLASStats& blas_stats = bvh_manager->getBLASStats();
+            ImGui::Text("BLAS build time: %.1f ms", blas_stats.build_time_ms);
+            ImGui::Text("BLAS count: %u", blas_stats.blas_cnt);
+            ImGui::Text("BLAS nodes: %llu (leaves: %llu)", blas_stats.node_cnt, blas_stats.leaf_cnt);
+            ImGui::Text("BLAS size: %.2f MB CPU, %.2f MB GPU", blas_stats.node_cnt * sizeof(BLASNode) / (1024.0 * 1024.0),
+                        blas_stats.node_cnt * sizeof(GPUBLASNode) / (1024.0 * 1024.0));
+            ImGui::Text("BLAS max depth: %u", blas_stats.max_depth);
+            ImGui::Text("Avg triangles per leaf: %.2f", blas_stats.leaf_cnt ? double(blas_stats.leaf_triangle_cnt) / blas_stats.leaf_cnt : 0.0);
 
             ImGui::End();
         }

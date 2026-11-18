@@ -26,8 +26,12 @@ public:
 	std::span<const BLASNode> getBLASNodes(MeshHandle mesh_handle) const;
 	std::span<const TLASNode> getTLASNodes() const;
 
+	const BLASStats& getBLASStats() const;
+	void resetBLASStats(); // called before a scene load or a BVH rebuild, so stats describe only the current BVH
+
 private:
 	GUISettings* settings_;
+	BLASStats blas_stats_;
 	struct BVHInfo {
 		std::vector<BLASNode> bvh_nodes;
 	};
