@@ -97,7 +97,9 @@ void Texture::uploadToGPU() {
 
 
     glTextureStorage2D(texture_id_, 1, internal_format, tex_description_.image_width, tex_description_.image_height);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Rows in data_ are tightly packed, not padded to 4 bytes
     glTextureSubImage2D(texture_id_, 0, 0, 0, tex_description_.image_width, tex_description_.image_height, format, type, data_.data());
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 4); // Restore OpenGL default
 
     if (channels == 1) {
         GLint swizzleMask[] = {GL_RED, GL_RED, GL_RED, GL_ONE};
