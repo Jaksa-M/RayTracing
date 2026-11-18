@@ -98,6 +98,7 @@
     <ClCompile Include="camera_controller.cpp" />
     <ClCompile Include="Editor.cpp" />
     <ClCompile Include="file_utility.cpp" />
+    <ClCompile Include="benchmark.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Renderer\Renderer.vcxproj">
@@ -107,6 +108,7 @@
   <ItemGroup>
     <ClInclude Include="camera_controller.h" />
     <ClInclude Include="file_utility.h" />
+    <ClInclude Include="benchmark.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\ShaderFiles\shader.fs.txt" />

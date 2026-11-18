@@ -31,6 +31,7 @@
 #include "gpu_types.h"
 #include "gpu_timer.h"
 #include "rolling_average.h"
+#include "benchmark.h"
 #include "context.h"
 #include "statistics.h"
 #include "camera.h"
@@ -38,6 +39,7 @@
 #include "texture_loader.h"
 #include "texture.h"
 #include <chrono>
+#include <algorithm> // std::find_if
 
 // Scenes
 #include "scene_rt_meshes.h"
@@ -78,7 +80,12 @@ void resizeTexture(GLuint tex, int width, int height, bool float_type) {
 }
 
 // Main code
-int main(int, char**) {
+int main(int argc, char** argv) {
+    // Without arguments Editor starts normally, with --benchmark it measures one run, writes the result and closes
+    BenchmarkConfig benchmark_config;
+    if (!parseBenchmarkArgs(argc, argv, benchmark_config)) return 1;
+    int32 exit_code = 0;
+
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) return 1;
 
@@ -92,11 +99,16 @@ int main(int, char**) {
     glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
 
 
+    // Benchmark: resolution must stay the same during measuring
+    if (benchmark_config.enabled) glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    int32 window_w = benchmark_config.enabled ? benchmark_config.width : 1280;
+    int32 window_h = benchmark_config.enabled ? benchmark_config.height : 720;
+
     // Create window with graphics context
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Dear ImGui GLFW+OpenGL3 example", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(window_w, window_h, "Dear ImGui GLFW+OpenGL3 example", nullptr, nullptr);
     if (window == nullptr) return 1;
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1); // Enable vsync
+    glfwSwapInterval(benchmark_config.enabled ? 0 : 1); // Enable vsync (off in benchmark, otherwise frame time is limited by the monitors HZ)
 
     if (!gladLoadGL((GLADloadfunc)glfwGetProcAddress)) {
         std::cerr << "Failed to initialize GLAD2\n";
@@ -171,6 +183,20 @@ int main(int, char**) {
 
     loadPresetsFromFile(camera_file, camera_presets);
 
+    // Benchmark overrides the defaults above (before the GPU setup below, because it depends on use_gpu)
+    std::unique_ptr<Benchmark> benchmark;
+    if (benchmark_config.enabled) {
+        benchmark = std::make_unique<Benchmark>(benchmark_config);
+        selected_scene_index = SceneType::OBJ_SINGLE_MESH;
+        chosen_technique_index = benchmark_config.technique;
+        gui_settings->BVH_technique = benchmark_config.technique;
+        gui_settings->use_gpu = benchmark_config.use_gpu;
+        gui_settings->spp = benchmark_config.spp;
+        max_bounces = benchmark_config.bounces;
+        trace_percentage = 1.0f; // CPU traces every pixel, same as GPU
+    }
+    auto prev_frame_start = std::chrono::steady_clock::now();
+
     uint32 frame_index = 0;
 
     std::shared_ptr<Shader> comp_shader;
@@ -228,6 +254,13 @@ int main(int, char**) {
     // Main loop
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents(); // Any pending events like keyboard or mouse inputs, window resize...
+
+        auto frame_start = std::chrono::steady_clock::now();
+        if (benchmark && frame_index > 1) { // frame 0 also loads the scene, so its time is not used
+            std::chrono::duration<double, std::milli> frame_time = frame_start - prev_frame_start;
+            benchmark->addFrameTime(frame_time.count());
+        }
+        prev_frame_start = frame_start;
         
         // If the window is minimized (GLFW_ICONIFIED), the application waits (sleeps) for 10 milliseconds and skips the rest of the loop iteration. 
         // This helps reduce CPU usage when the window is not actively visible.
@@ -434,7 +467,8 @@ int main(int, char**) {
                         active_scene = std::make_unique<SceneMaterialTesting>();
                         break;
                     case SceneType::OBJ_SINGLE_MESH: // scene_obj_single_mesh
-                        active_scene = std::make_unique<SceneObjSingleMesh>();
+                        if (benchmark) active_scene = std::make_unique<SceneObjSingleMesh>(benchmark_config.obj_path, benchmark_config.scale);
+                        else active_scene = std::make_unique<SceneObjSingleMesh>();
                         break;
                 }
                 active_scene->context = context;
@@ -452,6 +486,17 @@ int main(int, char**) {
                 ImGui::Combo("Cameras", &selected_camera_index, camera_names_cstrings.data(), static_cast<int32>(camera_names_cstrings.size()));
                 active_scene->setActiveCamera(selected_camera_index);
                 cam_controller = std::make_unique<CameraController>(*cameras[selected_camera_index], 2.0f);
+                if (benchmark && !benchmark_config.view.empty()) { // Benchmark places camera to the chosen preset
+                    auto preset = std::find_if(camera_presets.begin(), camera_presets.end(),
+                                               [&](const CameraPreset& p) { return p.name == benchmark_config.view; });
+                    if (preset != camera_presets.end()) {
+                        cameras[selected_camera_index]->applyPreset(*preset);
+                    } else {
+                        std::cerr << "ERROR: camera preset '" << benchmark_config.view << "' not found in " << camera_file << "\n";
+                        exit_code = 1;
+                        glfwSetWindowShouldClose(window, GLFW_TRUE);
+                    }
+                }
                 float yaw, pitch;
                 cameras[selected_camera_index]->recalculateYawPitch(yaw, pitch);
                 cam_controller->setYawPitch(yaw, pitch);
@@ -499,10 +544,10 @@ int main(int, char**) {
             ImGui::End();
         }
         
-        if (!io.WantCaptureKeyboard) {
+        if (!io.WantCaptureKeyboard && !benchmark) { // camera must not move during benchmark
             cam_controller->handleKeyboardInput(io.DeltaTime);
         }
-        if (!io.WantCaptureMouse) {
+        if (!io.WantCaptureMouse && !benchmark) {
             cam_controller->handleMouseInput(io);
         }
 
@@ -534,6 +579,7 @@ int main(int, char**) {
             cam.render(active_scene->getWorld(), image_data_acc, *(context.settings));
             std::chrono::duration<double, std::milli> render_time = std::chrono::steady_clock::now() - render_start;
             cpu_render_ms.add(render_time.count());
+            if (benchmark) benchmark->addRenderTime(render_time.count());
 
             // Filling image_data
             image_data.resize(display_w * display_h * 3);
@@ -613,7 +659,10 @@ int main(int, char**) {
             gpu_timer->begin();
             glDispatchCompute(num_groups_x, num_groups_y, 1);
             gpu_timer->end();
-            if (double ms; gpu_timer->getResult(ms)) gpu_render_ms.add(ms);
+            if (double ms; gpu_timer->getResult(ms)) {
+                gpu_render_ms.add(ms);
+                if (benchmark) benchmark->addRenderTime(ms);
+            }
             // Barrier that ensures that data writting is completely finished
             // (TEXTURE_FETCH because fullscreen pass reads tex with texture() right after)
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
@@ -652,6 +701,11 @@ int main(int, char**) {
         if (reset_accumulated == true) active_scene->getActiveCamera().setCameraMoved(true);
 
         frame_index++;
+
+        if (benchmark && benchmark->isDone() && exit_code == 0) {
+            if (!benchmark->writeResult(bvh_manager->getBLASStats(), statistics->triangle_cnt, display_w, display_h)) exit_code = 1;
+            glfwSetWindowShouldClose(window, GLFW_TRUE);
+        }
     }
     // Cleanup
     active_scene.reset();
@@ -668,5 +722,5 @@ int main(int, char**) {
     glfwDestroyWindow(window);
     glfwTerminate();
 
-    return 0;
+    return exit_code;
 }

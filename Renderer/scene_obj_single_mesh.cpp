@@ -11,7 +11,7 @@
 #include <chrono> // Time
 #include "texture_loader.h"
 
-SceneObjSingleMesh::SceneObjSingleMesh() {}
+SceneObjSingleMesh::SceneObjSingleMesh(std::string obj_path, float scale) : obj_path_(std::move(obj_path)), scale_(scale) {}
 
 void SceneObjSingleMesh::initialize() {
     if (context.settings->use_tiny_bvh) world_ = std::make_unique<HittableListTinybvh>();
@@ -42,12 +42,12 @@ void SceneObjSingleMesh::initialize() {
 
     auto start_time = std::chrono::high_resolution_clock::now(); // Start timing
 
-    obj_loader_ = std::make_unique<ObjLoader>("../Resources/crytek_sponza/sponza.obj");
+    obj_loader_ = std::make_unique<ObjLoader>(obj_path_);
     if (!obj_loader_->loadAsSingleMesh(context)) {
         std::cout << "ERROR: single mesh failed to load" << std::endl;
     }
 
-    matrix4x4 m = transformation::create_scaling_matrix(0.01f, 0.01f, 0.01f); // crytek_sponza (same scale as SceneObjLoader)
+    matrix4x4 m = transformation::create_scaling_matrix(scale_, scale_, scale_);
 
     std::span<MeshHandle> meshes = obj_loader_->getMeshes();
     for (uint32 i = 0; i < meshes.size(); i++) { // only 1 mesh

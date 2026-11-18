@@ -2,6 +2,7 @@
 #define SCENE_OBJ_SINGLE_MESH_H
 
 #include <memory.h>
+#include <string>
 #include "hittable.h"
 #include "mesh.h"
 #include "obj_loader.h"
@@ -10,7 +11,8 @@
 
 class SceneObjSingleMesh : public Scene {
    public:
-    SceneObjSingleMesh();
+    // Default is Crytek Sponza, benchmark mode passes the OBJ file and scale from command line
+    SceneObjSingleMesh(std::string obj_path = "../Resources/crytek_sponza/sponza.obj", float scale = 0.01f);
 
     void initialize() override;
 
@@ -23,6 +25,8 @@ class SceneObjSingleMesh : public Scene {
 
    private:
     std::unique_ptr<ObjLoader> obj_loader_;
+    std::string obj_path_;
+    float scale_;
 
     std::unique_ptr<Shader> shader_prog_;
     std::vector<std::unique_ptr<Mesh>> bounding_boxes_; // 1 bounding box for each object that will get translated while drawing
