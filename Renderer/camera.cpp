@@ -21,7 +21,7 @@ void Camera::render(const HittableList& world, std::vector<vec4>& image_data_acc
     this->settings_ = settings;
     initialize();
 
-    if (image_data_acc.empty()) {
+    if (image_data_acc.size() != image_width * image_height) {
         image_data_acc.assign(image_width * image_height, vec4());
     }
 
