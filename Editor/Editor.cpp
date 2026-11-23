@@ -541,6 +541,16 @@ int main(int argc, char** argv) {
             ImGui::Text("BLAS max depth: %u", blas_stats.max_depth);
             ImGui::Text("Avg triangles per leaf: %.2f", blas_stats.leaf_cnt ? double(blas_stats.leaf_triangle_cnt) / blas_stats.leaf_cnt : 0.0);
 
+            // Wide BLASes, collapsed from the binary BLAS above
+            auto wideStatsText = [](const char* name, const WideBLASStats& stats, size_t node_size) {
+                ImGui::Text("%s nodes: %llu (avg children: %.2f)", name, stats.node_cnt,
+                            stats.node_cnt ? double(stats.child_cnt) / stats.node_cnt : 0.0);
+                ImGui::Text("%s size: %.2f MB, max depth: %u, collapse: %.1f ms", name, stats.node_cnt * node_size / (1024.0 * 1024.0),
+                            stats.max_depth, stats.collapse_time_ms);
+            };
+            wideStatsText("BVH4", blas_stats.bvh4, sizeof(WideBLASNode<4>));
+            wideStatsText("BVH8", blas_stats.bvh8, sizeof(WideBLASNode<8>));
+
             ImGui::End();
         }
         

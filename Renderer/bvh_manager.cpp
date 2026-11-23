@@ -24,6 +24,104 @@ static uint32 maxDepth(const std::vector<BLASNode>& nodes) {
     return max_depth;
 }
 
+// Makes a wide node from binary node bin_index and returns its index. Its children are found by repeatedly opening
+// (replacing with its two children) the inner child with the largest surface area, until there are N children
+// or all of them are leaves. Leaves and triangle order are the same as in the binary BLAS.
+template <uint32 N>
+static uint32 collapseNode(const std::vector<BLASNode>& nodes, uint32 bin_index, std::vector<WideBLASNode<N>>& wide_nodes) {
+    uint32 wide_index = static_cast<uint32>(wide_nodes.size());
+    wide_nodes.emplace_back();
+
+    uint32 children[N]; // binary node indices of the children
+    uint32 child_cnt = 0;
+    const BLASNode& node = nodes[bin_index];
+    if (node.isLeaf()) {
+        children[child_cnt++] = bin_index; // only when the root is a leaf (mesh with 2 or less triangles)
+    } else {
+        children[child_cnt++] = node.left_child;
+        children[child_cnt++] = node.right_child;
+    }
+
+    while (child_cnt < N) {
+        int32 largest = -1;
+        float largest_area = -1.0f;
+        for (uint32 i = 0; i < child_cnt; i++) {
+            const BLASNode& child = nodes[children[i]];
+            if (child.isLeaf()) continue;
+            vec3 e = child.aabb_max - child.aabb_min;
+            float area = e.x() * e.y() + e.y() * e.z() + e.z() * e.x();
+            if (area > largest_area) {
+                largest_area = area;
+                largest = i;
+            }
+        }
+        if (largest == -1) break; // all children are leaves
+
+        uint32 opened = children[largest];
+        children[largest] = nodes[opened].left_child;
+        children[child_cnt++] = nodes[opened].right_child;
+    }
+
+    for (uint32 i = 0; i < child_cnt; i++) {
+        const BLASNode& child = nodes[children[i]];
+        uint32 child_value = child.isLeaf() ? child.first_triangle_index : collapseNode<N>(nodes, children[i], wide_nodes);
+
+        WideBLASNode<N>& wide_node = wide_nodes[wide_index]; // taken after the recursive call, because emplace_back can move the nodes
+        wide_node.child_aabb_min[i] = child.aabb_min;
+        wide_node.child_aabb_max[i] = child.aabb_max;
+        wide_node.child[i] = child_value;
+        wide_node.triangle_cnt[i] = child.isLeaf() ? child.triangle_cnt : 0;
+    }
+    return wide_index;
+}
+
+// Collapses the binary BLAS into a BVH with N children per node and adds its numbers to stats
+template <uint32 N>
+static void collapseBLAS(const std::vector<BLASNode>& nodes, std::vector<WideBLASNode<N>>& wide_nodes, WideBLASStats& stats) {
+    auto start_time = std::chrono::steady_clock::now();
+    wide_nodes.clear();
+    collapseNode<N>(nodes, 0, wide_nodes);
+    std::chrono::duration<double, std::milli> collapse_time = std::chrono::steady_clock::now() - start_time;
+
+    // Depth and the leaf check are done after the timing, so they don't count as collapse time
+    uint64 leaf_cnt = 0, leaf_triangle_cnt = 0;
+    uint32 max_depth = 0;
+    std::vector<std::pair<uint32, uint32>> stack{{0u, 1u}}; // node index, depth
+    while (!stack.empty()) {
+        auto [index, depth] = stack.back();
+        stack.pop_back();
+        max_depth = std::max(max_depth, depth);
+        const WideBLASNode<N>& node = wide_nodes[index];
+        for (uint32 i = 0; i < N; i++) {
+            if (node.isEmpty(i)) continue;
+            stats.child_cnt++;
+            if (node.isLeaf(i)) {
+                leaf_cnt++;
+                leaf_triangle_cnt += node.triangle_cnt[i];
+            } else {
+                stack.push_back({node.child[i], depth + 1});
+            }
+        }
+    }
+
+    // Collapsing only regroups the nodes, so the wide BLAS must have exactly the same leaves as the binary one
+    uint64 bin_leaf_cnt = 0, bin_leaf_triangle_cnt = 0;
+    for (const BLASNode& node : nodes) {
+        if (node.isLeaf()) {
+            bin_leaf_cnt++;
+            bin_leaf_triangle_cnt += node.triangle_cnt;
+        }
+    }
+    if (leaf_cnt != bin_leaf_cnt || leaf_triangle_cnt != bin_leaf_triangle_cnt) {
+        std::cerr << "WARNING: BVH" << N << " has " << leaf_cnt << " leaves with " << leaf_triangle_cnt << " triangles, but binary BLAS has "
+                  << bin_leaf_cnt << " leaves with " << bin_leaf_triangle_cnt << " triangles.\n";
+    }
+
+    stats.collapse_time_ms += collapse_time.count();
+    stats.node_cnt += wide_nodes.size();
+    stats.max_depth = std::max(stats.max_depth, max_depth);
+}
+
 BVHManager::BVHManager(GUISettings* settings): settings_(settings) {
     
 }
@@ -74,6 +172,10 @@ void BVHManager::buildBLAS(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_
                 blas_stats_.leaf_triangle_cnt += node.triangle_cnt;
             }
         }
+
+        // Wide versions of the same BLAS
+        collapseBLAS<4>(nodes, bvh_info_[mesh_handle].bvh4_nodes, blas_stats_.bvh4);
+        collapseBLAS<8>(nodes, bvh_info_[mesh_handle].bvh8_nodes, blas_stats_.bvh8);
     }
 }
 
