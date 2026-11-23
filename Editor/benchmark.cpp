@@ -9,9 +9,19 @@
 #include <ctime>
 
 static void printBenchmarkUsage() {
-    std::cerr << "Usage: Editor.exe --benchmark --obj <file.obj> [--scale 1] [--method midpoint|sah] [--device cpu|gpu]\n"
+    std::cerr << "Usage: Editor.exe --benchmark --obj <file.obj> [--scale 1] [--method midpoint|sah|binned_sah] [--device cpu|gpu]\n"
                  "                  [--view <camera preset>] [--width 1024] [--height 768] [--bounces 3] [--spp 1]\n"
                  "                  [--warmup 10] [--frames 100] [--out ../Benchmarks/results.csv]\n";
+}
+
+// Same names as the --method values
+static const char* techniqueName(BVHTechnique technique) {
+    switch (technique) {
+    case BVHTechnique::MIDPOINT_SPLIT: return "midpoint";
+    case BVHTechnique::SAH: return "sah";
+    case BVHTechnique::BINNED_SAH: return "binned_sah";
+    }
+    return "unknown";
 }
 
 bool parseBenchmarkArgs(int argc, char** argv, BenchmarkConfig& config) {
@@ -36,6 +46,7 @@ bool parseBenchmarkArgs(int argc, char** argv, BenchmarkConfig& config) {
             else if (arg == "--method") {
                 if (value == "midpoint") config.technique = BVHTechnique::MIDPOINT_SPLIT;
                 else if (value == "sah") config.technique = BVHTechnique::SAH;
+                else if (value == "binned_sah") config.technique = BVHTechnique::BINNED_SAH;
                 else throw std::invalid_argument("unknown method");
             }
             else if (arg == "--device") {
@@ -142,7 +153,7 @@ bool Benchmark::writeResult(const BLASStats& blas_stats, uint32 triangle_cnt, ui
     file << date << ","
          << config_.obj_path << ","
          << triangle_cnt << ","
-         << (config_.technique == BVHTechnique::SAH ? "sah" : "midpoint") << ","
+         << techniqueName(config_.technique) << ","
          << (config_.use_gpu ? "gpu" : "cpu") << ","
          << (config_.view.empty() ? "initial" : config_.view) << ","
          << width << "," << height << ","
