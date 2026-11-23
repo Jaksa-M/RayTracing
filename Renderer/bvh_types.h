@@ -17,11 +17,42 @@ struct BLASNode {
     bool isLeaf() const { return triangle_cnt > 0; }
 };
 
+// Node of a wide BLAS (BVH4, BVH8), made by collapsing the binary BLAS. A node stores the boxes of all its children,
+// so after loading one node a ray can test up to N boxes. Leaves are not separate nodes, a leaf child points to its triangles.
+template <uint32 N>
+struct WideBLASNode {
+    static constexpr uint32 EMPTY = ~0u; // child slot is not used
+
+    vec3 child_aabb_min[N], child_aabb_max[N];
+    uint32 child[N];        // inner child: index of its node, leaf child: index of its first triangle, EMPTY: no child
+    uint32 triangle_cnt[N]; // 0 for inner child, > 0 for leaf child
+
+    WideBLASNode() {
+        for (uint32 i = 0; i < N; i++) {
+            child_aabb_min[i] = vec3(float_max); // inverted box, so no ray can hit an empty slot
+            child_aabb_max[i] = vec3(-float_max);
+            child[i] = EMPTY;
+            triangle_cnt[i] = 0;
+        }
+    }
+
+    bool isEmpty(uint32 i) const { return child[i] == EMPTY; }
+    bool isLeaf(uint32 i) const { return triangle_cnt[i] > 0; }
+};
+
 struct TLASNode {
     vec3 aabb_min, aabb_max;
     uint32 left_right; // 2x16 bits for left and right child index
     const Hittable* blas; // Valid only for leaf nodes
     bool isLeaf() const { return left_right == 0; } // for interior nodes one of the childs must be greater than 0
+};
+
+// Stats of the wide BLASes (BVH4 or BVH8), summed like BLASStats
+struct WideBLASStats {
+    double collapse_time_ms = 0.0; // only collapsing, the binary BLAS build is not included
+    uint64 node_cnt = 0;
+    uint64 child_cnt = 0; // used child slots, children per node = child_cnt / node_cnt
+    uint32 max_depth = 0; // nodes on the longest path from root, leaves are not nodes here
 };
 
 // Summed over all BLASes built since the last reset (scene load or BVH technique switch)
@@ -32,6 +63,7 @@ struct BLASStats {
     uint64 leaf_cnt = 0;
     uint64 leaf_triangle_cnt = 0; // average triangles per leaf
     uint32 max_depth = 0;
+    WideBLASStats bvh4, bvh8;
 };
 
 struct IntersectResult {

@@ -34,6 +34,8 @@ private:
 	BLASStats blas_stats_;
 	struct BVHInfo {
 		std::vector<BLASNode> bvh_nodes;
+		std::vector<WideBLASNode<4>> bvh4_nodes; // bvh_nodes collapsed to 4 children per node
+		std::vector<WideBLASNode<8>> bvh8_nodes; // bvh_nodes collapsed to 8 children per node
 	};
 	std::unordered_map<MeshHandle, BVHInfo> bvh_info_;
 
