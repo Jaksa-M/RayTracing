@@ -14,7 +14,8 @@ enum class SceneType {
 
 enum class BVHTechnique {
     MIDPOINT_SPLIT,
-    SAH
+    SAH,
+    BINNED_SAH
 };
 
 enum class MeshColor { 

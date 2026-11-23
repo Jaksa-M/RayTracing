@@ -4,6 +4,7 @@
 #include "vec3.h"
 #include "interval.h"
 #include <algorithm>
+#include <cmath>
 #include "hittable.h"
 
 inline int findBestMatch(std::span<const TLASNode> tlas_nodes, const std::span<const uint32> list, uint32 N, uint32 A) {
@@ -73,6 +74,29 @@ std::vector<BLASNode> BVHBuilder::buildBLASSAH() {
 
     // Start recursive subdivision
     subdivideSAH(0);
+
+    reorderIndices();
+
+    blas_nodes_.resize(nodes_used_); // Trim unused nodes
+    return blas_nodes_;
+}
+
+std::vector<BLASNode> BVHBuilder::buildBLASBinnedSAH() {
+    uint32 N = static_cast<uint32>(indices_.size() / 3);
+
+    for (uint32 i = 0; i < 2 * N - 1; i++) {
+        blas_nodes_.push_back(BLASNode());
+    }
+    BLASNode& root = blas_nodes_[0];
+    root.left_child = 0;
+    root.right_child = 0;
+    root.first_triangle_index = 0;
+    root.triangle_cnt = N; // root node holds all triangles
+
+    createBoundBox(0); // creating bounding box for root node
+
+    // Start recursive subdivision
+    subdivideBinnedSAH(0);
 
     reorderIndices();
 
@@ -305,6 +329,146 @@ void BVHBuilder::findBestSplitSAH(const BLASNode& node, int32& best_axis, float&
             best_pos = axis_best_pos;
         }
     }
+}
+
+// Binned SAH helpers, used both to choose the split and to move the triangles
+// Bins per unit of length on an axis, 0 if the axis can't be binned
+static float binScale(float extent) {
+    float scale = extent > 0.0f ? BINNED_SAH_BIN_CNT / extent : 0.0f;
+    return std::isfinite(scale) ? scale : 0.0f; // extent so small that the division overflows
+}
+
+static uint32 binIndex(float centroid, float centroid_min, float scale) {
+    return std::min(BINNED_SAH_BIN_CNT - 1, static_cast<uint32>((centroid - centroid_min) * scale));
+}
+
+void BVHBuilder::subdivideBinnedSAH(uint32 node_index) {
+    BLASNode& node = blas_nodes_[node_index];
+
+    // Same leaf rule as SAH, so the two methods differ only in how the split is chosen
+    if (node.triangle_cnt <= 2) return;
+
+    uint32* first = &triangle_indices_[node.first_triangle_index]; // triangles of this node
+    uint32* last = first + node.triangle_cnt;
+
+    // Bins cover the bounds of triangle centroids (not the node box), so no bin is wasted on empty space
+    vec3 centroid_min(float_max), centroid_max(std::numeric_limits<float>::lowest());
+    for (uint32* t = first; t != last; t++) {
+        centroid_min = vec3::minVec(centroid_min, triangles_[*t].centroid);
+        centroid_max = vec3::maxVec(centroid_max, triangles_[*t].centroid);
+    }
+
+    int32 axis = -1;
+    uint32 split = 0; // bins 0..split-1 go to the left child, bins split..BIN_CNT-1 to the right
+    if (!findBestSplitBinnedSAH(std::span<const uint32>(first, last), centroid_min, centroid_max, axis, split)) return;
+
+    // Move the triangles of the left bins to the front (we swap indices only, swapping whole Triangles wouldn't be efficient)
+    float scale = binScale(centroid_max[axis] - centroid_min[axis]);
+    uint32* middle = std::partition(first, last, [&](uint32 triangle_index) {
+        return binIndex(triangles_[triangle_index].centroid[axis], centroid_min[axis], scale) < split;
+    });
+    uint32 left_count = static_cast<uint32>(middle - first); // How many triangles will be in left child
+
+    // Can't happen, because the chosen split has triangles on both sides, but an empty child would recurse forever
+    if (left_count == 0 || left_count == node.triangle_cnt) return;
+
+    // Create child nodes
+    uint32 left_child_index = nodes_used_++;
+    uint32 right_child_index = nodes_used_++;
+    node.left_child = left_child_index;
+    node.right_child = right_child_index;
+    blas_nodes_[left_child_index].first_triangle_index = node.first_triangle_index;
+    blas_nodes_[left_child_index].triangle_cnt = left_count;
+    blas_nodes_[right_child_index].first_triangle_index = node.first_triangle_index + left_count;
+    blas_nodes_[right_child_index].triangle_cnt = node.triangle_cnt - left_count;
+
+    // We also use this variable to know if it is leaf node or not. Leaf nodes have triangle_cnt > 0.
+    // So every time node gets split into children, triangle_cnt for that node becomes 0.
+    node.triangle_cnt = 0;
+
+    createBoundBox(left_child_index);
+    createBoundBox(right_child_index);
+
+    // Recursive call, first visit left child, than right
+    subdivideBinnedSAH(left_child_index);
+    subdivideBinnedSAH(right_child_index);
+}
+
+// Binned SAH: triangles are put into equal bins on every axis (no sorting) and only the planes between bins
+// are tested, with the same cost as full SAH. Returns false if no plane has triangles on both sides.
+bool BVHBuilder::findBestSplitBinnedSAH(std::span<const uint32> node_triangles, const vec3& centroid_min, const vec3& centroid_max,
+                                        int32& best_axis, uint32& best_split) {
+    constexpr uint32 BIN_CNT = BINNED_SAH_BIN_CNT;
+    constexpr float lowest = std::numeric_limits<float>::lowest();
+
+    struct Bin {
+        vec3 aabb_min = vec3(float_max); // box around the triangles in this bin
+        vec3 aabb_max = vec3(lowest);
+        uint32 triangle_cnt = 0;
+    };
+    Bin bins[3][BIN_CNT]; // bins of every axis
+
+    float scale[3];
+    for (uint32 axis = 0; axis < 3; axis++) scale[axis] = binScale(centroid_max[axis] - centroid_min[axis]);
+
+    // One pass over the triangles fills the bins of all 3 axes
+    for (uint32 triangle_index : node_triangles) {
+        const Triangle& triangle = triangles_[triangle_index];
+        vec3 triangle_min = vec3::minVec(vec3::minVec(triangle.v0, triangle.v1), triangle.v2);
+        vec3 triangle_max = vec3::maxVec(vec3::maxVec(triangle.v0, triangle.v1), triangle.v2);
+
+        for (uint32 axis = 0; axis < 3; axis++) {
+            if (scale[axis] == 0.0f) continue;
+            Bin& bin = bins[axis][binIndex(triangle.centroid[axis], centroid_min[axis], scale[axis])];
+            bin.aabb_min = vec3::minVec(bin.aabb_min, triangle_min);
+            bin.aabb_max = vec3::maxVec(bin.aabb_max, triangle_max);
+            bin.triangle_cnt++;
+        }
+    }
+
+    auto boxArea = [](const vec3& box_min, const vec3& box_max) {
+        vec3 extent = box_max - box_min;
+        return extent.x() * extent.y() + extent.y() * extent.z() + extent.z() * extent.x();
+    };
+
+    float best_cost = float_max;
+    bool found = false;
+    for (uint32 axis = 0; axis < 3; axis++) {
+        if (scale[axis] == 0.0f) continue;
+
+        // Sweep from the right: plane i has bins i..BIN_CNT-1 on its right side
+        float right_area[BIN_CNT];
+        uint32 right_cnt[BIN_CNT];
+        vec3 right_min(float_max), right_max(lowest);
+        uint32 right_sum = 0;
+        for (uint32 i = BIN_CNT - 1; i > 0; i--) {
+            right_min = vec3::minVec(right_min, bins[axis][i].aabb_min);
+            right_max = vec3::maxVec(right_max, bins[axis][i].aabb_max);
+            right_sum += bins[axis][i].triangle_cnt;
+            right_cnt[i] = right_sum;
+            right_area[i] = right_sum > 0 ? boxArea(right_min, right_max) : 0.0f;
+        }
+
+        // Sweep from the left: plane i has bins 0..i-1 on its left side
+        vec3 left_min(float_max), left_max(lowest);
+        uint32 left_sum = 0;
+        for (uint32 i = 1; i < BIN_CNT; i++) {
+            left_min = vec3::minVec(left_min, bins[axis][i - 1].aabb_min);
+            left_max = vec3::maxVec(left_max, bins[axis][i - 1].aabb_max);
+            left_sum += bins[axis][i - 1].triangle_cnt;
+
+            if (left_sum == 0 || right_cnt[i] == 0) continue; // one child would be empty
+
+            float cost = left_sum * boxArea(left_min, left_max) + right_cnt[i] * right_area[i];
+            if (cost < best_cost) { // on equal cost the earlier axis and plane win
+                best_cost = cost;
+                best_axis = axis;
+                best_split = i;
+                found = true;
+            }
+        }
+    }
+    return found;
 }
 
 void BVHBuilder::reorderIndices() {

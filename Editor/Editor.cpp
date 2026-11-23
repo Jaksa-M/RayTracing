@@ -278,7 +278,7 @@ int main(int argc, char** argv) {
             static float f = 0.0f;
             const char* scenes[] = {"scene_rt_meshes", "scene_cornell_box", "scene_obj_loader",
                                     "scene_material_testing", "scene_obj_single_mesh"}; // Dropdown list (combo) items for scene selection
-            const char* techniques[] = { "midpoint split", "SAH" }; // Dropdown list (combo) items for technique selection
+            const char* techniques[] = { "midpoint split", "SAH", "binned SAH" }; // Dropdown list (combo) items for technique selection
             const char* mesh_colors[] = {"material", "geometric normal", "shading normal", "depth",
                                          "uv", "roughness"}; // Dropdown list (combo) items for color representation selection
             const char* block_sizes[] = {"8x8", "16x16", "64x64"}; // Dropdown list (combo) items for block size selection

@@ -49,6 +49,9 @@ void BVHManager::buildBLAS(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_
         case BVHTechnique::SAH: // SAH
             bvh_info_[mesh_handle].bvh_nodes = bvh_builder.buildBLASSAH();
             break;
+        case BVHTechnique::BINNED_SAH: // binned SAH
+            bvh_info_[mesh_handle].bvh_nodes = bvh_builder.buildBLASBinnedSAH();
+            break;
         }
         std::chrono::duration<double, std::milli> build_time = std::chrono::steady_clock::now() - start_time;
 

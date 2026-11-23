@@ -11,7 +11,7 @@ param(
     [int]$Bounces = 3,
     [int]$Width = 1024,
     [int]$Height = 768,
-    [string[]]$Methods = @("midpoint", "sah"),
+    [string[]]$Methods = @("midpoint", "sah", "binned_sah"),
     [string[]]$Devices = @("cpu", "gpu"),
     [string[]]$Scenes = @(),   # names from the $scene_list below, empty means all
     [int]$MaxAttempts = 3,     # a failed run (crash, error) is started again, at most this many times in total
@@ -46,7 +46,7 @@ $log_dir = Join-Path $root ("Benchmarks\logs\" + (Get-Date -Format "yyyy-MM-dd_H
 # ---------- Checks before starting, so a long run doesn't fail in the middle ----------
 $problems = @()
 if (-not (Test-Path $exe)) { $problems += "Editor.exe not found: $exe (build Editor in Release)" }
-foreach ($m in $Methods) { if ($m -notin @("midpoint", "sah")) { $problems += "Unknown method '$m' (midpoint, sah)" } }
+foreach ($m in $Methods) { if ($m -notin @("midpoint", "sah", "binned_sah")) { $problems += "Unknown method '$m' (midpoint, sah, binned_sah)" } }
 foreach ($d in $Devices) { if ($d -notin @("cpu", "gpu")) { $problems += "Unknown device '$d' (cpu, gpu)" } }
 
 $selected_scenes = @($scene_list | Where-Object { $Scenes.Count -eq 0 -or $_.Name -in $Scenes })
