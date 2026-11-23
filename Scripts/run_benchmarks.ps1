@@ -37,7 +37,7 @@ $Scenes = @($Scenes -split "," | Where-Object { $_ -ne "" })
 
 $root = Split-Path -Parent $PSScriptRoot
 $editor_dir = Join-Path $root "Editor"
-$exe = Join-Path $editor_dir "x64\Release\Editor.exe"
+$exe = Join-Path $root "x64\Release\Editor.exe" # Visual Studio builds into the solution folder
 $presets_file = Join-Path $root "Cameras\saved_presets.txt"
 if ($Out -eq "") { $Out = Join-Path $root "Benchmarks\results.csv" }
 elseif (-not [IO.Path]::IsPathRooted($Out)) { $Out = Join-Path (Get-Location) $Out }
