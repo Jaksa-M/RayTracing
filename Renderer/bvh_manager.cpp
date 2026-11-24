@@ -8,6 +8,29 @@
 #include <iostream>
 #include <chrono>
 
+// Costs used by the SAH cost metric (relative to each other)
+constexpr double SAH_COST_TRAVERSAL = 1.0; // visiting one inner node
+constexpr double SAH_COST_TRIANGLE = 1.0;  // testing one triangle
+
+// How much work a random ray needs in this tree (lower is better).
+// Bigger nodes are hit more often, so each node counts by its area compared to the root.
+static double sahCost(const std::vector<BLASNode>& nodes) {
+    auto area = [](const BLASNode& node) {
+        vec3 extent = node.aabb_max - node.aabb_min;
+        return double(extent.x()) * extent.y() + double(extent.y()) * extent.z() + double(extent.z()) * extent.x();
+    };
+    double root_area = area(nodes[0]);
+    if (root_area <= 0.0) return 0.0; // flat mesh without area, the probabilities can't be computed
+
+    double cost = 0.0;
+    for (const BLASNode& node : nodes) {
+        double probability = area(node) / root_area;
+        if (node.isLeaf()) cost += probability * node.triangle_cnt * SAH_COST_TRIANGLE;
+        else cost += probability * SAH_COST_TRAVERSAL;
+    }
+    return cost;
+}
+
 // Depth of the deepest leaf (root has depth 1)
 static uint32 maxDepth(const std::vector<BLASNode>& nodes) {
     uint32 max_depth = 0;
@@ -166,6 +189,7 @@ void BVHManager::buildBLAS(MeshBufferManager* mesh_buf_manager, MeshHandle mesh_
         blas_stats_.blas_cnt++;
         blas_stats_.node_cnt += nodes.size();
         blas_stats_.max_depth = std::max(blas_stats_.max_depth, depth);
+        blas_stats_.sah_cost_sum += sahCost(nodes);
         for (const BLASNode& node : nodes) {
             if (node.isLeaf()) {
                 blas_stats_.leaf_cnt++;

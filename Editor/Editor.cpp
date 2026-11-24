@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
     // Benchmark: resolution must stay the same during measuring
     if (benchmark_config.enabled) glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     int32 window_w = benchmark_config.enabled ? benchmark_config.width : 1340;
-    int32 window_h = benchmark_config.enabled ? benchmark_config.height : 980;
+    int32 window_h = benchmark_config.enabled ? benchmark_config.height : 1000;
 
     // Create window with graphics context
     GLFWwindow* window = glfwCreateWindow(window_w, window_h, "Dear ImGui GLFW+OpenGL3 example", nullptr, nullptr);
@@ -573,6 +573,7 @@ int main(int argc, char** argv) {
                         blas_stats.node_cnt * sizeof(GPUBLASNode) / (1024.0 * 1024.0));
             ImGui::Text("BLAS max depth: %u", blas_stats.max_depth);
             ImGui::Text("Avg triangles per leaf: %.2f", blas_stats.leaf_cnt ? double(blas_stats.leaf_triangle_cnt) / blas_stats.leaf_cnt : 0.0);
+            ImGui::Text("SAH cost (avg per BLAS): %.2f", blas_stats.blas_cnt ? blas_stats.sah_cost_sum / blas_stats.blas_cnt : 0.0);
 
             // Wide BLASes, collapsed from the binary BLAS above
             auto wideStatsText = [](const char* name, const WideBLASStats& stats, size_t node_size, size_t gpu_node_size) {
