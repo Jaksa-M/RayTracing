@@ -83,16 +83,7 @@ void SceneObjLoader::initialize() {
 
     std::cout << "Execution time: " << elapsed.count() << " seconds" << std::endl;
 
-    if (context.settings->use_tiny_bvh) {
-        HittableListTinybvh* tinybvh_world = static_cast<HittableListTinybvh*>(world_.get());
-        context.statistics->rt_mesh_cnt = tinybvh_world->getSize();
-        context.statistics->triangle_cnt = tinybvh_world->getTriangleCount();
-    }
-    else {
-        HittableList* world = static_cast<HittableList*>(world_.get());
-        context.statistics->rt_mesh_cnt = world->getSize();
-        context.statistics->triangle_cnt = world->getTriangleCount();
-    }
+    updateStatistics();
 
     initShader();
 }

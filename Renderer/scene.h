@@ -53,6 +53,9 @@ public:
 
     virtual uint32 getRtMeshesSize();
 
+    // Sets mesh and triangle count in the statistics shown in the UI
+    void updateStatistics();
+
     virtual std::size_t rayCast(ray& r);
 
 protected:

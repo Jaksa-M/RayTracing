@@ -78,8 +78,7 @@ void SceneObjSingleMesh::initialize() {
 
     std::cout << "Execution time: " << elapsed.count() << " seconds" << std::endl;
 
-    context.statistics->rt_mesh_cnt = world_->getSize();
-    context.statistics->triangle_cnt = world_->getTriangleCount();
+    updateStatistics();
 
     initShader();
 }
