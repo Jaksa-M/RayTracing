@@ -6,6 +6,7 @@
 struct GUISettings {
     bool enable_BVH = true;
     BVHTechnique BVH_technique = BVHTechnique::SAH;
+    uint32 bvh_width = 2;
     MeshColor mesh_color = MeshColor::MATERIAL;
     int32 selected_option = -1;
     float trace_percentage = 0.1f;

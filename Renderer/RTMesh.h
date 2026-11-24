@@ -45,5 +45,7 @@ private:
     
     ResolvedMeshInfo res_mesh_info_;
     std::span<const BLASNode> bvh_nodes_;
+    std::span<const WideBLASNode<4>> bvh4_nodes_;
+    std::span<const WideBLASNode<8>> bvh8_nodes_;
 };
 #endif

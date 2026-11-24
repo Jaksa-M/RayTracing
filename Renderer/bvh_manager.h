@@ -24,6 +24,8 @@ public:
                    std::span<std::shared_ptr<Hittable>> rt_meshes); // building TLAS
 
 	std::span<const BLASNode> getBLASNodes(MeshHandle mesh_handle) const;
+	std::span<const WideBLASNode<4>> getBLAS4Nodes(MeshHandle mesh_handle) const;
+	std::span<const WideBLASNode<8>> getBLAS8Nodes(MeshHandle mesh_handle) const;
 	std::span<const TLASNode> getTLASNodes() const;
 
 	const BLASStats& getBLASStats() const;
