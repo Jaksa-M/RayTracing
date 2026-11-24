@@ -205,6 +205,7 @@ void BVHBuilder::subdivideSAH(uint32 node_index) {
     float best_pos = 0;
     float best_cost = float_max; // Maximum value for float, it is taken from math_constants.h file
     findBestSplitSAH(node, best_axis, best_pos, best_cost);
+    if (best_axis == -1) return; // no split found (e.g. all centroids in the same point), the node stays a leaf
     int32 axis = best_axis;
     float splitPos = best_pos;
 
