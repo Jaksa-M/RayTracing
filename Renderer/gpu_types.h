@@ -23,6 +23,8 @@ struct GPUMeshInstance {
     uint32 material_index;
     uint32 blas_offset;
     uint32 blas_size;
+    uint32 wide_blas_offset;
+    uint32 unused1, unused2, unused3;
 };
 
 struct GPUMaterial {
@@ -43,6 +45,14 @@ struct GPUBLASNode {
     uint32 right_child;
     uint32 first_triangle_index, triangle_cnt;
     uint32 unused1, unused2;
+};
+
+// One child of a wide BLAS node (BVH4/BVH8), a node is N children in a row
+struct GPUWideBLASChild {
+    vec3 aabb_min;
+    uint32 child; // inner: node index, leaf: first triangle, ~0u: empty
+    vec3 aabb_max;
+    uint32 triangle_cnt; // 0 inner, >0 leaf
 };
 
 struct GPUTLASNode {
