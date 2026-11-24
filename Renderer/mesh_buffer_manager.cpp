@@ -60,6 +60,13 @@ MeshHandle MeshBufferManager::addToBuffer(std::span<Attribute> attributes, std::
     return new_handle;
 }
 
+void MeshBufferManager::clear() {
+    // Swapping with empty vectors frees the memory (clear() alone keeps it reserved)
+    std::vector<float>().swap(buffer);
+    std::vector<MeshInfo>().swap(mesh_info_);
+    std::vector<std::size_t>().swap(free_indices_);
+}
+
 void MeshBufferManager::removeMesh(MeshHandle mesh) {
     // TODO: reuse memory that is no longer used
     if (mesh < mesh_info_.size() && mesh_info_[mesh].active) {

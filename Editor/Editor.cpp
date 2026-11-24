@@ -481,6 +481,11 @@ int main(int argc, char** argv) {
 
             // Initialize a scene depending on which scene is chosen (only if scene is not already initalized)
             if (scene_changed == true || !active_scene) {
+                // Only one scene exists at a time, so the old scene is destroyed first and then all its meshes and BVHs are removed
+                active_scene.reset();
+                mesh_buf_manager->clear();
+                bvh_manager->clear();
+
                 switch (selected_scene_index) {
                     case SceneType::RT_MESHES: // scene_rt_meshes
                         active_scene = std::make_unique<SceneRtMeshes>();

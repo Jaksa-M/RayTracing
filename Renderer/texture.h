@@ -12,9 +12,11 @@ class Texture {
     Texture(const color& solid_color);
     Texture(std::vector<uint8> data, TexDescription desc);
 
-    ~Texture() { 
-        data_.clear();
-    }
+    ~Texture();
+
+    // A copy would delete the same GL texture twice
+    Texture(const Texture&) = delete;
+    Texture& operator=(const Texture&) = delete;
 
     std::span<unsigned char> getData();
     void setData(std::vector<uint8> data);
