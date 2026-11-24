@@ -308,6 +308,11 @@ uint32 Scene::getRtMeshesSize() {
     return static_cast<uint32>(rt_meshes_.size());
 }
 
+void Scene::updateStatistics() {
+    context.statistics->rt_mesh_cnt = world_->getSize();
+    context.statistics->triangle_cnt = world_->getTriangleCount();
+}
+
 std::size_t Scene::rayCast(ray& r) {
     // Fire the ray in that direction and intersect with BVH
     std::cout << "Firing ray from: " << r.origin() << " in direction: " << r.direction() << std::endl;

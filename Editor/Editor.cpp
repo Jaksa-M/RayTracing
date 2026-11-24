@@ -552,8 +552,8 @@ int main(int argc, char** argv) {
             ImGui::Text("Frame time: %.2f ms", 1000.0f / io.Framerate); // whole frame, limited by vsync
             if (gui_settings->use_gpu) ImGui::Text("GPU render time: %.2f ms", gpu_render_ms.average());
             else ImGui::Text("CPU render time: %.2f ms", cpu_render_ms.average());
-            ImGui::Text("Triangle count: %d", statistics->triangle_cnt);
-            ImGui::Text("RTMeshes count: %d", statistics->rt_mesh_cnt);
+            ImGui::Text("Triangle count: %u", statistics->triangle_cnt);
+            ImGui::Text("RTMeshes count: %u", statistics->rt_mesh_cnt);
 
             const BLASStats& blas_stats = bvh_manager->getBLASStats();
             ImGui::Text("BLAS build time: %.1f ms", blas_stats.build_time_ms);
