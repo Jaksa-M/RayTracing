@@ -443,7 +443,7 @@ int main(int argc, char** argv) {
             chosen_technique_index = static_cast<BVHTechnique>(technique_index); // Convert int back to enum class
 
             // Children per BLAS node
-            const char* bvh_widths[] = {"2 (binary)", "4", "8"};
+            const char* bvh_widths[] = {"2", "4", "8"};
             int32 bvh_width_index = gui_settings->bvh_width == 8 ? 2 : (gui_settings->bvh_width == 4 ? 1 : 0);
             if (ImGui::Combo("BVH width", &bvh_width_index, bvh_widths, IM_ARRAYSIZE(bvh_widths))) {
                 gui_settings->bvh_width = 2u << bvh_width_index; // 2, 4 or 8
