@@ -63,6 +63,7 @@ struct BLASStats {
     uint64 leaf_cnt = 0;
     uint64 leaf_triangle_cnt = 0; // average triangles per leaf
     uint32 max_depth = 0;
+    double sah_cost_sum = 0.0; // SAH cost of every BLAS added together (average)
     WideBLASStats bvh4, bvh8;
 };
 

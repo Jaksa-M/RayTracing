@@ -135,7 +135,7 @@ bool Benchmark::writeResult(const BLASStats& blas_stats, uint32 triangle_cnt, ui
     bool write_header = !std::filesystem::exists(path) || std::filesystem::file_size(path) == 0;
 
     const std::string header = "date,obj,triangles,method,bvh_width,device,view,width,height,bounces,spp,warmup_frames,frames,"
-                               "build_time_ms,blas_count,nodes,leaves,size_mb_cpu,size_mb_gpu,max_depth,avg_leaf_triangles,"
+                               "build_time_ms,blas_count,nodes,leaves,size_mb_cpu,size_mb_gpu,max_depth,avg_leaf_triangles,sah_cost,"
                                "wide_nodes,wide_avg_children,wide_max_depth,wide_size_mb_cpu,wide_size_mb_gpu,collapse_ms,"
                                "render_ms_avg,render_ms_median,render_ms_min,render_ms_max,render_ms_stddev,frame_ms_avg";
 
@@ -200,6 +200,7 @@ bool Benchmark::writeResult(const BLASStats& blas_stats, uint32 triangle_cnt, ui
          << blas_stats.node_cnt * sizeof(GPUBLASNode) / mb << ","
          << blas_stats.max_depth << ","
          << (blas_stats.leaf_cnt ? double(blas_stats.leaf_triangle_cnt) / blas_stats.leaf_cnt : 0.0) << ","
+         << (blas_stats.blas_cnt ? blas_stats.sah_cost_sum / blas_stats.blas_cnt : 0.0) << ","
          << wide_columns << ","
          << average(render_times_) << ","
          << median(render_times_) << ","
