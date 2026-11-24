@@ -200,6 +200,11 @@ int main(int argc, char** argv) {
     uint32 frame_index = 0;
 
     std::shared_ptr<Shader> comp_shader;
+    // Compute shader is compiled for the chosen BVH width
+    auto createComputeShader = [&]() {
+        std::string defines = gui_settings->bvh_width == 2 ? "" : "#define BVH_WIDTH " + std::to_string(gui_settings->bvh_width) + "\n";
+        return std::make_shared<Shader>("../ShaderFiles/compute_shader.comp", defines);
+    };
     GLuint tex = 0, background_tex = 0, accumulated_tex = 0;
     GLsizei tex_width = 512, tex_height = 512;
     GLsizei background_tex_width = 512, background_tex_height = 512;
@@ -223,7 +228,7 @@ int main(int argc, char** argv) {
     std::unique_ptr<GpuTimer> gpu_timer;
 
     if (gui_settings->use_gpu) { // using compute shader
-        comp_shader = std::make_shared<Shader>("../ShaderFiles/compute_shader.comp");
+        comp_shader = createComputeShader();
         gpu_timer = std::make_unique<GpuTimer>();
 
         // generating accumulated image that will be used on gpu
@@ -439,11 +444,14 @@ int main(int argc, char** argv) {
             // Children per BLAS node
             const char* bvh_widths[] = {"2 (binary)", "4", "8"};
             int32 bvh_width_index = gui_settings->bvh_width == 8 ? 2 : (gui_settings->bvh_width == 4 ? 1 : 0);
-            if (gui_settings->use_gpu) ImGui::BeginDisabled();
             if (ImGui::Combo("BVH width", &bvh_width_index, bvh_widths, IM_ARRAYSIZE(bvh_widths))) {
                 gui_settings->bvh_width = 2u << bvh_width_index; // 2, 4 or 8
+                if (gui_settings->use_gpu && !gui_settings->use_tiny_bvh) {
+                    // GPU gets the BLAS of the new width and a shader made for it (BVH is not built again)
+                    active_scene->sendMeshDataToGPU();
+                    comp_shader = createComputeShader();
+                }
             }
-            if (gui_settings->use_gpu) ImGui::EndDisabled();
 
             int32 mesh_color_index = static_cast<int32>(chosen_mesh_color); // Convert enum class to int
             ImGui::Combo("Mesh color", &mesh_color_index, mesh_colors, IM_ARRAYSIZE(mesh_colors));
@@ -525,7 +533,7 @@ int main(int argc, char** argv) {
             // Option to hot reload shader during program execution
             if (!gui_settings->use_gpu) ImGui::BeginDisabled();
             if (ImGui::Button("Reload shader")) {
-                comp_shader = std::make_shared<Shader>("../ShaderFiles/compute_shader.comp");
+                comp_shader = createComputeShader();
             }
 
             ImGui::SetNextItemWidth(100);
@@ -551,14 +559,15 @@ int main(int argc, char** argv) {
             ImGui::Text("Avg triangles per leaf: %.2f", blas_stats.leaf_cnt ? double(blas_stats.leaf_triangle_cnt) / blas_stats.leaf_cnt : 0.0);
 
             // Wide BLASes, collapsed from the binary BLAS above
-            auto wideStatsText = [](const char* name, const WideBLASStats& stats, size_t node_size) {
+            auto wideStatsText = [](const char* name, const WideBLASStats& stats, size_t node_size, size_t gpu_node_size) {
                 ImGui::Text("%s nodes: %llu (avg children: %.2f)", name, stats.node_cnt,
                             stats.node_cnt ? double(stats.child_cnt) / stats.node_cnt : 0.0);
-                ImGui::Text("%s size: %.2f MB, max depth: %u, collapse: %.1f ms", name, stats.node_cnt * node_size / (1024.0 * 1024.0),
-                            stats.max_depth, stats.collapse_time_ms);
+                ImGui::Text("%s size: %.2f MB CPU, %.2f MB GPU", name, stats.node_cnt * node_size / (1024.0 * 1024.0),
+                            stats.node_cnt * gpu_node_size / (1024.0 * 1024.0));
+                ImGui::Text("%s max depth: %u, collapse: %.1f ms", name, stats.max_depth, stats.collapse_time_ms);
             };
-            wideStatsText("BVH4", blas_stats.bvh4, sizeof(WideBLASNode<4>));
-            wideStatsText("BVH8", blas_stats.bvh8, sizeof(WideBLASNode<8>));
+            wideStatsText("BVH4", blas_stats.bvh4, sizeof(WideBLASNode<4>), 4 * sizeof(GPUWideBLASChild));
+            wideStatsText("BVH8", blas_stats.bvh8, sizeof(WideBLASNode<8>), 8 * sizeof(GPUWideBLASChild));
 
             ImGui::End();
         }

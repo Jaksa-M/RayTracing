@@ -11,7 +11,20 @@
 struct BLASInfo { // temporary storage just to be able to collect blas data to send to GPU
     uint32 offset;
     uint32 size;
+    uint32 wide_offset; // first node in the wide BLAS buffer
 };
+
+// Adds the wide BLAS nodes as GPU children (N per node), returns the index of its first node
+template <uint32 N>
+static uint32 appendWideBLAS(std::span<const WideBLASNode<N>> nodes, std::vector<GPUWideBLASChild>& children) {
+    uint32 offset = static_cast<uint32>(children.size() / N);
+    for (const WideBLASNode<N>& node : nodes) {
+        for (uint32 i = 0; i < N; i++) {
+            children.push_back({node.child_aabb_min[i], node.child[i], node.child_aabb_max[i], node.triangle_cnt[i]});
+        }
+    }
+    return offset;
+}
 
 inline uint32 registerTexture(const std::shared_ptr<Texture>& tex, std::unordered_map<std::shared_ptr<Texture>, uint32>& texture_to_index,
                                 std::vector<uint64>& texture_handles) {
@@ -142,6 +155,7 @@ void Scene::sendMeshDataToGPU() {
     std::unordered_map<MeshHandle, BLASInfo> mesh_handle_to_blas_info;
     std::vector<BLASNode> all_blas_nodes; // flat array of all BLAS nodes
     std::vector<GPUBLASNode> all_blas_nodes_gpu_format;
+    std::vector<GPUWideBLASChild> wide_blas_children;
 
     // TLAS related
     BVHManager* bvh_manager = context.bvh_manager;
@@ -165,7 +179,15 @@ void Scene::sendMeshDataToGPU() {
             uint32 blas_size = static_cast<uint32>(nodes.size());
             all_blas_nodes.insert(all_blas_nodes.end(), nodes.begin(), nodes.end());
 
-            mesh_handle_to_blas_info[mesh_handle] = {blas_offset, blas_size};
+            // Binary BLAS is always sent, wide one only for the chosen width
+            uint32 wide_offset = 0;
+            if (context.settings->bvh_width == 4) {
+                wide_offset = appendWideBLAS<4>(bvh_manager->getBLAS4Nodes(mesh_handle), wide_blas_children);
+            } else if (context.settings->bvh_width == 8) {
+                wide_offset = appendWideBLAS<8>(bvh_manager->getBLAS8Nodes(mesh_handle), wide_blas_children);
+            }
+
+            mesh_handle_to_blas_info[mesh_handle] = {blas_offset, blas_size, wide_offset};
         }
     }
 
@@ -229,6 +251,8 @@ void Scene::sendMeshDataToGPU() {
         BLASInfo blas_info = mesh_handle_to_blas_info[rt_mesh->getMeshHandle()];
         instance.blas_offset = blas_info.offset;
         instance.blas_size = blas_info.size;
+        instance.wide_blas_offset = blas_info.wide_offset;
+        instance.unused1 = instance.unused2 = instance.unused3 = 0;
 
         instances.push_back(instance);
     }
@@ -241,6 +265,11 @@ void Scene::sendMeshDataToGPU() {
     texture_handles_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(texture_handles)), BufferUsage::StaticDraw);
     blas_nodes_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(all_blas_nodes_gpu_format)), BufferUsage::StaticDraw);
     tlas_nodes_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(tlas_nodes_gpu_format)), BufferUsage::StaticDraw);
+    if (!wide_blas_children.empty()) {
+        wide_blas_nodes_buffer_ = std::make_unique<GpuBuffer>(std::as_bytes(std::span(wide_blas_children)), BufferUsage::StaticDraw);
+    } else {
+        wide_blas_nodes_buffer_.reset();
+    }
 }
 
 void Scene::rebuildBVH() {
@@ -272,6 +301,7 @@ void Scene::bindResources(Shader* shader) {
     shader->bindBuffer(texture_handles_buffer_.get(), 7);
     shader->bindBuffer(blas_nodes_buffer_.get(), 8);
     shader->bindBuffer(tlas_nodes_buffer_.get(), 9);
+    if (wide_blas_nodes_buffer_) shader->bindBuffer(wide_blas_nodes_buffer_.get(), 10);
 }
 
 uint32 Scene::getRtMeshesSize() {

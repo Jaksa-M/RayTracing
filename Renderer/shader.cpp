@@ -65,7 +65,7 @@ Shader::Shader(const char* vertexPath, const char* fragmentPath) {
     glDeleteShader(fragment);
 }
 
-Shader::Shader(const char* compute_path) {
+Shader::Shader(const char* compute_path, const std::string& defines) {
     std::string comp_code;
     std::ifstream comp_shader_file;
     comp_shader_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
@@ -82,6 +82,10 @@ Shader::Shader(const char* compute_path) {
         comp_code = comp_shader_stream.str();
     } catch (std::ifstream::failure& e) {
         std::cout << "ERROR::Compute shader::FILE_NOT_SUCCESSFULLY_READ: " << e.what() << std::endl;
+    }
+    // #version has to be the first line, so defines go after it
+    if (!defines.empty()) {
+        comp_code.insert(comp_code.find('\n') + 1, defines);
     }
     const char* comp_shader_code = comp_code.c_str();
 

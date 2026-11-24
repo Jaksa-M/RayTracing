@@ -11,7 +11,7 @@ public:
     unsigned int ID;
 
     Shader(const char* vertexPath, const char* fragmentPath);
-    Shader(const char* compute_path);
+    Shader(const char* compute_path, const std::string& defines = ""); // defines are added right after #version
 
     void bind(); // activate the shader
 

@@ -68,6 +68,7 @@ protected:
     std::unique_ptr<GpuBuffer> material_buffer_;
     std::unique_ptr<GpuBuffer> texture_handles_buffer_;
     std::unique_ptr<GpuBuffer> blas_nodes_buffer_;
+    std::unique_ptr<GpuBuffer> wide_blas_nodes_buffer_;
     std::unique_ptr<GpuBuffer> tlas_nodes_buffer_;
 };
 

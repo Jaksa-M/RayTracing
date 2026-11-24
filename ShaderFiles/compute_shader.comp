@@ -90,6 +90,8 @@ struct GPUMeshInstance {
     uint material_index; // index into Materials array
     uint blas_offset;
     uint blas_size;
+    uint wide_blas_offset;
+    uint unused1, unused2, unused3;
 };
 
 struct GPUBLASNode {
@@ -103,6 +105,21 @@ struct GPUBLASNode {
 bool isLeaf(in GPUBLASNode node) {
     return node.triangle_cnt > 0u;
 }
+
+#ifndef BVH_WIDTH
+#define BVH_WIDTH 2
+#endif
+
+#if BVH_WIDTH != 2
+// One child of a wide BLAS node, a node is BVH_WIDTH children in a row
+struct GPUWideBLASChild {
+    vec3 aabb_min;
+    uint child; // inner: node index, leaf: first triangle, WIDE_EMPTY: no child
+    vec3 aabb_max;
+    uint triangle_cnt; // 0 inner, >0 leaf
+};
+const uint WIDE_EMPTY = 0xFFFFFFFFu;
+#endif
 
 struct GPUTLASNode {
     vec3 aabb_min;
@@ -127,6 +144,9 @@ layout(std430, binding = 6) buffer Materials { Material u_materials[]; };
 layout(std430, binding = 7) readonly buffer ssbo3 { sampler2D u_textures[]; };
 layout(std430, binding = 8) readonly buffer BLASNodes { GPUBLASNode u_blas_nodes[]; };
 layout(std430, binding = 9) readonly buffer TLASNodes { GPUTLASNode u_tlas_nodes[]; };
+#if BVH_WIDTH != 2
+layout(std430, binding = 10) readonly buffer WideBLASChildren { GPUWideBLASChild u_wide_blas_children[]; };
+#endif
 
 
 uniform ivec2 u_resolution; // (width, height)
@@ -608,6 +628,121 @@ bool intersectBLAS( in Ray local_ray, in MeshDesc desc, in uint blas_offset, ino
     return (best_index_offset != uint(-1) && best_t < FLOAT_MAX);
 }
 
+#if BVH_WIDTH != 2
+// Returns where the ray enters the box, or FLOAT_MAX if it misses
+float slabTestOneNode(in vec3 inv_dir, in float ray_tmax, in vec3 node_min, in vec3 node_max,
+    in float rox, in float roy, in float roz, in bvec3 signMask)
+{
+    float tx_min = ((signMask.x ? node_min.x : node_max.x) * inv_dir.x) - rox;
+    float tx_max = ((signMask.x ? node_max.x : node_min.x) * inv_dir.x) - rox;
+    float ty_min = ((signMask.y ? node_min.y : node_max.y) * inv_dir.y) - roy;
+    float ty_max = ((signMask.y ? node_max.y : node_min.y) * inv_dir.y) - roy;
+    float tz_min = ((signMask.z ? node_min.z : node_max.z) * inv_dir.z) - roz;
+    float tz_max = ((signMask.z ? node_max.z : node_min.z) * inv_dir.z) - roz;
+
+    float tmin = max(max(tx_min, ty_min), max(tz_min, 0.0));
+    float tmax = min(min(tx_max, ty_max), min(tz_max, ray_tmax));
+
+    bool hit = (tmax >= tmin) && (tmax > 0.0) && (tmin < ray_tmax);
+    return hit ? tmin : FLOAT_MAX;
+}
+
+// Intersects the triangles of one leaf and keeps the closest hit
+void intersectLeafTriangles(in Ray local_ray, in MeshDesc desc, in uint first_triangle_index, in uint triangle_cnt,
+    inout float best_t, inout uint best_index_offset, inout float best_u, inout float best_v)
+{
+    for (uint i = 0u; i < triangle_cnt; i++) {
+        uint tri_base = first_triangle_index * 3u + i * 3u;
+
+        uvec3 idxs = getIndices(desc, tri_base);
+        vec3 v0, v1, v2;
+        getVertices(desc, idxs, v0, v1, v2);
+
+        float t, u, v;
+        if (intersectTriangleMT(local_ray, v0, v1, v2, t, u, v)) {
+            if (t > 0.0 && t < best_t) {
+                best_t = t;
+                best_index_offset = tri_base;
+                best_u = u;
+                best_v = v;
+            }
+        }
+    }
+}
+
+// Swaps children a and b if b is nearer
+#define SORT_PAIR(a, b) if (dist[b] < dist[a]) { \
+    float td = dist[a]; dist[a] = dist[b]; dist[b] = td; \
+    uint tc = child[a]; child[a] = child[b]; child[b] = tc; \
+    uint tt = triangle_cnt[a]; triangle_cnt[a] = triangle_cnt[b]; triangle_cnt[b] = tt; }
+
+// Wide BLAS (BVH4/BVH8) traversal: hit children are visited nearest first
+bool intersectWideBLAS(in Ray local_ray, in MeshDesc desc, in uint wide_blas_offset, inout float best_t,
+    out uint best_index_offset, out float best_u, out float best_v)
+{
+    const uint MAX_STACK_SIZE = 64u; // same as binary traversal, a larger stack was much slower on GPU
+    uint node_stack[MAX_STACK_SIZE];
+    uint stack_top = 0u;
+
+    node_stack[stack_top++] = 0u; // root node index
+
+    best_index_offset = uint(-1); // Invalid triangle
+    best_u = 0.0;
+    best_v = 0.0;
+
+    vec3 inv_dir = vec3(1.0) / local_ray.rd;
+    float rox = local_ray.ro.x * inv_dir.x;
+    float roy = local_ray.ro.y * inv_dir.y;
+    float roz = local_ray.ro.z * inv_dir.z;
+    bvec3 sign_mask = bvec3(local_ray.rd.x >= 0.0, local_ray.rd.y >= 0.0, local_ray.rd.z >= 0.0);
+
+    while (stack_top > 0u) {
+        uint first_child = (wide_blas_offset + node_stack[--stack_top]) * uint(BVH_WIDTH);
+
+        // Distance to every child box (FLOAT_MAX if missed or empty). Only constant indices are used,
+        // so the GPU can keep these arrays in registers
+        float dist[BVH_WIDTH];
+        uint child[BVH_WIDTH];
+        uint triangle_cnt[BVH_WIDTH];
+        for (uint i = 0u; i < uint(BVH_WIDTH); i++) {
+            GPUWideBLASChild c = u_wide_blas_children[first_child + i];
+            dist[i] = (c.child == WIDE_EMPTY) ? FLOAT_MAX
+                : slabTestOneNode(inv_dir, local_ray.tMax, c.aabb_min, c.aabb_max, rox, roy, roz, sign_mask);
+            child[i] = c.child;
+            triangle_cnt[i] = c.triangle_cnt;
+        }
+
+        // Sorting network, nearest child first
+#if BVH_WIDTH == 4
+        SORT_PAIR(0, 1); SORT_PAIR(2, 3); SORT_PAIR(0, 2); SORT_PAIR(1, 3); SORT_PAIR(1, 2);
+#else
+        SORT_PAIR(0, 1); SORT_PAIR(2, 3); SORT_PAIR(4, 5); SORT_PAIR(6, 7);
+        SORT_PAIR(0, 2); SORT_PAIR(1, 3); SORT_PAIR(4, 6); SORT_PAIR(5, 7);
+        SORT_PAIR(1, 2); SORT_PAIR(5, 6);
+        SORT_PAIR(0, 4); SORT_PAIR(1, 5); SORT_PAIR(2, 6); SORT_PAIR(3, 7);
+        SORT_PAIR(2, 4); SORT_PAIR(3, 5);
+        SORT_PAIR(1, 2); SORT_PAIR(3, 4); SORT_PAIR(5, 6);
+#endif
+
+        // Leaf children, nearest first
+        for (uint i = 0u; i < uint(BVH_WIDTH); i++) {
+            if (triangle_cnt[i] > 0u && dist[i] < best_t) {
+                intersectLeafTriangles(local_ray, desc, child[i], triangle_cnt[i], best_t, best_index_offset, best_u, best_v);
+            }
+        }
+
+        // Inner children, farthest pushed first so the nearest is on top of the stack
+        for (int i = BVH_WIDTH - 1; i >= 0; i--) {
+            if (triangle_cnt[i] == 0u && dist[i] < best_t && stack_top < MAX_STACK_SIZE) {
+                node_stack[stack_top++] = child[i];
+            }
+        }
+    }
+
+    return (best_index_offset != uint(-1) && best_t < FLOAT_MAX);
+}
+#endif
+
 bool hitMesh(in Ray world_ray, in MeshDesc desc, out HitRecord out_hit, in GPUMeshInstance instance) {
     if (desc.indices_count < 3u || desc.vertices_count == 0u) return false;
 
@@ -635,7 +770,11 @@ bool hitMesh(in Ray world_ray, in MeshDesc desc, out HitRecord out_hit, in GPUMe
     float best_u = 0.0;
     float best_v = 0.0;
 
+#if BVH_WIDTH == 2
     bool hit = intersectBLAS(local_ray, desc, instance.blas_offset, best_t, best_index_offset, best_u, best_v);
+#else
+    bool hit = intersectWideBLAS(local_ray, desc, instance.wide_blas_offset, best_t, best_index_offset, best_u, best_v);
+#endif
     if (!hit) return false;
 
     // Build local hit record
