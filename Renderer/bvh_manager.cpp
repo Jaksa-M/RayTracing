@@ -197,6 +197,20 @@ std::span<const BLASNode> BVHManager::getBLASNodes(MeshHandle mesh_handle) const
     return {};
 }
 
+std::span<const WideBLASNode<4>> BVHManager::getBLAS4Nodes(MeshHandle mesh_handle) const {
+    if (auto it = bvh_info_.find(mesh_handle); it != bvh_info_.end()) {
+        return std::span(it->second.bvh4_nodes);
+    }
+    return {};
+}
+
+std::span<const WideBLASNode<8>> BVHManager::getBLAS8Nodes(MeshHandle mesh_handle) const {
+    if (auto it = bvh_info_.find(mesh_handle); it != bvh_info_.end()) {
+        return std::span(it->second.bvh8_nodes);
+    }
+    return {};
+}
+
 std::span<const TLASNode> BVHManager::getTLASNodes() const {
     return tlas_nodes_;
 }
