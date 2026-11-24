@@ -1,8 +1,9 @@
-# Runs the Editor benchmark for every combination of scene, BVH method, device (CPU/GPU) and camera view, Repeats times.
+# Runs the Editor benchmark for every combination of scene, BVH method, device (CPU/GPU), BVH width and camera view, Repeats times.
 # Every run is a separate Editor process, so runs don't affect each other. All results are appended to one CSV file.
 # Build Editor in Release first. Examples (from the repository folder):
 #   powershell -ExecutionPolicy Bypass -File Scripts\run_benchmarks.ps1
 #   powershell -ExecutionPolicy Bypass -File Scripts\run_benchmarks.ps1 -Repeats 10 -Devices gpu -Scenes crytek_sponza
+#   powershell -ExecutionPolicy Bypass -File Scripts\run_benchmarks.ps1 -Widths 2,4
 #   powershell -ExecutionPolicy Bypass -File Scripts\run_benchmarks.ps1 -DryRun
 param(
     [int]$Repeats = 5,
@@ -13,6 +14,7 @@ param(
     [int]$Height = 768,
     [string[]]$Methods = @("midpoint", "sah", "binned_sah"),
     [string[]]$Devices = @("cpu", "gpu"),
+    [string[]]$Widths = @("2", "4", "8"), # children per BLAS node
     [string[]]$Scenes = @(),   # names from the $scene_list below, empty means all
     [int]$MaxAttempts = 3,     # a failed run (crash, error) is started again, at most this many times in total
     [int]$TimeoutMinutes = 30, # a run that takes longer is stopped and counts as failed
@@ -33,6 +35,7 @@ $invariant = [Globalization.CultureInfo]::InvariantCulture # numbers always with
 # "-Devices cpu,gpu" given through -File arrives as one string "cpu,gpu", so it is split here
 $Methods = @($Methods -split ",")
 $Devices = @($Devices -split ",")
+$Widths = @($Widths -split ",")
 $Scenes = @($Scenes -split "," | Where-Object { $_ -ne "" })
 
 $root = Split-Path -Parent $PSScriptRoot
@@ -48,6 +51,7 @@ $problems = @()
 if (-not (Test-Path $exe)) { $problems += "Editor.exe not found: $exe (build Editor in Release)" }
 foreach ($m in $Methods) { if ($m -notin @("midpoint", "sah", "binned_sah")) { $problems += "Unknown method '$m' (midpoint, sah, binned_sah)" } }
 foreach ($d in $Devices) { if ($d -notin @("cpu", "gpu")) { $problems += "Unknown device '$d' (cpu, gpu)" } }
+foreach ($w in $Widths) { if ($w -notin @("2", "4", "8")) { $problems += "Unknown BVH width '$w' (2, 4, 8)" } }
 
 $selected_scenes = @($scene_list | Where-Object { $Scenes.Count -eq 0 -or $_.Name -in $Scenes })
 foreach ($s in $Scenes) { if ($s -notin $scene_list.Name) { $problems += "Unknown scene '$s' (" + ($scene_list.Name -join ", ") + ")" } }
@@ -83,8 +87,10 @@ for ($r = 1; $r -le $Repeats; $r++) {
         if ($views.Count -eq 0) { $views = @("") }
         foreach ($method in $Methods) {
             foreach ($device in $Devices) {
-                foreach ($view in $views) {
-                    $runs += [pscustomobject]@{ Repeat = $r; Scene = $scene; Method = $method; Device = $device; View = $view }
+                foreach ($bvh_width in $Widths) {
+                    foreach ($view in $views) {
+                        $runs += [pscustomobject]@{ Repeat = $r; Scene = $scene; Method = $method; Device = $device; Width = $bvh_width; View = $view }
+                    }
                 }
             }
         }
@@ -93,7 +99,7 @@ for ($r = 1; $r -le $Repeats; $r++) {
 
 function Get-RunLabel($run) {
     $view_name = if ($run.View -eq "") { "initial" } else { $run.View }
-    return "{0} {1} {2} {3} repeat {4}" -f $run.Scene.Name, $run.Method, $run.Device, $view_name, $run.Repeat
+    return "{0} {1} {2} bvh{3} {4} repeat {5}" -f $run.Scene.Name, $run.Method, $run.Device, $run.Width, $view_name, $run.Repeat
 }
 
 Write-Host "Benchmark: $($runs.Count) runs, $Frames frames (+$Warmup warmup), ${Width}x${Height}, $Bounces bounces"
@@ -118,7 +124,7 @@ for ($i = 0; $i -lt $runs.Count; $i++) {
     $label = Get-RunLabel $run
 
     $arguments = "--benchmark --obj `"$($run.Scene.Obj)`" --scale $($run.Scene.Scale.ToString($invariant))" +
-                 " --method $($run.Method) --device $($run.Device) --width $Width --height $Height --bounces $Bounces" +
+                 " --method $($run.Method) --device $($run.Device) --bvh-width $($run.Width) --width $Width --height $Height --bounces $Bounces" +
                  " --warmup $Warmup --frames $Frames --out `"$Out`""
     if ($run.View -ne "") { $arguments += " --view `"$($run.View)`"" }
 

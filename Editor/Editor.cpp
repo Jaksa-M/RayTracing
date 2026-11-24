@@ -190,6 +190,7 @@ int main(int argc, char** argv) {
         selected_scene_index = SceneType::OBJ_SINGLE_MESH;
         chosen_technique_index = benchmark_config.technique;
         gui_settings->BVH_technique = benchmark_config.technique;
+        gui_settings->bvh_width = benchmark_config.bvh_width;
         gui_settings->use_gpu = benchmark_config.use_gpu;
         gui_settings->spp = benchmark_config.spp;
         max_bounces = benchmark_config.bounces;
