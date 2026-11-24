@@ -101,8 +101,8 @@ int main(int argc, char** argv) {
 
     // Benchmark: resolution must stay the same during measuring
     if (benchmark_config.enabled) glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    int32 window_w = benchmark_config.enabled ? benchmark_config.width : 1280;
-    int32 window_h = benchmark_config.enabled ? benchmark_config.height : 720;
+    int32 window_w = benchmark_config.enabled ? benchmark_config.width : 1340;
+    int32 window_h = benchmark_config.enabled ? benchmark_config.height : 980;
 
     // Create window with graphics context
     GLFWwindow* window = glfwCreateWindow(window_w, window_h, "Dear ImGui GLFW+OpenGL3 example", nullptr, nullptr);
@@ -134,6 +134,7 @@ int main(int argc, char** argv) {
 
     // Our state
     bool show_demo_window = true;
+    float ui_panel_width = 0.0f;
 
     // Setting up settings for each Scene (they are all using same settings)
     std::unique_ptr<GUISettings> gui_settings = std::make_unique<GUISettings>();
@@ -289,7 +290,11 @@ int main(int argc, char** argv) {
                                          "uv", "roughness"}; // Dropdown list (combo) items for color representation selection
             const char* block_sizes[] = {"8x8", "16x16", "64x64"}; // Dropdown list (combo) items for block size selection
             
+            // Panel height always fits its content, the width stays as it is (from imgui.ini or resized by the user)
+            if (ui_panel_width > 0.0f) ImGui::SetNextWindowSize(ImVec2(ui_panel_width, 0.0f));
             ImGui::Begin("Ray Tracer");                          // Create a window called "Hello, world!" and append into it.
+
+            ui_panel_width = ImGui::GetWindowWidth();
 
             ImGui::Checkbox("Demo Window", &show_demo_window);      // Edit bools storing our window open/close state
 
