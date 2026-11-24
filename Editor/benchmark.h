@@ -13,6 +13,7 @@ struct BenchmarkConfig {
     std::string obj_path;
     float scale = 1.0f;
     BVHTechnique technique = BVHTechnique::SAH;
+    uint32 bvh_width = 2;
     bool use_gpu = false;
     std::string view; // name of a camera preset, empty means the initial camera of the scene
     uint32 width = 1024;
