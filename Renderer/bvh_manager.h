@@ -30,6 +30,7 @@ public:
 
 	const BLASStats& getBLASStats() const;
 	void resetBLASStats(); // called before a scene load or a BVH rebuild, so stats describe only the current BVH
+	void clear(); // removes all BLASes and the TLAS (when the scene is changed)
 
 private:
 	GUISettings* settings_;

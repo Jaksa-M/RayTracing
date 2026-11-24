@@ -37,6 +37,7 @@ public:
 
 	MeshHandle addToBuffer(std::span<Attribute> attributes, std::span<uint32> indices);
     void removeMesh(MeshHandle mesh);
+    void clear(); // removes all meshes and frees their memory (when the scene is changed)
 
 	std::span<const uint32> getIndices(MeshHandle mesh) const;
 	std::span<uint32> getIndices(MeshHandle mesh);

@@ -223,6 +223,11 @@ void BVHManager::resetBLASStats() {
     blas_stats_ = BLASStats();
 }
 
+void BVHManager::clear() {
+    bvh_info_.clear();
+    std::vector<TLASNode>().swap(tlas_nodes_); // swap frees the memory
+}
+
 void BVHManager::transformToTriangles(std::span<const float> vertices, std::span<const uint32> indices,
     std::vector<Triangle>& triangles, std::vector<uint32>& triangle_indices) {
 

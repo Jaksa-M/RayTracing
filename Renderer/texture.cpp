@@ -10,6 +10,11 @@
 
 Texture::Texture() {}
 
+Texture::~Texture() {
+    if (bindless_handle_ != 0) glMakeTextureHandleNonResidentARB(bindless_handle_);
+    if (texture_id_ != 0) glDeleteTextures(1, &texture_id_);
+}
+
 Texture::Texture(const color& solid_color) {
     tex_description_.format = TexFormat::RGB32_FLOAT;
     tex_description_.image_width = 1;
