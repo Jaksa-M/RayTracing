@@ -137,6 +137,9 @@ void Scene::setBackgroundTexture(std::shared_ptr<Texture> tex) {
 }
 
 void Scene::sendMeshDataToGPU() {
+    // GPU works only with our own BVH, tinybvh meshes (RTMeshTinyBVH) have nothing to send
+    if (context.settings->use_tiny_bvh) return;
+
     // Mesh related
     std::unordered_map<MeshHandle, uint32> mesh_handle_to_gpu_index;
     std::vector<MeshHandle> all_mesh_handles;

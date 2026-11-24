@@ -197,6 +197,11 @@ int main(int argc, char** argv) {
         max_bounces = benchmark_config.bounces;
         trace_percentage = 1.0f; // CPU traces every pixel, same as GPU
     }
+    // GPU traverses only our own BVH, so tinybvh can be used only with CPU rendering
+    if (gui_settings->use_tiny_bvh && gui_settings->use_gpu) {
+        std::cerr << "WARNING: tinybvh works only with CPU rendering, GPU rendering is turned off" << std::endl;
+        gui_settings->use_gpu = false;
+    }
     auto prev_frame_start = std::chrono::steady_clock::now();
 
     uint32 frame_index = 0;
