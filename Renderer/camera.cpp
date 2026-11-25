@@ -91,7 +91,7 @@ void Camera::render(const HittableList& world, std::vector<vec4>& image_data_acc
                         rays_to_trace_intersection_.push_back(std::pair(ra, false));  // Save ray on every step size
                     }
 
-                    pixel_color = ray_color(ra, settings_.max_bounces, world);
+                    pixel_color = ray_color(ra, settings_.max_bounces + 1, world);
 
                     // Last channel represents number of samples
                     image_data_acc[index_acc] += vec4(pixel_color.x(), pixel_color.y(), pixel_color.z(), 1.0f);
