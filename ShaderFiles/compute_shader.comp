@@ -26,14 +26,18 @@ const uint INVALID_TEX = uint(-1); // invalid texture
 // Struct types
 struct Material {
     vec3 albedo;
-    float roughness; // for metal (currently unused)
+    float roughness; // for metal
     vec3 emission;
     uint albedo_tex_index;
-    uint roughness_tex_index; // for metal (currently unused)
+    uint roughness_tex_index; // for metal
     uint emission_tex_index;
     uint normal_map_tex_index;
-    uint unused1;
+    uint type; // MATERIAL_DIFFUSE, MATERIAL_METAL or MATERIAL_EMISSIVE
 };
+// Material types
+const uint MATERIAL_DIFFUSE = 0u;
+const uint MATERIAL_METAL = 1u;
+const uint MATERIAL_EMISSIVE = 2u;
 
 struct Ray {
     vec3 ro;
@@ -432,6 +436,20 @@ bool scatterLambertian(inout uint rng_state, in Material mat, in HitRecord rec, 
 
     attenuation = albedo;
     return true;
+}
+
+bool scatterMetal(inout uint rng_state, in vec3 ray_dir, in Material mat, in HitRecord rec, out vec3 attenuation, out vec3 new_dir) {
+    vec3 normal = applyNormalMap(mat, rec);
+    if (any(isnan(normal))) normal = rec.normal;
+    normal = normalize(normal);
+
+    float roughness = clamp(sampleRoughness(mat, rec), 0.0, 1.0);
+    vec3 reflected = reflect(normalize(ray_dir), normal) + roughness * randomUnitVector(rng_state);
+    if (length(reflected) < EPSILON) reflected = normal;
+    new_dir = normalize(reflected);
+
+    attenuation = sampleAlbedo(mat, rec);
+    return dot(new_dir, normal) > 0.0;
 }
 
 bool intersectTriangleMT(Ray ray, vec3 v0, vec3 v1, vec3 v2, out float t, out float u, out float v) {
@@ -1044,7 +1062,12 @@ vec3 tracePath(inout Ray ray, inout uint rng_state) {
         vec3 color_from_emission = emitted(mat, h);
         result += attenuation * color_from_emission;
 
-        scatterLambertian(rng_state, mat, h, new_attenuation, new_dir);
+        // The path ends where the material doesn't scatter (light sources, metal reflecting into the surface)
+        bool scattered;
+        if (mat.type == MATERIAL_METAL) scattered = scatterMetal(rng_state, ray.rd, mat, h, new_attenuation, new_dir);
+        else if (mat.type == MATERIAL_EMISSIVE) scattered = false;
+        else scattered = scatterLambertian(rng_state, mat, h, new_attenuation, new_dir);
+        if (!scattered) break;
 
         attenuation *= new_attenuation;
         ray.ro = h.p + h.normal * 0.0001; // offset to avoid self-hit

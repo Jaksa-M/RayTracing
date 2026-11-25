@@ -27,6 +27,11 @@ struct GPUMeshInstance {
     uint32 unused1, unused2, unused3;
 };
 
+// Material types on GPU (same values as in the shader)
+constexpr uint32 GPU_MATERIAL_DIFFUSE = 0;
+constexpr uint32 GPU_MATERIAL_METAL = 1;
+constexpr uint32 GPU_MATERIAL_EMISSIVE = 2;
+
 struct GPUMaterial {
     vec3 albedo;
     float roughness;
@@ -35,7 +40,7 @@ struct GPUMaterial {
     uint32 roughness_tex_index;
     uint32 emission_tex_index;
     uint32 normal_map_tex_index;
-    uint32 unused1;
+    uint32 type;
 };
 
 struct GPUBLASNode {
