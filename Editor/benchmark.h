@@ -6,6 +6,7 @@
 #include "types.h"
 #include "ui_types.h"
 #include "bvh_types.h"
+#include "traversal_stats.h"
 
 // Settings of one benchmark run, read from command line arguments
 struct BenchmarkConfig {
@@ -37,7 +38,8 @@ public:
     void addRenderTime(double ms); // only ray tracing, CPU gives it every frame, GPU when its timer result is ready
     bool isDone() const; // true when both frame and render times have all measured frames
 
-    bool writeResult(const BLASStats& blas_stats, uint32 triangle_cnt, uint32 width, uint32 height) const;
+    bool writeResult(const BLASStats& blas_stats, uint32 triangle_cnt, uint32 width, uint32 height,
+                     const TraversalCounts& traversal) const; // traversal is counted in an extra frame after the timed ones
 
 private:
     const BenchmarkConfig& config_;

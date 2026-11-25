@@ -129,7 +129,8 @@ static double standardDeviation(const std::vector<double>& values) {
     return std::sqrt(sum / values.size());
 }
 
-bool Benchmark::writeResult(const BLASStats& blas_stats, uint32 triangle_cnt, uint32 width, uint32 height) const {
+bool Benchmark::writeResult(const BLASStats& blas_stats, uint32 triangle_cnt, uint32 width, uint32 height,
+                            const TraversalCounts& traversal) const {
     std::filesystem::path path(config_.output_file);
     if (path.has_parent_path()) std::filesystem::create_directories(path.parent_path());
     bool write_header = !std::filesystem::exists(path) || std::filesystem::file_size(path) == 0;
@@ -137,7 +138,8 @@ bool Benchmark::writeResult(const BLASStats& blas_stats, uint32 triangle_cnt, ui
     const std::string header = "date,obj,triangles,method,bvh_width,device,view,width,height,bounces,spp,warmup_frames,frames,"
                                "build_time_ms,blas_count,nodes,leaves,size_mb_cpu,size_mb_gpu,max_depth,avg_leaf_triangles,sah_cost,"
                                "wide_nodes,wide_avg_children,wide_max_depth,wide_size_mb_cpu,wide_size_mb_gpu,collapse_ms,"
-                               "render_ms_avg,render_ms_median,render_ms_min,render_ms_max,render_ms_stddev,frame_ms_avg";
+                               "render_ms_avg,render_ms_median,render_ms_min,render_ms_max,render_ms_stddev,frame_ms_avg,"
+                               "rays_per_frame,nodes_per_ray,box_tests_per_ray,triangle_tests_per_ray,mrays_per_s";
 
     // A file with other columns (made by an older Editor) would get mixed rows
     if (!write_header) {
@@ -207,7 +209,16 @@ bool Benchmark::writeResult(const BLASStats& blas_stats, uint32 triangle_cnt, ui
          << *render_min << ","
          << *render_max << ","
          << standardDeviation(render_times_) << ","
-         << average(frame_times_) << "\n";
+         << average(frame_times_) << ","
+         << traversal.rays << ",";
+    if (config_.use_gpu) { // nodes, boxes and triangles are counted only on GPU, CPU rows leave them empty
+        file << traversal.perRay(traversal.nodes) << ","
+             << traversal.perRay(traversal.box_tests) << ","
+             << traversal.perRay(traversal.triangle_tests) << ",";
+    } else {
+        file << ",,,";
+    }
+    file << traversal.rays / (average(render_times_) * 1000.0) << "\n"; // rays of one frame / timed render time, in millions per second
 
     std::cout << "Benchmark done: render " << average(render_times_) << " ms (avg of " << config_.frames
               << " frames), result written to " << config_.output_file << std::endl;

@@ -110,6 +110,15 @@ bool isLeaf(in GPUBLASNode node) {
 #define BVH_WIDTH 2
 #endif
 
+// Traversal statistics, the Editor defines COUNT_TRAVERSAL only for counting frames (normal frames have no counting code)
+#ifdef COUNT_TRAVERSAL
+const uint TRAVERSAL_COUNTER_SLOTS = 64u; // counters are spread over slots, so one slot doesn't overflow
+uint g_rays = 0u, g_nodes = 0u, g_box_tests = 0u, g_triangle_tests = 0u; // counts of this pixel
+#define COUNT_ADD(counter, value) counter += (value)
+#else
+#define COUNT_ADD(counter, value)
+#endif
+
 #if BVH_WIDTH != 2
 // One child of a wide BLAS node, a node is BVH_WIDTH children in a row
 struct GPUWideBLASChild {
@@ -146,6 +155,9 @@ layout(std430, binding = 8) readonly buffer BLASNodes { GPUBLASNode u_blas_nodes
 layout(std430, binding = 9) readonly buffer TLASNodes { GPUTLASNode u_tlas_nodes[]; };
 #if BVH_WIDTH != 2
 layout(std430, binding = 10) readonly buffer WideBLASChildren { GPUWideBLASChild u_wide_blas_children[]; };
+#endif
+#ifdef COUNT_TRAVERSAL
+layout(std430, binding = 11) buffer TraversalCounters { uint u_traversal_counters[]; }; // 4 counters per slot
 #endif
 
 
@@ -561,6 +573,7 @@ bool intersectBLAS( in Ray local_ray, in MeshDesc desc, in uint blas_offset, ino
         GPUBLASNode node = u_blas_nodes[node_abs_idx];
 
         if (isLeaf(node)) {
+            COUNT_ADD(g_triangle_tests, node.triangle_cnt);
             // Loop through all triangles in this leaf
             for (uint i = 0u; i < node.triangle_cnt; i++) {
                 uint tri_base = node.first_triangle_index * 3u + i * 3u;
@@ -584,6 +597,8 @@ bool intersectBLAS( in Ray local_ray, in MeshDesc desc, in uint blas_offset, ino
             continue;
         }
 
+        COUNT_ADD(g_nodes, 1u);
+        COUNT_ADD(g_box_tests, 2u); // both children
         uint left_local = node.left_child;
         uint right_local = node.right_child;
 
@@ -698,6 +713,7 @@ bool intersectWideBLAS(in Ray local_ray, in MeshDesc desc, in uint wide_blas_off
 
     while (stack_top > 0u) {
         uint first_child = (wide_blas_offset + node_stack[--stack_top]) * uint(BVH_WIDTH);
+        COUNT_ADD(g_nodes, 1u);
 
         // Distance to every child box (FLOAT_MAX if missed or empty). Only constant indices are used,
         // so the GPU can keep these arrays in registers
@@ -706,6 +722,7 @@ bool intersectWideBLAS(in Ray local_ray, in MeshDesc desc, in uint wide_blas_off
         uint triangle_cnt[BVH_WIDTH];
         for (uint i = 0u; i < uint(BVH_WIDTH); i++) {
             GPUWideBLASChild c = u_wide_blas_children[first_child + i];
+            COUNT_ADD(g_box_tests, c.child != WIDE_EMPTY ? 1u : 0u);
             dist[i] = (c.child == WIDE_EMPTY) ? FLOAT_MAX
                 : slabTestOneNode(inv_dir, local_ray.tMax, c.aabb_min, c.aabb_max, rox, roy, roz, sign_mask);
             child[i] = c.child;
@@ -727,6 +744,7 @@ bool intersectWideBLAS(in Ray local_ray, in MeshDesc desc, in uint wide_blas_off
         // Leaf children, nearest first
         for (uint i = 0u; i < uint(BVH_WIDTH); i++) {
             if (triangle_cnt[i] > 0u && dist[i] < best_t) {
+                COUNT_ADD(g_triangle_tests, triangle_cnt[i]);
                 intersectLeafTriangles(local_ray, desc, child[i], triangle_cnt[i], best_t, best_index_offset, best_u, best_v);
             }
         }
@@ -907,6 +925,7 @@ bool intersectTLAS(in Ray ray, inout float closest_t, out HitRecord best_hit) {
 }
 
 bool hitScene(inout Ray ray, inout HitRecord closest_hit) {
+    COUNT_ADD(g_rays, 1u); // one call is one traced ray
     float closest_t = ray.tMax; // intersectTLAS will update closest_t as it finds hits.
     HitRecord best;
 
@@ -1084,4 +1103,13 @@ void main() {
 
     // Display final averaged color
     imageStore(u_display_img, gid, vec4(avg_color, 1.0));
+
+#ifdef COUNT_TRAVERSAL
+    // Every pixel adds its counts once, workgroups use different slots
+    uint slot = ((gl_WorkGroupID.x + gl_WorkGroupID.y * gl_NumWorkGroups.x) % TRAVERSAL_COUNTER_SLOTS) * 4u;
+    atomicAdd(u_traversal_counters[slot + 0u], g_rays);
+    atomicAdd(u_traversal_counters[slot + 1u], g_nodes);
+    atomicAdd(u_traversal_counters[slot + 2u], g_box_tests);
+    atomicAdd(u_traversal_counters[slot + 3u], g_triangle_tests);
+#endif
 }

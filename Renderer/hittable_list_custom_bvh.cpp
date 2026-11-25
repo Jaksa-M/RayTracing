@@ -1,4 +1,5 @@
 #include "hittable_list_custom_bvh.h"
+#include "traversal_stats.h"
 #include "interval.h"
 #include <vector>
 #include "bvh_manager.h"
@@ -89,6 +90,9 @@ void HittableListCustomBVH::add(std::shared_ptr<Hittable> object) {
 
 #if DEBUG_BLAS
 bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) const {
+    if (cpu_traversal_counters.enabled.load(std::memory_order_relaxed)) {
+        cpu_traversal_counters.rays.fetch_add(1, std::memory_order_relaxed); // one call is one traced ray
+    }
     HitRecord temp_rec;
     bool hit_anything = false;
     auto closest_so_far = ray_t.max;
@@ -113,6 +117,9 @@ bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) co
 }
 #else
 bool HittableListCustomBVH::hit(const ray& r, interval ray_t, HitRecord& rec) const {
+    if (cpu_traversal_counters.enabled.load(std::memory_order_relaxed)) {
+        cpu_traversal_counters.rays.fetch_add(1, std::memory_order_relaxed); // one call is one traced ray
+    }
     if (tlas_.empty()) return false;
 
     const vec3& dir = r.direction();
