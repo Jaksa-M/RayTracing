@@ -54,6 +54,8 @@ inline uint32 addMaterial(const std::shared_ptr<Material>& mat, std::unordered_m
     gpu_mat.emission_tex_index = UINT32_MAX;
     gpu_mat.normal_map_tex_index = UINT32_MAX;
 
+    gpu_mat.type = GPU_MATERIAL_DIFFUSE;
+
     if (std::shared_ptr<Lambertian> lambert = std::dynamic_pointer_cast<Lambertian>(mat)) {
         gpu_mat.albedo = lambert->getAlbedo();
         gpu_mat.roughness = lambert->getRoughness();
@@ -70,6 +72,7 @@ inline uint32 addMaterial(const std::shared_ptr<Material>& mat, std::unordered_m
         }
     }
     else if (std::shared_ptr<Metal> metal = std::dynamic_pointer_cast<Metal>(mat)) {
+        gpu_mat.type = GPU_MATERIAL_METAL;
         gpu_mat.albedo = metal->getAlbedo();
         gpu_mat.roughness = metal->getRoughness();
         gpu_mat.emission = metal->getEmission();
@@ -88,6 +91,7 @@ inline uint32 addMaterial(const std::shared_ptr<Material>& mat, std::unordered_m
         }
     }
     else if (std::shared_ptr<Emissive> emissive = std::dynamic_pointer_cast<Emissive>(mat)) {
+        gpu_mat.type = GPU_MATERIAL_EMISSIVE;
         gpu_mat.albedo = emissive->getAlbedo();
         gpu_mat.roughness = emissive->getRoughness();
         gpu_mat.emission = emissive->getEmission();
