@@ -96,6 +96,9 @@
     <ClInclude Include="statistics.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="traversal_stats.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="texture.h">
       <Filter>Header Files</Filter>
     </ClInclude>

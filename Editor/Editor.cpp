@@ -34,6 +34,7 @@
 #include "benchmark.h"
 #include "context.h"
 #include "statistics.h"
+#include "traversal_stats.h"
 #include "camera.h"
 #include "camera_controller.h"
 #include "texture_loader.h"
@@ -102,7 +103,7 @@ int main(int argc, char** argv) {
     // Benchmark: resolution must stay the same during measuring
     if (benchmark_config.enabled) glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     int32 window_w = benchmark_config.enabled ? benchmark_config.width : 1340;
-    int32 window_h = benchmark_config.enabled ? benchmark_config.height : 1000;
+    int32 window_h = benchmark_config.enabled ? benchmark_config.height : 1040;
 
     // Create window with graphics context
     GLFWwindow* window = glfwCreateWindow(window_w, window_h, "Dear ImGui GLFW+OpenGL3 example", nullptr, nullptr);
@@ -208,10 +209,18 @@ int main(int argc, char** argv) {
 
     std::shared_ptr<Shader> comp_shader;
     // Compute shader is compiled for the chosen BVH width
-    auto createComputeShader = [&]() {
+    auto createComputeShader = [&](bool count_traversal = false) {
         std::string defines = gui_settings->bvh_width == 2 ? "" : "#define BVH_WIDTH " + std::to_string(gui_settings->bvh_width) + "\n";
+        if (count_traversal) defines += "#define COUNT_TRAVERSAL\n"; // shader variant used only for counting frames
         return std::make_shared<Shader>("../ShaderFiles/compute_shader.comp", defines);
     };
+    std::shared_ptr<Shader> count_shader; // made when the first counting frame on GPU needs it
+
+    // Traversal statistics: counted every frame while the checkbox is on, and in one extra frame after the benchmark
+    bool count_traversal = false;
+    bool traversal_counted = false; // last_traversal_counts is filled
+    TraversalCounts last_traversal_counts;
+    std::unique_ptr<GpuBuffer> traversal_counter_buffer;
     GLuint tex = 0, background_tex = 0, accumulated_tex = 0;
     GLsizei tex_width = 512, tex_height = 512;
     GLsizei background_tex_width = 512, background_tex_height = 512;
@@ -461,6 +470,7 @@ int main(int argc, char** argv) {
                     // GPU gets the BLAS of the new width and a shader made for it (BVH is not built again)
                     active_scene->sendMeshDataToGPU();
                     comp_shader = createComputeShader();
+                    count_shader.reset();
                 }
             }
 
@@ -544,12 +554,15 @@ int main(int argc, char** argv) {
             active_scene->context.settings->mesh_color = chosen_mesh_color;
 
             ImGui::Checkbox("Multithreading", &active_scene->context.settings->multithreading);
+            ImGui::SameLine();
+            ImGui::Checkbox("Count traversal (slower)", &count_traversal);
 
             ImGui::Separator();
             // Option to hot reload shader during program execution
             if (!gui_settings->use_gpu) ImGui::BeginDisabled();
             if (ImGui::Button("Reload shader")) {
                 comp_shader = createComputeShader();
+                count_shader.reset();
             }
 
             ImGui::SetNextItemWidth(100);
@@ -574,6 +587,14 @@ int main(int argc, char** argv) {
             ImGui::Text("BLAS max depth: %u", blas_stats.max_depth);
             ImGui::Text("Avg triangles per leaf: %.2f", blas_stats.leaf_cnt ? double(blas_stats.leaf_triangle_cnt) / blas_stats.leaf_cnt : 0.0);
             ImGui::Text("SAH cost (avg per BLAS): %.2f", blas_stats.blas_cnt ? blas_stats.sah_cost_sum / blas_stats.blas_cnt : 0.0);
+            if (count_traversal && traversal_counted) {
+                const TraversalCounts& t = last_traversal_counts;
+                if (gui_settings->use_gpu) {
+                    ImGui::Text("Per ray: %.1f nodes, %.1f boxes, %.1f triangles", t.perRay(t.nodes), t.perRay(t.box_tests),
+                                t.perRay(t.triangle_tests));
+                }
+                ImGui::Text("Rays per frame: %.2f M%s", t.rays / 1e6, gui_settings->use_gpu ? "" : " (nodes/boxes: GPU only)");
+            }
 
             // Wide BLASes, collapsed from the binary BLAS above
             auto wideStatsText = [](const char* name, const WideBLASStats& stats, size_t node_size, size_t gpu_node_size) {
@@ -618,11 +639,23 @@ int main(int argc, char** argv) {
             if (gui_settings->use_gpu) resizeTexture(accumulated_tex, tex_width, tex_height, true);
         }
 
+        // Counting frame: every frame while counting is on in the UI, and one extra frame after the benchmark's timed frames
+        bool count_frame = count_traversal || (benchmark && benchmark->isDone());
+
         if (!gui_settings->use_gpu) {
             Camera& cam = active_scene->getActiveCamera();
+            if (count_frame) {
+                cpu_traversal_counters.reset();
+                cpu_traversal_counters.enabled = true;
+            }
             auto render_start = std::chrono::steady_clock::now();
             cam.render(active_scene->getWorld(), image_data_acc, *(context.settings));
             std::chrono::duration<double, std::milli> render_time = std::chrono::steady_clock::now() - render_start;
+            if (count_frame) {
+                cpu_traversal_counters.enabled = false;
+                last_traversal_counts = cpu_traversal_counters.get();
+                traversal_counted = true;
+            }
             cpu_render_ms.add(render_time.count());
             if (benchmark) benchmark->addRenderTime(render_time.count());
 
@@ -660,14 +693,23 @@ int main(int argc, char** argv) {
         }
 
         if (gui_settings->use_gpu) { // Use compute shader
+            // Counting frames use the shader variant with counters and a zeroed counter buffer
+            Shader* active_shader = comp_shader.get();
+            if (count_frame) {
+                if (!count_shader) count_shader = createComputeShader(true);
+                active_shader = count_shader.get();
+                std::vector<uint32> zeros(GPU_TRAVERSAL_COUNTER_SLOTS * 4, 0);
+                traversal_counter_buffer = std::make_unique<GpuBuffer>(std::as_bytes(std::span(zeros)), BufferUsage::DynamicDraw);
+            }
+
             const uint32 WG_SIZE_X = 16;
             const uint32 WG_SIZE_Y = 16;
 
             uint32_t num_groups_x = (display_w + WG_SIZE_X - 1) / WG_SIZE_X;
             uint32_t num_groups_y = (display_h + WG_SIZE_Y - 1) / WG_SIZE_Y;
 
-            comp_shader->bind();
-            comp_shader->setIVec2("u_resolution", display_w, display_h);
+            active_shader->bind();
+            active_shader->setIVec2("u_resolution", display_w, display_h);
 
             glBindImageTexture(0, tex, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
             glBindImageTexture(2, accumulated_tex, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
@@ -679,26 +721,27 @@ int main(int argc, char** argv) {
             vec3 delta_u = active_cam.getDeltaU();
             vec3 delta_v = active_cam.getDeltaV();
 
-            comp_shader->setVec3("u_cam_center", center.x(), center.y(), center.z());
-            comp_shader->setVec3("u_pixel00_loc", pixel_00.x(), pixel_00.y(), pixel_00.z());
-            comp_shader->setVec3("u_pixel_delta_u", delta_u.x(), delta_u.y(), delta_u.z());
-            comp_shader->setVec3("u_pixel_delta_v", delta_v.x(), delta_v.y(), delta_v.z());
-            comp_shader->setUint("u_frame_index", frame_index);
-            comp_shader->setInt("u_max_bounces", gui_settings->max_bounces);
-            comp_shader->setInt("u_spp", gui_settings->spp);
-            comp_shader->setFloat("u_environment_light", gui_settings->environment_light);
+            active_shader->setVec3("u_cam_center", center.x(), center.y(), center.z());
+            active_shader->setVec3("u_pixel00_loc", pixel_00.x(), pixel_00.y(), pixel_00.z());
+            active_shader->setVec3("u_pixel_delta_u", delta_u.x(), delta_u.y(), delta_u.z());
+            active_shader->setVec3("u_pixel_delta_v", delta_v.x(), delta_v.y(), delta_v.z());
+            active_shader->setUint("u_frame_index", frame_index);
+            active_shader->setInt("u_max_bounces", gui_settings->max_bounces);
+            active_shader->setInt("u_spp", gui_settings->spp);
+            active_shader->setFloat("u_environment_light", gui_settings->environment_light);
 
-            active_scene->bindResources(comp_shader.get());
-            comp_shader->setUint("u_instance_count", active_scene->getRtMeshesSize());
+            active_scene->bindResources(active_shader);
+            if (count_frame) active_shader->bindBuffer(traversal_counter_buffer.get(), 11);
+            active_shader->setUint("u_instance_count", active_scene->getRtMeshesSize());
 
-            comp_shader->setBool("u_accumulate", active_cam.getCameraMoved());
+            active_shader->setBool("u_accumulate", active_cam.getCameraMoved());
             if (active_cam.getCameraMoved()) {
                 active_cam.setCameraMoved(false);
             }
             
             glActiveTexture(GL_TEXTURE0); // activate the texture unit first before binding texture
             glBindTexture(GL_TEXTURE_2D, background_tex);
-            comp_shader->setTexture("u_background_img", 0); // compute shader uniform background_img should sample from texture unit 0
+            active_shader->setTexture("u_background_img", 0); // compute shader uniform background_img should sample from texture unit 0
 
             //glMemoryBarrier(GL_ALL_BARRIER_BITS); // before dispatch
             gpu_timer->begin();
@@ -711,6 +754,20 @@ int main(int argc, char** argv) {
             // Barrier that ensures that data writting is completely finished
             // (TEXTURE_FETCH because fullscreen pass reads tex with texture() right after)
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+
+            if (count_frame) { // read the counters back and add the slots together
+                glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
+                std::vector<uint32> counters(GPU_TRAVERSAL_COUNTER_SLOTS * 4);
+                glGetNamedBufferSubData(traversal_counter_buffer->id(), 0, counters.size() * sizeof(uint32), counters.data());
+                last_traversal_counts = TraversalCounts();
+                for (uint32 slot = 0; slot < GPU_TRAVERSAL_COUNTER_SLOTS; slot++) {
+                    last_traversal_counts.rays += counters[slot * 4 + 0];
+                    last_traversal_counts.nodes += counters[slot * 4 + 1];
+                    last_traversal_counts.box_tests += counters[slot * 4 + 2];
+                    last_traversal_counts.triangle_tests += counters[slot * 4 + 3];
+                }
+                traversal_counted = true;
+            }
             if (GLenum err = glGetError(); err != GL_NO_ERROR) {
                 std::cout << "GLerror: " << err;
             }
@@ -719,7 +776,7 @@ int main(int argc, char** argv) {
             glBindImageTexture(0, 0, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA8);
             glBindImageTexture(2, 0, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
             glBindTexture(GL_TEXTURE_2D, 0);
-            comp_shader->unbind(); // compute-only program must not stay bound while drawing
+            active_shader->unbind(); // compute-only program must not stay bound while drawing
         }
 
         // Fullscreen pass: draws tex to the screen framebuffer
@@ -747,13 +804,15 @@ int main(int argc, char** argv) {
 
         frame_index++;
 
-        if (benchmark && benchmark->isDone() && exit_code == 0) {
-            if (!benchmark->writeResult(bvh_manager->getBLASStats(), statistics->triangle_cnt, display_w, display_h)) exit_code = 1;
+        if (benchmark && benchmark->isDone() && traversal_counted && exit_code == 0) {
+            if (!benchmark->writeResult(bvh_manager->getBLASStats(), statistics->triangle_cnt, display_w, display_h,
+                                        last_traversal_counts)) exit_code = 1;
             glfwSetWindowShouldClose(window, GLFW_TRUE);
         }
     }
     // Cleanup
     active_scene.reset();
+    traversal_counter_buffer.reset();
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
